@@ -10,7 +10,7 @@ from tcod.tileset import load_tilesheet, CHARMAP_TCOD
 from engine import Engine
 from dungeon_factory import random_dungeon
 from entities import Charactor
-from src.components.stats import CombatStats, PhysicalStats
+from components.stats import CombatStats, PhysicalStats
 
 TITLE = "JRL - Jay's Roguelike"
 WIDTH, HEIGHT = 720, 480  # Window pixel resolution (when not maximized.)

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from src.components.base import BaseComponent
+from components.base import BaseComponent
 
 
 class PhysicalStats(BaseComponent):

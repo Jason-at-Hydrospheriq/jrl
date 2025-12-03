@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from src.entities import AICharactor
+from entities import AICharactor
 from components.ai import HostileAI
 from components.stats import PhysicalStats, MentalStats, CombatStats
 

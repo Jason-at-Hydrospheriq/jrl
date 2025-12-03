@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Optional, Protocol
+from typing import TYPE_CHECKING, Protocol
 import numpy as np
 
-from entities import AICharactor, Charactor
+if TYPE_CHECKING:
+    from entities import AICharactor, Charactor
 
 
 class AIEvent(Protocol):

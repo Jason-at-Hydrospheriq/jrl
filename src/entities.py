@@ -5,10 +5,10 @@ from __future__ import annotations
 import tcod
 from tcod.map import compute_fov
 import numpy as np
-from typing import Optional, Tuple, Type, TypeVar, TYPE_CHECKING, NewType
+from typing import Optional, Tuple, Type, TypeVar, TYPE_CHECKING
 from copy import deepcopy
 
-from src.components.stats import PhysicalStats, MentalStats, CombatStats
+from components.stats import PhysicalStats, MentalStats, CombatStats
 from components.ai import BaseAI
 
 if TYPE_CHECKING:
@@ -17,8 +17,6 @@ if TYPE_CHECKING:
 
 #Type variable used for type hinting 'self' returns
 T = TypeVar("T", bound="BaseEntity")
-EntityTypes = TypeVar("EntityTypes", BaseEntity, PhysicalObject, Charactor, AICharactor)
-ActorTypes = TypeVar("ActorTypes", Charactor, AICharactor)
 
 
 class BaseEntity:
@@ -206,3 +204,7 @@ class AICharactor(Charactor):
             # self._ai.on_death()
             self._ai = None
         return alive
+    
+    
+EntityTypes = TypeVar("EntityTypes", BaseEntity, PhysicalObject, Charactor, AICharactor)
+ActorTypes = TypeVar("ActorTypes", Charactor, AICharactor)

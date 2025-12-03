@@ -7,8 +7,7 @@ from tcod.context import Context
 from tcod.console import Console
 
 from event_handlers import PlayerEventHandler, MobEventsHandler
-from actions import NoAction
-from src.entities import Charactor
+from entities import Charactor
 
 if TYPE_CHECKING:
     from game_map import GameMap

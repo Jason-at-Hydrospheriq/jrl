@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple
 import numpy as np  # type: ignore
 import tcod
 
-from ai_events import AIEvent, AIEventMove, AIEventMeleeAttack, AIEventNone
-from entities import AICharactor
+from components.ai_events import AIEvent, AIEventMove, AIEventMeleeAttack, AIEventNone
 
 if TYPE_CHECKING:
     from entities import AICharactor, Charactor
