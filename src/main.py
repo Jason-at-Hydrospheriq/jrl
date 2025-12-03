@@ -8,8 +8,9 @@ from tcod.context import new as new_window
 from tcod.tileset import load_tilesheet, CHARMAP_TCOD
 
 from engine import Engine
-from entities import Character
 from dungeon_factory import random_dungeon
+from entities import Charactor
+from src.components.stats import CombatStats, PhysicalStats
 
 TITLE = "JRL - Jay's Roguelike"
 WIDTH, HEIGHT = 720, 480  # Window pixel resolution (when not maximized.)
@@ -20,7 +21,9 @@ def main() -> None:
     tileset = load_tilesheet("dejavu10x10_gs_tc.png", 32, 8, CHARMAP_TCOD)
 
     # Create player and NPC entities
-    player = Character(name="Player", x=40, y=22, char="@", color=(255, 255, 255))
+    player = Charactor(name="Player", x=40, y=22, char="@", color=(255, 255, 255),
+                       physical=PhysicalStats(max_hp=30, constitution=12),
+                       combat=CombatStats(defense=2, attack_power=5))
     engine = Engine(player=player)
 
     # Set up game map
@@ -46,7 +49,8 @@ def main() -> None:
             engine.render(console=root_game_console, context=game_window, view_mobs=False)
 
             # Parse, execute, and manage event driven state changes for entities
-            engine.event_handler.handle_events()
+            engine.player_event_handler.handle_events()
+            engine.mob_event_handler.handle_events()
 
 if __name__ == "__main__":
     main()

@@ -2,19 +2,22 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Tuple, Protocol
-import numpy as np
+from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
    from engine import Engine
-   from entities import Entity
-   from game_map import GameMap
+   from entities import PhysicalObject, Charactor, AICharactor
 
 
 class Action(Protocol):
-    entity: Entity
+    
+    def perform(self) -> None:
+        ...
 
-    def __init__(self, entity: Entity) -> None:
+
+class BaseAction:
+
+    def __init__(self, entity: PhysicalObject | Charactor | AICharactor) -> None:
         self.entity = entity
 
     @property
@@ -25,46 +28,48 @@ class Action(Protocol):
         ...  # To be implemented by subclasses.
 
 
-class ActionOnTarget(Action):
-    def __init__(self, entity: Entity, dx: int, dy: int) -> None:
+class ActionOnTarget(BaseAction):
+    def __init__(self, entity: PhysicalObject | Charactor | AICharactor, dx: int, dy: int) -> None:
         super().__init__(entity)
-        self.dx = dx
-        self.dy = dy
-    
-    @property
-    def target_location(self) -> np.ndarray:
-        entity_target = self.entity.game_map.get_entity_location(self.entity)
-        entity_target['x'] += self.dx
-        entity_target['y'] += self.dy
+        
+        self.target_dx = dx
+        self.target_dy = dy
 
-        return entity_target
 
-    @property
-    def target_entity(self) -> Optional[Entity]:
-        return self.entity.game_map.get_entity_by_location(self.target_location)
-    
-class NoAction(Action):
+class ActionOnDestination(BaseAction):
+
+    def __init__(self, entity: PhysicalObject | Charactor | AICharactor, dx: int, dy: int) -> None:
+        super().__init__(entity)
+
+        self.entity.dx = dx
+        self.entity.dy = dy
+
+
+class NoAction(BaseAction):
     def perform(self) -> None:
         pass
 
 
-class EscapeAction(Action):
+class EscapeAction(BaseAction):
     def perform(self) -> None:
         raise SystemExit()
 
 
-class SystemExitAction(Action):
+class SystemExitAction(BaseAction):
     def perform(self) -> None:
         raise SystemExit()
     
 
-class MovementAction(ActionOnTarget):
+class MoveAction(ActionOnDestination):
     def perform(self) -> None:
 
-        if not self.entity.game_map.in_bounds(self.target_location):
-            return  # Destination is out of bounds.
-        if not self.entity.game_map.tiles["walkable"][self.target_location['x'], self.target_location['y']]:
-            return  # Destination is blocked by a tile.
+        if self.entity.collision: # Destination is blocked by an entity, wall, or map boundary.
+            # If obstacle is an ai_actor, perform a melee attack instead.
+            obstacle = self.entity.game_map.get_entity_at_location(self.entity.destination)
+            if obstacle and obstacle in self.entity.game_map.live_ai_actors:
+                return MeleeAction(self.entity, self.entity.dx, self.entity.dy).perform()
+            
+            return  # Destination is blocked by an entity, wall, or map boundary.
         
         self.entity.move(self) # type: ignore
 
@@ -72,16 +77,18 @@ class MovementAction(ActionOnTarget):
 class MeleeAction(ActionOnTarget):
     def perform(self) -> None:
 
-        if not self.target_entity:
+        target = self.entity.game_map.get_entity_at_location(self.entity.target_location)
+
+        if not target:
             return  # No entity to attack.
 
-        print(f"You kick the {self.target_entity.name}, much to its annoyance!")
+        damage = self.entity.combat.attack_power - target.combat.defense  # type: ignore
+        attack_desc = f"{self.entity.name} attacks {target.name}"
 
+        if damage > 0:
+            print(f"{attack_desc} for {damage} hit points.")
 
-class CollisionAction(ActionOnTarget):
-    def perform(self) -> None:
-
-        if self.target_entity:
-            return MeleeAction(self.entity, self.dx, self.dy).perform()
+            if target.physical:
+                target.physical.hp -= damage
         else:
-            return MovementAction(self.entity, self.dx, self.dy).perform()
+            print(f"{attack_desc} but does no damage.")

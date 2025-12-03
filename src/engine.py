@@ -6,20 +6,22 @@ from typing import TYPE_CHECKING, Set, Iterable, Any
 from tcod.context import Context
 from tcod.console import Console
 
-from event_handlers import EventHandler
+from event_handlers import PlayerEventHandler, MobEventsHandler
 from actions import NoAction
-from entities import Character
+from src.entities import Charactor
 
 if TYPE_CHECKING:
     from game_map import GameMap
     
 class Engine:
-    player: Character
-    event_handler: EventHandler
+    player: Charactor
+    player_event_handler: PlayerEventHandler
+    mob_event_handler: MobEventsHandler
 
-    def __init__(self, player: Character) -> None:
+    def __init__(self, player: Charactor) -> None:
         self.player = player
-        self.event_handler = EventHandler(self)
+        self.player_event_handler = PlayerEventHandler(self)
+        self.mob_event_handler = MobEventsHandler(self)
    
     @property
     def game_map(self) -> GameMap:
@@ -28,12 +30,6 @@ class Engine:
     @game_map.setter
     def game_map(self, value: GameMap) -> None:
         self.player.game_map = value
-
-    def handle_mob_actions(self) -> None:
-        for entity in self.game_map.non_player_entities:
-            if isinstance(entity, Character):
-                mob_action = NoAction(entity)
-                mob_action.perform()
 
     def render(self, console: Console, context: Context, view_mobs: bool=False) -> None:
         self.game_map.render(console, view_mobs=view_mobs)

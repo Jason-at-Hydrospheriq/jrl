@@ -7,7 +7,7 @@ from typing import Iterator, List, Tuple
 import numpy as np
 
 from game_map import GameMap
-from entities import Entity, Character
+from entities import Charactor
 from engine import Engine
 import tile_types
 import mob_factory
@@ -71,7 +71,7 @@ class CircularRoom(Room):
         return mask
  
 
-def random_dungeon(engine: Engine, map_width: int, map_height: int, player: Character, max_rooms: int=10, min_room_size: int=5, max_room_size: int=20, max_total_mobs: int=50, max_mobs_per_room: int=5) -> GameMap:
+def random_dungeon(engine: Engine, map_width: int, map_height: int, player: Charactor, max_rooms: int=10, min_room_size: int=5, max_room_size: int=20, max_total_mobs: int=50, max_mobs_per_room: int=5) -> GameMap:
     #TODO Use LLM to generate more complex dungeons
 
     dungeon = GameMap(engine=engine, width=map_width, height=map_height, player=player)
@@ -157,7 +157,7 @@ def random_mobs(rooms: List[Room], max_total_mobs: int, max_mobs_per_room: int, 
         else:
             n_mobs_spawned_in_this_room = 0
             while n_mobs_spawned_in_this_room < max_mobs_in_this_room:
-                current_mob_locations = [game_map.get_entity_location(mob) for mob in game_map.non_player_entities]
+                current_mob_locations = [game_map.get_entity_location(mob) for mob in game_map.live_ai_actors]
                 spawn_location = room.random_location()
                 if not any(mob_location == spawn_location for mob_location in current_mob_locations):
                     if random.random() < 0.8:
@@ -171,7 +171,7 @@ def random_mobs(rooms: List[Room], max_total_mobs: int, max_mobs_per_room: int, 
     # Generate remainder of mobs in corridors
     while n_total_mobs_spawned_in_this_map < max_total_mobs_in_this_map:
         spawn_location = game_map.get_map_location(random.randint(0, game_map.width - 1), random.randint(0, game_map.height - 1))
-        current_mob_locations = [game_map.get_entity_location(mob) for mob in game_map.non_player_entities]
+        current_mob_locations = [game_map.get_entity_location(mob) for mob in game_map.live_ai_actors]
         for room in rooms:
             if room.contains(spawn_location):
                 continue  # Skip if inside a room
