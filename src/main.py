@@ -21,6 +21,7 @@ def main() -> None:
 
     # Create player and NPC entities
     player = Character(name="Player", x=40, y=22, char="@", color=(255, 255, 255))
+    engine = Engine(player=player)
 
     # Set up game map
     map_width = 100
@@ -28,10 +29,8 @@ def main() -> None:
     max_total_mobs = 100
     max_mobs_per_room = 5
     max_rooms = 15
-    game_map = random_dungeon(map_width, map_height, player=player, max_rooms=max_rooms, max_total_mobs=max_total_mobs, max_mobs_per_room=max_mobs_per_room)
+    engine.game_map = random_dungeon(engine, map_width, map_height, player=player, max_rooms=max_rooms, max_total_mobs=max_total_mobs, max_mobs_per_room=max_mobs_per_room)
 
-    # Initialize the game engine with dungeon and player
-    engine = Engine(player=player, game_map=game_map)
 
     # Main game loop
     with new_window(columns=WIDTH, rows=HEIGHT, tileset=tileset, title=TITLE, vsync=True, sdl_window_flags=FLAGS) as game_window:
@@ -44,10 +43,10 @@ def main() -> None:
                     root_game_console = game_window.new_console(map_width, map_height, order="F")
 
             # Render game console
-            engine.render(console=root_game_console, context=game_window, view_mobs=True)
+            engine.render(console=root_game_console, context=game_window, view_mobs=False)
 
             # Parse, execute, and manage event driven state changes for entities
-            engine.handle_events(events=tcod.event.wait())
+            engine.event_handler.handle_events()
 
 if __name__ == "__main__":
     main()

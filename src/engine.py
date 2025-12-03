@@ -2,37 +2,38 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Set, Iterable, Any
+from typing import TYPE_CHECKING, Set, Iterable, Any
 from tcod.context import Context
 from tcod.console import Console
-from copy import copy   
-from entities import Entity, Character
-from game_map import GameMap
-from event_handlers import ConsoleEventHandler, PlayerEventHandler, NonPlayerEventHandler
+
+from event_handlers import EventHandler
 from actions import NoAction
+from entities import Character
 
+if TYPE_CHECKING:
+    from game_map import GameMap
+    
 class Engine:
-    def __init__(self, player: Character, game_map: GameMap) -> None:
-        self.console_entity = Entity(name='Console')
-        self.player = player
-        self.game_map = game_map
-        self.console_event_handler = ConsoleEventHandler()
-        self.player_event_handler = PlayerEventHandler()
-        self.non_player_event_handler = NonPlayerEventHandler()
-        self.active_non_player = None
+    player: Character
+    event_handler: EventHandler
 
+    def __init__(self, player: Character) -> None:
+        self.player = player
+        self.event_handler = EventHandler(self)
+   
     @property
-    def agents(self) -> Iterable:
-        handlers = [self.console_event_handler, self.player_event_handler, self.non_player_event_handler]
-        actors = [self.console_entity, self.player, self.active_non_player]
-        return zip(handlers, actors)
-     
-    def handle_events(self, events: Iterable[Any]) -> None:
-        events_copy = list(events)
-        for handler, actor in self.agents:
-            action = handler.handle_events(events_copy)
-            if actor:
-                action.perform(self, actor)
+    def game_map(self) -> GameMap:
+        return self.player.game_map
+
+    @game_map.setter
+    def game_map(self, value: GameMap) -> None:
+        self.player.game_map = value
+
+    def handle_mob_actions(self) -> None:
+        for entity in self.game_map.non_player_entities:
+            if isinstance(entity, Character):
+                mob_action = NoAction(entity)
+                mob_action.perform()
 
     def render(self, console: Console, context: Context, view_mobs: bool=False) -> None:
         self.game_map.render(console, view_mobs=view_mobs)

@@ -2,11 +2,15 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Iterable, Any
+from typing import Iterable, Any, Protocol, TYPE_CHECKING
 import tcod
-from tcod.event import KeyDown, Quit
+import tcod.event
 
-from actions import Action, ActionOnTarget, EscapeAction, MovementAction, NoAction, CollisionAction
+from actions import Action, ActionOnTarget, EscapeAction, MovementAction, NoAction, CollisionAction, SystemExitAction
+from entities import Character
+
+if TYPE_CHECKING:
+    from engine import Engine
 
 MOVEMENT_KEYS = {
     tcod.event.KeySym.UP: (0, -1),
@@ -15,63 +19,63 @@ MOVEMENT_KEYS = {
     tcod.event.KeySym.RIGHT: (1, 0),
 }
 
-class EventHandler():
-    def handle_events(self, events: Iterable[Any]) -> Action|ActionOnTarget:
-        """Handle a list of events. This method should be overridden by subclasses.
+class EventHandlerTemplate(Protocol):
 
-        Args:
-            events: A list of events to handle.
+    engine: Engine
 
-        Returns:
-            Action: The action to be performed in response to the events.
-        """
-        raise NotImplementedError()
+    def __init__(self, engine: Engine) -> None:
+        self.engine = engine
+    
+    def event_quit(self, event: tcod.event.Quit) -> Action:
+        ...
 
+    def event_keydown(self, event: tcod.event.KeyDown) -> Action | ActionOnTarget:
+        ...
+    
+    def handle_events(self) -> None:
+        ...
 
-class ConsoleEventHandler(EventHandler):
-    def handle_events(self, events: Iterable[Any]) -> Action:
-        action = NoAction()
-
-        for event in events:
-            match event:
-                
-                case Quit():
-                    raise SystemExit()
-                
-                case KeyDown(sym=sym):
-                    if sym == tcod.event.KeySym.ESCAPE:
-                        action = EscapeAction()
-                
-                case tcod.event.WindowResized(width=width, height=height):  # Size in pixels
-                        pass  # The next call to context.new_console may return a different size.
-        return action
-
-
-class PlayerEventHandler(EventHandler):
-    def handle_events(self, events: Iterable[Any]) -> Action | ActionOnTarget:
-        action = NoAction()
-
-        for event in events:
-            match event:
-                case KeyDown(sym=sym):
-                    if sym in MOVEMENT_KEYS:
-                        dx, dy = MOVEMENT_KEYS[sym]
-                        action = CollisionAction(dx, dy)
-                
-        return action
+    def _dispatch_events(self) -> Action | ActionOnTarget:
+        ...
     
 
-class NonPlayerEventHandler(EventHandler):
-    def handle_events(self, events: Iterable[Any]) -> Action | ActionOnTarget:
-        action = NoAction()
-
-        # for event in events:
-        #     match event:
-
-        #         case KeyDown(sym=sym):
-        #             if sym in MOVEMENT_KEYS:
-        #                 dx, dy = MOVEMENT_KEYS[sym]
-        #                 action = CollisionAction(dx, dy)
+class EventHandler(EventHandlerTemplate):
+    
+    @property
+    def player(self) -> Character:
+        return self.engine.player
+    
+    def event_quit(self, event: tcod.event.Quit) -> Action:
+        action: Action = SystemExitAction(self.player)
 
         return action
+    
+    def event_keydown(self, event: tcod.event.KeyDown) -> Action | ActionOnTarget:
+        action: Action | ActionOnTarget = NoAction(self.player)
         
+        if event.sym in MOVEMENT_KEYS:
+            dx, dy = MOVEMENT_KEYS[event.sym]
+            action = CollisionAction(self.player, dx, dy)
+        
+        elif event.sym == tcod.event.KeySym.ESCAPE:
+            action = SystemExitAction(self.player)
+
+        return action
+
+    def handle_events(self) -> None:
+        action = self._dispatch_events()
+        
+        action.perform()
+
+        self.engine.handle_mob_actions()
+        self.player.game_map.update_fov()
+
+    def _dispatch_events(self) -> Action | ActionOnTarget:
+        
+        for event in tcod.event.wait():
+            if isinstance(event, tcod.event.Quit):
+                return self.event_quit(event)
+            elif isinstance(event, tcod.event.KeyDown):
+                return self.event_keydown(event)
+            
+        return NoAction(self.player)
