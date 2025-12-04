@@ -2,39 +2,54 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Set, Iterable, Any
+from typing import TYPE_CHECKING, Set, Iterable, Any
 from tcod.context import Context
 from tcod.console import Console
-from copy import copy   
-from entities import Entity, Character
-from game_map import GameMap
-from event_handlers import ConsoleEventHandler, PlayerEventHandler, NonPlayerEventHandler
-from actions import NoAction
 
+from event_handlers import EventHandler, MainEventHandler, GameOverEventHandler
+from entities import Charactor
+
+if TYPE_CHECKING:
+    from game_map import GameMap
+    
 class Engine:
-    def __init__(self, player: Character, game_map: GameMap) -> None:
-        self.console_entity = Entity(name='Console')
+    player: Charactor
+    
+    def __init__(self, player: Charactor) -> None:
         self.player = player
-        self.game_map = game_map
-        self.console_event_handler = ConsoleEventHandler()
-        self.player_event_handler = PlayerEventHandler()
-        self.non_player_event_handler = NonPlayerEventHandler()
-        self.active_non_player = None
+        self._main_event_handler = MainEventHandler(self)
+        self._gameover_event_handler = GameOverEventHandler(self)
+    
+    @property
+    def event_handler(self) -> EventHandler:
+        if self.gameover:
+            return self._gameover_event_handler
+        return self._main_event_handler
+    
+    @property
+    def game_map(self) -> GameMap:
+        return self.player.game_map
+
+    @game_map.setter
+    def game_map(self, value: GameMap) -> None:
+        self.player.game_map = value
 
     @property
-    def agents(self) -> Iterable:
-        handlers = [self.console_event_handler, self.player_event_handler, self.non_player_event_handler]
-        actors = [self.console_entity, self.player, self.active_non_player]
-        return zip(handlers, actors)
-     
-    def handle_events(self, events: Iterable[Any]) -> None:
-        events_copy = list(events)
-        for handler, actor in self.agents:
-            action = handler.handle_events(events_copy)
-            if actor:
-                action.perform(self, actor)
-
+    def gameover(self) -> bool:
+        return not self.player.is_alive
+    
     def render(self, console: Console, context: Context, view_mobs: bool=False) -> None:
         self.game_map.render(console, view_mobs=view_mobs)
+        hp_text = "HP: N/A"
+        if self.player.physical:
+            hp_text = f"HP: {self.player.physical.hp}/{self.player.physical.max_hp}"
+        
+        console.print(
+            x=1,
+            y=105,
+            text=hp_text,
+            fg=(255, 0, 0),
+        )
+    
         context.present(console, integer_scaling=True)
         console.clear()    

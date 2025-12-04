@@ -6,79 +6,105 @@ import numpy as np
 import tcod
 from tcod.console import Console
 from tcod.map import compute_fov
-from typing import Iterable, Set, Optional, Tuple, List
+from typing import Generator, Iterable, Set, Optional, Tuple, List, TYPE_CHECKING, TypeVar
 
-from entities import Character, Entity
+if TYPE_CHECKING:
+    from engine import Engine
+
+from entities import EntityTypes, ActorTypes, PhysicalObject, Charactor, AICharactor
 import tile_types
 
 
-# Define Structured Data Types for GameMap
-# Location structured type.
-location_dtype = np.dtype(
-    [
-        ("x", np.int32),  
-        ("y", np.int32)
-    ]
-)
+class MapCoords:
+    x: int
+    y: int
+
+    def __init__(self, x: int, y: int) -> None:
+        self.x = x
+        self.y = y
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, MapCoords):
+            return NotImplemented
+        return self.x == other.x and self.y == other.y
 
 class GameMap:
-    def __init__(self, width: int, height: int, player: Character, mobs: Iterable[Character], ):
+
+    __slots__ = ("width", "height", "tiles", "player", "entities","visible", "explored", "engine")
+
+    width: int
+    height: int
+    tiles: np.ndarray
+    player: Charactor
+    entities: Set
+    visible: np.ndarray
+    explored: np.ndarray
+    engine: Engine
+
+    def __init__(self, engine: Engine,width: int, height: int, player: Charactor, entities: Iterable[EntityTypes]=[]) -> None:
+        self.engine = engine
         self.width, self.height = width, height
         self.tiles = np.full((width, height), fill_value=tile_types.wall, order="F")
         self.player = player
-        self.mobs = set(mobs)
-        self.objects = {}
+        self.entities = set(entities)
         self.visible: np.ndarray = np.full((width, height), fill_value=False, order="F")
         self.explored: np.ndarray = np.full((width, height), fill_value=False, order="F")
     
     @property
-    def all_entities(self) -> Set:
-        return self.mobs.union({self.player}.union(self.objects))
+    def physical_objects(self) -> Set[EntityTypes]:
+        return {entity for entity in self.entities if entity.physical}
     
     @property
-    def all_non_player_entities(self) -> Set:
-        return self.mobs.union(self.objects)
+    def live_actors(self) -> List[ActorTypes]:
+        return [entity for entity in self.entities if issubclass(entity.__class__, Charactor) and entity.is_alive]
     
     @property
-    def all_entity_blocked_tiles(self) -> List[np.ndarray]:
-        return [self.get_entity_location(entity) for entity in self.all_entities if entity.blocks_movement]
-
+    def live_ai_actors(self) -> List[AICharactor]:
+        return [entity for entity in self.live_actors if isinstance(entity, AICharactor) and entity.is_alive]
+    
     @property
-    def non_player_entity_blocked_tiles(self) -> List[np.ndarray]:
-        return [self.get_entity_location(entity) for entity in self.all_non_player_entities if entity.blocks_movement]
+    def blocked_tiles(self) -> List[MapCoords]:
+        blocked = []
+        for obj in self.physical_objects:
+            if obj.blocks_movement:
+                blocked.append(obj.location)
+        return blocked
     
     @staticmethod
-    def get_entity_location(entity: Entity) -> np.ndarray:
-        return np.array((entity.x, entity.y), dtype=location_dtype)
+    def get_map_coords(x: int, y: int) -> MapCoords:
+        return MapCoords(x=x, y=y)
     
-    @staticmethod
-    def get_map_location(x: int, y: int) -> np.ndarray:
-        return np.array((x, y), dtype=location_dtype)
-    
-    def get_entity_by_location(self, location) -> Entity|None:
-        entity_locations = [(self.get_entity_location(entity), entity) for entity in self.all_entities]
-        for entity_location, entity in entity_locations:
-            if entity_location == location:
-                return entity
-            else:
-                return None
-            
-    def in_bounds(self, target) -> bool:
+    def get_entity_at_location(self, location: MapCoords) -> Optional[EntityTypes]:
+        """Return first entity found at location."""
+        if self.in_bounds(location) is True:
+            for entity in self.entities:
+                if entity.location == location:
+                    return entity
+        return None
+        
+    def in_bounds(self, location: MapCoords) -> bool:
         """Return True if x and y are inside of the bounds of this map."""
-        return 0 <= target['x'].all() < self.width and 0 <= target['y'].all() < self.height
-
+        if not location.x is None and not location.y is None:
+            return 0 <= location.x < self.width and 0 <= location.y < self.height
+        return False
+    
+    def walkable(self, location: MapCoords) -> bool:
+        """Return True if the tile at location is walkable."""
+        if not self.in_bounds(location):
+            return False
+        
+        return bool(self.tiles["walkable"][location.x, location.y].all())
+           
     def render(self, console: Console, view_mobs: bool=False) -> None:
-        if self.non_player_entity_blocked_tiles:
-            for location in self.non_player_entity_blocked_tiles:
-                self.tiles['walkable'][location['x'], location['y']] = False
 
         if self.player:
-            self.visible[:] = compute_fov(self.tiles["transparent"], (self.player.x, self.player.y), radius=self.player.fov_radius, algorithm=tcod.FOV_SHADOW)
+            self.visible[:] = self.player.fov
             self.explored |= self.visible
 
         console.rgb[0:self.width, 0:self.height] = np.select(condlist=[self.visible, self.explored], choicelist=[self.tiles["light"], self.tiles["dark"]],
            default=tile_types.SHROUD)
         
-        for entity in self.all_entities:
-            # if self.visible[entity.x, entity.y] or view_mobs:
-            console.print(entity.x, entity.y, entity.char, fg=entity.color)
+        # Render ordered by entity state
+        for entity in sorted(self.entities | {self.player}, key=lambda e: e.is_alive, reverse=True):
+            if self.visible[entity.location.x, entity.location.y] or view_mobs:
+                console.print(entity.location.x, entity.location.y, entity.char, fg=entity.color)

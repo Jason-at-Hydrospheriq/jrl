@@ -2,104 +2,122 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 import numpy as np
 
 if TYPE_CHECKING:
    from engine import Engine
-   from entities import Entity
-   from game_map import GameMap
+   from entities import PhysicalObject, Charactor, AICharactor
+   from game_map import MapCoords
 
 
-class Action:
-   def perform(self, engine: Engine, entity: Entity) -> None:
-       """
-       Perform this action with the objects needed to determine its scope. This method must be overridden by Action subclasses.
-
-       Args:
-              engine: The engine instance.
-              entity: The entity performing the action.
-
-        Raises:
-                NotImplementedError: If the action is not implemented.
-        Returns:
-                None
-
-       """
-       raise NotImplementedError()
-
-
-class ActionOnTarget(Action):
-    def __init__(self, dx: int, dy: int) -> None:
-
-        self.dx = dx
-        self.dy = dy
+class Action(Protocol):
     
-    def get_target_location(self, game_map: GameMap, entity: Entity) -> np.ndarray:
-        entity_target = game_map.get_entity_location(entity)
-        entity_target['x'] += self.dx
-        entity_target['y'] += self.dy
-
-        return entity_target
-    
-    def perform(self, engine: Engine, entity: Entity) -> None:
-        """
-        Perform this action with the objects needed to determine its scope. This method must be overridden by Action subclasses.
-
-        Args:
-                engine: The engine instance.
-                entity: The entity performing the action.
-
-            Raises:
-                    NotImplementedError: If the action is not implemented.
-            Returns:
-                    None
-
-        """
-        raise NotImplementedError()
+    def perform(self) -> None:
+        ...
 
 
-class NoAction(Action):
-    def perform(self, engine: Engine, entity: Entity) -> None:
+class BaseAction:
+
+    def __init__(self, entity: PhysicalObject | Charactor | AICharactor) -> None:
+        self.entity = entity
+
+    @property
+    def engine(self) -> Engine:
+        return self.entity.game_map.engine
+
+    def perform(self) -> None:
+        ...  # To be implemented by subclasses.
+
+
+class ActionOnTarget(BaseAction):
+    def __init__(self, entity: PhysicalObject | Charactor | AICharactor, target: PhysicalObject | Charactor | AICharactor) -> None:
+        super().__init__(entity)
+        
+        if "Charactor" in str(target.__class__) or "AICharactor" in str(target.__class__):
+            if target.is_alive and target.targetable: #type: ignore
+                self.entity.target = target
+        elif target.physical:
+            if not target.physical.is_destroyed and target.targetable:
+                self.entity.target = target
+
+
+class ActionOnDestination(BaseAction):
+
+    def __init__(self, entity: PhysicalObject | Charactor | AICharactor, destination: MapCoords) -> None:
+        super().__init__(entity)
+
+        self.entity.destination = destination
+
+class NoAction(BaseAction):
+    def perform(self) -> None:
         pass
 
 
-class EscapeAction(Action):
-    def perform(self, engine: Engine, entity: Entity) -> None:
+class EscapeAction(BaseAction):
+    def perform(self) -> None:
         raise SystemExit()
 
 
-class MovementAction(ActionOnTarget):
-    def perform(self, engine: Engine, entity: Entity) -> None:
-        
-        target_location = self.get_target_location(engine.game_map, entity)
+class SystemExitAction(BaseAction):
+    def perform(self) -> None:
+        raise SystemExit()
+    
 
-        if not engine.game_map.in_bounds(target_location):
-            return  # Destination is out of bounds.
-        if not engine.game_map.tiles["walkable"][target_location['x'], target_location['y']]:
-            return  # Destination is blocked by a tile.
+class MoveAction(ActionOnDestination):
+    def perform(self) -> None:
+
+        if self.entity.collision: # Destination is blocked by an entity, wall, or map boundary.
+            # If obstacle is an ai_actor, perform a melee attack instead.
+            obstacle = self.entity.game_map.get_entity_at_location(self.entity.destination)
+            if obstacle and obstacle in self.entity.game_map.live_ai_actors:
+                if hasattr(self.entity, 'ai'):
+                    return # Do nothing if obstacle is an AICharactor.
+                else:
+                    return MeleeAction(self.entity, obstacle).perform() # Player attacks AICharactor.
+            if obstacle and obstacle is self.entity.game_map.player:
+                if hasattr(self.entity, 'ai'):
+                    return MeleeAction(self.entity, obstacle).perform() # AICharactor attacks Player.
+            return  # Destination is blocked by an entity, wall, or map boundary.
         
-        entity.move(self) # type: ignore
+        self.entity.move() # type: ignore
 
 
 class MeleeAction(ActionOnTarget):
-    def perform(self, engine: Engine, entity:Entity) -> None:
-        
-        target_location = self.get_target_location(engine.game_map, entity)
-        target_entity = engine.game_map.get_entity_by_location(target_location)
+    def perform(self) -> None:
+        damage = 0
+        attack_desc = ""
+        attacker_class = str(self.entity.__class__)
 
-        if not target_entity:
+        if not self.entity.target:
             return  # No entity to attack.
 
-        print(f"You kick the {target_entity.name}, much to its annoyance!")
+        if not "Charactor" in attacker_class and not "AICharactor" in attacker_class:
+            return  # Cannot perform melee attack if entity is not a Charactor or AICharactor.
+        
+        if self.entity.combat and self.entity.target.combat:
+            damage = self.entity.attack() # type: ignore
+            attack_desc = f"{self.entity.name} attacks {self.entity.target.name}"
+        
+        if damage > 0:
+            print(f"{attack_desc} for {damage} hit points.")
 
-
-class CollisionAction(ActionOnTarget):
-    def perform(self, engine: Engine, entity: Entity) -> None:
-        target_location = self.get_target_location(engine.game_map, entity)
-        target_entity = engine.game_map.get_entity_by_location(target_location)
-
-        if not target_entity:
-            return MovementAction(self.dx, self.dy).perform(engine, entity)
+            if self.entity.target.physical:
+                self.entity.target.physical.hp -= damage
+                if not self.entity.target.is_alive: #type: ignore
+                    return DeathAction(self.entity.target).perform()
         else:
-            return MeleeAction(self.dx, self.dy).perform(engine, entity)
+            print(f"{attack_desc} but does no damage.")
+
+
+class DeathAction(BaseAction):
+    def perform(self) -> None:
+        
+        if hasattr(self.entity, 'die'):
+            if self.engine.player is self.entity:
+                death_message = "You died!"
+            else:
+                death_message = f"{self.entity.name} is dead!"
+
+            self.entity.die()
+            print(death_message)
