@@ -6,7 +6,7 @@ import random
 from typing import Iterator, List, Tuple
 import numpy as np
 
-from game_map import GameMap
+from game_map import GameMap, MapCoords
 from entities import Charactor
 from engine import Engine
 import tile_types
@@ -15,15 +15,15 @@ import mob_factory
 
 class Room:
     def __init__(self, x: int, y: int, game_map: GameMap):
-        self.center = game_map.get_map_location(x, y)
+        self.center = MapCoords(x, y)
         self.game_map = game_map
 
     @property
     def _inner_area(self) -> np.ndarray:
         raise NotImplementedError()
     
-    def contains(self, location) -> np.bool_:
-        return self._inner_area[int(location['x']), int(location['y'])]
+    def contains(self, location: MapCoords) -> np.bool_:
+        return self._inner_area[location.x, location.y]
     
     def intersects(self, other_room: Room) -> np.bool_:
         """Return True if this room intersects with another room."""
@@ -35,25 +35,23 @@ class Room:
         """Carve out this room in the given game map."""
         game_map.tiles[self._inner_area] = tile_types.floor      
     
-    def random_location(self) -> np.ndarray:
+    def random_location(self) -> MapCoords:
         """Return a random location within this room."""
         area_indices = np.argwhere(self._inner_area)
         choice = random.choice(area_indices)
-        return self.game_map.get_map_location(choice[0], choice[1])
+        return MapCoords(int(choice[0]), int(choice[1]))
 
 
 class RectangularRoom(Room):
     def __init__(self, x: int, y: int, width: int, height: int, game_map: GameMap):
-        super().__init__(x + width // 2, y + height // 2, game_map)
-        self.x1 = x
-        self.y1 = y
-        self.x2 = x + width
-        self.y2 = y + height
+        super().__init__(x, y, game_map)
+        self.upper_left_corner = MapCoords(x - width // 2, y - height // 2)
+        self.lower_right_corner = MapCoords(x + width // 2, y + height // 2)
 
     @property
     def _inner_area(self) -> np.ndarray:
         """Return the inner area of this room as a 2D array index."""
-        mask = np.fromfunction(lambda xx, yy: (self.x1 <= xx) & (xx < self.x2) & (self.y1 <= yy) & (yy < self.y2),
+        mask = np.fromfunction(lambda xx, yy: (self.upper_left_corner.x <= xx) & (xx < self.lower_right_corner.x) & (self.upper_left_corner.y <= yy) & (yy < self.lower_right_corner.y),
                                (self.game_map.width, self.game_map.height), dtype=int)
         return mask
 
@@ -66,7 +64,7 @@ class CircularRoom(Room):
     @property
     def _inner_area(self) -> np.ndarray:
         """Return the inner area of this room as a 2D array index."""
-        mask = np.fromfunction(lambda xx, yy: (xx - self.center['x']) ** 2 + (yy - self.center['y']) ** 2 <= self.radius ** 2 + 2,
+        mask = np.fromfunction(lambda xx, yy: (xx - self.center.x) ** 2 + (yy - self.center.y) ** 2 <= self.radius ** 2 + 2,
                                (self.game_map.width, self.game_map.height), dtype=int)
         return mask
  
@@ -83,7 +81,7 @@ def random_dungeon(engine: Engine, map_width: int, map_height: int, player: Char
             new_room.add_to_map(dungeon)
 
             if len(rooms) == 0:
-                player.x, player.y = int(new_room.center['x']), int(new_room.center['y'])
+                player.location = new_room.center  # Place player in first room
 
             rooms.append(new_room)
 
@@ -95,7 +93,6 @@ def random_dungeon(engine: Engine, map_width: int, map_height: int, player: Char
 
     # Populate dungeion with mobs
     random_mobs(rooms, max_total_mobs, max_mobs_per_room, dungeon)
-
 
     return dungeon
 
@@ -117,10 +114,10 @@ def random_rooms(game_map: GameMap, max_rooms: int, min_room_size: int, max_room
             y = random.randint(radius, game_map.height - radius - 1)
             yield CircularRoom(x, y, radius, game_map=game_map)
 
-def sequential_corridors(start, end, game_map: GameMap) -> None:
+def sequential_corridors(start: MapCoords, end: MapCoords, game_map: GameMap) -> None:
     """Carve out a corridor between two points in the game map."""
-    x1, y1 = start['x'], start['y']
-    x2, y2 = end['x'], end['y']
+    x1, y1 = start.x, start.y
+    x2, y2 = end.x, end.y
     width = random.randint(0, 2)
 
     if random.random() < 0.5:
@@ -145,19 +142,18 @@ def random_mobs(rooms: List[Room], max_total_mobs: int, max_mobs_per_room: int, 
     n_total_mobs_spawned_in_this_map = 0
     min_total_mobs_in_this_map = len(rooms) * max_mobs_per_room
     max_total_mobs_in_this_map = random.randint(min_total_mobs_in_this_map, max_total_mobs)
-    player_location = game_map.get_entity_location(game_map.player)
     
     # Generate mobs in rooms
     for room in rooms:
         max_mobs_in_this_room = random.randint(1, max_mobs_per_room)
 
-        if room.contains(player_location):
+        if room.contains(game_map.player.location):
             continue  # Skip room if player is inside
         
         else:
             n_mobs_spawned_in_this_room = 0
             while n_mobs_spawned_in_this_room < max_mobs_in_this_room:
-                current_mob_locations = [game_map.get_entity_location(mob) for mob in game_map.live_ai_actors]
+                current_mob_locations = [mob.location for mob in game_map.live_ai_actors]
                 spawn_location = room.random_location()
                 if not any(mob_location == spawn_location for mob_location in current_mob_locations):
                     if random.random() < 0.8:
@@ -170,14 +166,16 @@ def random_mobs(rooms: List[Room], max_total_mobs: int, max_mobs_per_room: int, 
 
     # Generate remainder of mobs in corridors
     while n_total_mobs_spawned_in_this_map < max_total_mobs_in_this_map:
-        spawn_location = game_map.get_map_location(random.randint(0, game_map.width - 1), random.randint(0, game_map.height - 1))
-        current_mob_locations = [game_map.get_entity_location(mob) for mob in game_map.live_ai_actors]
+        x, y = random.randint(0, game_map.width - 1), random.randint(0, game_map.height - 1)
+        spawn_location = MapCoords(int(x), int(y))
+        current_mob_locations = [mob.location for mob in game_map.live_ai_actors]
+
         for room in rooms:
             if room.contains(spawn_location):
                 continue  # Skip if inside a room
 
             else: 
-                if game_map.tiles[spawn_location['x'], spawn_location['y']]["walkable"] and not any(mob_location == spawn_location for mob_location in current_mob_locations):
+                if game_map.tiles[spawn_location.x, spawn_location.y]["walkable"] and not any(mob_location == spawn_location for mob_location in current_mob_locations):
                     if random.random() < 0.8:
                         mob_factory.ORC.spawn(game_map, spawn_location)
                     else:

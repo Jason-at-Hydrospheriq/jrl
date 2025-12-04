@@ -4,6 +4,7 @@
 from __future__ import annotations
 import tcod
 from tcod.map import compute_fov
+from tcod import libtcodpy
 import numpy as np
 from typing import Optional, Tuple, Type, TypeVar, TYPE_CHECKING
 from copy import deepcopy
@@ -12,7 +13,7 @@ from components.stats import PhysicalStats, MentalStats, CombatStats
 from components.ai import BaseAI
 
 if TYPE_CHECKING:
-    from game_map import GameMap
+    from game_map import GameMap, MapCoords
     from engine import Engine
 
 #Type variable used for type hinting 'self' returns
@@ -24,16 +25,14 @@ class BaseEntity:
     A generic object to represent players, enemies, items, etc.
     """
     game_map: GameMap
-    x: int
-    y: int
+    location: MapCoords
     char: str
     color: Tuple[int, int, int]
     name: str
 
     def __init__(   self, 
                  game_map: GameMap | None = None, 
-                 x: int=0, 
-                 y: int=0, 
+                 location: MapCoords | None = None,
                  char: str=' ', 
                  color: Tuple[int, int, int]=(0,0,0), 
                  name: str='<Unnamed>') -> None:
@@ -42,85 +41,69 @@ class BaseEntity:
             self.game_map = game_map
             self.game_map.entities.add(self)
 
-        self.x = x
-        self.y = y
+        if location:
+            self.location = location
+    
         self.char = char
         self.color = color
         self.name = name
 
     @property
-    def location(self) -> np.ndarray | None:
-        return self.game_map.get_entity_location(self) if self.game_map else None
-        
-    @property
     def engine(self) -> Optional[Engine]:
         return self.game_map.engine if self.game_map else None
     
-    def spawn(self: T, game_map: GameMap, location) -> T:
+    def spawn(self: T, game_map: GameMap, location: MapCoords) -> T:
         """Spawn a copy of this entity at the given location."""
         clone = deepcopy(self)
-        clone.x = int(location['x'])
-        clone.y = int(location['y'])
+        clone.location = location
         clone.game_map = game_map
         game_map.entities.add(clone)
         return clone
 
 
 class PhysicalObject(BaseEntity):
-    dx: int = 0
-    dy: int = 0
-    target_dx: int = 0
-    target_dy: int = 0
-    blocks_movement: bool
+    destination: MapCoords
+    target: PhysicalObject | Charactor | AICharactor
+    blocks_movement: bool = True
     targetable: bool = True
     physical: PhysicalStats | None
     combat: CombatStats | None
 
     def __init__(   self, 
                     *, 
-                    x: int=0, 
-                    y: int=0, 
+                    location: MapCoords | None = None,
+                    destination: MapCoords | None = None,
                     char: str=' ', 
                     color: Tuple[int, int, int]=(0,0,0), 
                     name: str="<Unnamed>", 
-                    blocks_movement: bool=False, 
+                    blocks_movement: bool=True, 
                     targetable: bool=True,
                     physical: PhysicalStats | None = None,
                     combat: CombatStats | None = None,
                  ) -> None:
         
-        super().__init__(x=x, y=y, char=char, color=color, name=name)
+        super().__init__(location=location, char=char, color=color, name=name)
         self.blocks_movement = blocks_movement
         self.targetable = targetable
         self.physical = physical
         self.combat = combat
 
-    @property
-    def destination(self) -> np.ndarray:
-        destination = self.game_map.get_entity_location(self).copy()
-        destination['x'] += self.dx
-        destination['y'] += self.dy
-        return destination
+        if destination:
+            self.destination = destination
 
     @property
-    def target_location(self) -> np.ndarray:
-        target_location = self.game_map.get_entity_location(self).copy()
-        target_location['x'] += self.target_dx
-        target_location['y'] += self.target_dy
-        return target_location
-    
-    @property
     def collision(self) -> bool:
-        out_of_bounds = not self.game_map.in_bounds(self.destination)
-        blocked = self.game_map.get_entity_at_location(self.destination) is not None
-        walkable = self.game_map.tiles["walkable"][self.destination['x'], self.destination['y']]
-        return blocked or not walkable or out_of_bounds
+        if not self.game_map.in_bounds(self.destination):
+            return True
+        if self.game_map.get_entity_at_location(self.destination) is not None:
+            return True
+        if not self.game_map.walkable(self.destination):
+            return True
+        return False
     
     def move(self) -> None:
-        self.x += self.dx
-        self.dx = 0
-        self.y += self.dy
-        self.dy = 0
+        if self.destination is not None:
+            self.location = self.destination
     
 
 class Charactor(PhysicalObject):
@@ -129,8 +112,7 @@ class Charactor(PhysicalObject):
 
     def __init__(   self,
                     *,
-                    x: int = 0,
-                    y: int = 0,
+                    location: MapCoords | None = None,
                     char: str,
                     color: Tuple[int, int, int],
                     name: str = "<Unnamed>",
@@ -141,7 +123,7 @@ class Charactor(PhysicalObject):
                     targetable: bool = True,
                     ) -> None:
 
-        super().__init__(x=x, y=y, char=char, color=color, name=name, physical=physical, combat=combat, targetable=targetable)
+        super().__init__(location=location, char=char, color=color, name=name, physical=physical, combat=combat, targetable=targetable)
         self.fov_radius = fov_radius
         self.mental = mental
 
@@ -155,8 +137,8 @@ class Charactor(PhysicalObject):
     @property
     def fov(self) -> np.ndarray:
         """Return the actor's field of view as a boolean array."""
-        if self.game_map:
-            return compute_fov(self.game_map.tiles["transparent"], (self.x, self.y), radius=self.fov_radius, algorithm=tcod.FOV_SHADOW)
+        if self.game_map and self.location is not None:
+            return compute_fov(self.game_map.tiles["transparent"], (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_SHADOW)
         else:
             return np.array([])
 
@@ -169,14 +151,16 @@ class Charactor(PhysicalObject):
             alive = alive and self.mental.is_conscious()        
         return alive
 
+    def attack(self) -> int:
+        return self.combat.attack_power - self.target.combat.defense  # type: ignore
+
 
 class AICharactor(Charactor):
     _ai: Optional[BaseAI]
     
     def __init__(   self,
                     *,
-                    x: int = 0,
-                    y: int = 0,
+                    location: MapCoords | None = None,
                     char: str = "?",
                     color: Tuple[int, int, int],
                     name: str = "<Unnamed>",
@@ -188,13 +172,17 @@ class AICharactor(Charactor):
                     targetable: bool = True,
                     ) -> None:
         
-        super().__init__(x=x, y=y, char=char, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat, mental=mental, targetable=targetable)
+        super().__init__(location=location, char=char, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat, mental=mental, targetable=targetable)
         self._ai = ai_cls(self)
 
     @property
+    def ai(self) -> Optional[BaseAI]:
+        return self._ai
+    
+    @property
     def in_player_fov(self) -> bool:
-        if self.game_map:
-            return self.game_map.visible[self.x, self.y]
+        if self.game_map and self.location is not None:
+            return bool(self.game_map.visible[self.location.x, self.location.y])
         return False
     
     @property

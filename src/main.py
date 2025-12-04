@@ -21,7 +21,7 @@ def main() -> None:
     tileset = load_tilesheet("dejavu10x10_gs_tc.png", 32, 8, CHARMAP_TCOD)
 
     # Create player and NPC entities
-    player = Charactor(name="Player", x=40, y=22, char="@", color=(255, 255, 255),
+    player = Charactor(name="Player", char="@", color=(255, 255, 255),
                        physical=PhysicalStats(max_hp=30, constitution=12),
                        combat=CombatStats(defense=2, attack_power=5))
     engine = Engine(player=player)
@@ -29,9 +29,9 @@ def main() -> None:
     # Set up game map
     map_width = 100
     map_height = 100
-    max_total_mobs = 100
-    max_mobs_per_room = 5
-    max_rooms = 15
+    max_total_mobs = 5
+    max_mobs_per_room = 1
+    max_rooms = 3
     engine.game_map = random_dungeon(engine, map_width, map_height, player=player, max_rooms=max_rooms, max_total_mobs=max_total_mobs, max_mobs_per_room=max_mobs_per_room)
 
 
@@ -50,7 +50,6 @@ def main() -> None:
 
             # Parse, execute, and manage event driven state changes for entities
             engine.player_event_handler.handle_events()
-            engine.mob_event_handler.handle_events()
 
 if __name__ == "__main__":
     main()

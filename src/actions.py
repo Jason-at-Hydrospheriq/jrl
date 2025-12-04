@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
+import numpy as np
 
 if TYPE_CHECKING:
    from engine import Engine
    from entities import PhysicalObject, Charactor, AICharactor
+   from game_map import MapCoords
 
 
 class Action(Protocol):
@@ -29,21 +31,23 @@ class BaseAction:
 
 
 class ActionOnTarget(BaseAction):
-    def __init__(self, entity: PhysicalObject | Charactor | AICharactor, dx: int, dy: int) -> None:
+    def __init__(self, entity: PhysicalObject | Charactor | AICharactor, target: PhysicalObject | Charactor | AICharactor) -> None:
         super().__init__(entity)
         
-        self.target_dx = dx
-        self.target_dy = dy
+        if "Charactor" in str(target.__class__) or "AICharactor" in str(target.__class__):
+            if target.is_alive and target.targetable: #type: ignore
+                self.entity.target = target
+        elif target.physical:
+            if not target.physical.is_destroyed and target.targetable:
+                self.entity.target = target
 
 
 class ActionOnDestination(BaseAction):
 
-    def __init__(self, entity: PhysicalObject | Charactor | AICharactor, dx: int, dy: int) -> None:
+    def __init__(self, entity: PhysicalObject | Charactor | AICharactor, destination: MapCoords) -> None:
         super().__init__(entity)
 
-        self.entity.dx = dx
-        self.entity.dy = dy
-
+        self.entity.destination = destination
 
 class NoAction(BaseAction):
     def perform(self) -> None:
@@ -67,28 +71,38 @@ class MoveAction(ActionOnDestination):
             # If obstacle is an ai_actor, perform a melee attack instead.
             obstacle = self.entity.game_map.get_entity_at_location(self.entity.destination)
             if obstacle and obstacle in self.entity.game_map.live_ai_actors:
-                return MeleeAction(self.entity, self.entity.dx, self.entity.dy).perform()
-            
+                if hasattr(self.entity, 'ai'):
+                    return # Do nothing if obstacle is an AICharactor.
+                else:
+                    return MeleeAction(self.entity, obstacle).perform() # Player attacks AICharactor.
+            if obstacle and obstacle is self.entity.game_map.player:
+                if hasattr(self.entity, 'ai'):
+                    return MeleeAction(self.entity, obstacle).perform() # AICharactor attacks Player.
             return  # Destination is blocked by an entity, wall, or map boundary.
         
-        self.entity.move(self) # type: ignore
+        self.entity.move() # type: ignore
 
 
 class MeleeAction(ActionOnTarget):
     def perform(self) -> None:
+        damage = 0
+        attack_desc = ""
+        attacker_class = str(self.entity.__class__)
 
-        target = self.entity.game_map.get_entity_at_location(self.entity.target_location)
-
-        if not target:
+        if not self.entity.target:
             return  # No entity to attack.
 
-        damage = self.entity.combat.attack_power - target.combat.defense  # type: ignore
-        attack_desc = f"{self.entity.name} attacks {target.name}"
-
+        if not "Charactor" in attacker_class and not "AICharactor" in attacker_class:
+            return  # Cannot perform melee attack if entity is not a Charactor or AICharactor.
+        
+        if self.entity.combat and self.entity.target.combat:
+            damage = self.entity.attack() # type: ignore
+            attack_desc = f"{self.entity.name} attacks {self.entity.target.name}"
+        
         if damage > 0:
             print(f"{attack_desc} for {damage} hit points.")
 
-            if target.physical:
-                target.physical.hp -= damage
+            if self.entity.target.physical:
+                self.entity.target.physical.hp -= damage
         else:
             print(f"{attack_desc} but does no damage.")

@@ -15,16 +15,18 @@ from entities import EntityTypes, ActorTypes, PhysicalObject, Charactor, AIChara
 import tile_types
 
 
-# Define Structured Data Types for GameMap
-# Location structured type.
-location_dtype = np.dtype(
-    [
-        ("x", np.int32),  
-        ("y", np.int32)
-    ]
-)
+class MapCoords:
+    x: int
+    y: int
 
+    def __init__(self, x: int, y: int) -> None:
+        self.x = x
+        self.y = y
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, MapCoords):
+            return NotImplemented
+        return self.x == other.x and self.y == other.y
 
 class GameMap:
 
@@ -49,48 +51,53 @@ class GameMap:
         self.explored: np.ndarray = np.full((width, height), fill_value=False, order="F")
     
     @property
-    def entity_locations(self) -> List[Tuple[EntityTypes, np.ndarray]]:
-        return [(entity, self.get_entity_location(entity)) for entity in self.entities]
-    
-    @property
     def physical_objects(self) -> Set[EntityTypes]:
         return {entity for entity in self.entities if issubclass(entity.__class__, PhysicalObject)}
     
     @property
-    def live_actors(self) -> Generator[ActorTypes]:
-        yield from (entity for entity in self.entities if issubclass(entity.__class__, Charactor) and entity.is_alive)
+    def live_actors(self) -> List[ActorTypes]:
+        return [entity for entity in self.entities if issubclass(entity.__class__, Charactor) and entity.is_alive]
     
     @property
-    def live_ai_actors(self) -> Generator[AICharactor]:
-        yield from (entity for entity in self.live_actors if isinstance(entity, AICharactor) and entity.is_alive)
+    def live_ai_actors(self) -> List[AICharactor]:
+        return [entity for entity in self.live_actors if isinstance(entity, AICharactor) and entity.is_alive]
     
     @property
-    def blocked_tiles(self) -> Generator[np.ndarray]:
+    def blocked_tiles(self) -> List[MapCoords]:
+        blocked = []
         for obj in self.physical_objects:
             if obj.blocks_movement:
-                yield self.get_entity_location(obj)
+                blocked.append(obj.location)
+        return blocked
     
     @staticmethod
-    def get_entity_location(entity: EntityTypes) -> np.ndarray:
-        return np.array((entity.x, entity.y), dtype=location_dtype)
+    def get_map_coords(x: int, y: int) -> MapCoords:
+        return MapCoords(x=x, y=y)
     
-    @staticmethod
-    def get_map_location(x: int, y: int) -> np.ndarray:
-        return np.array((x, y), dtype=location_dtype)
-    
-    def get_entity_at_location(self, location) -> Optional[EntityTypes]:
-        for entity, entity_location in self.entity_locations:
-            if entity_location == location:
-                return entity
+    def get_entity_at_location(self, location: MapCoords) -> Optional[EntityTypes]:
+        """Return first entity found at location."""
+        if self.in_bounds(location) is True:
+            for entity in self.entities:
+                if entity.location == location:
+                    return entity
         return None
         
-    def in_bounds(self, location) -> bool:
+    def in_bounds(self, location: MapCoords) -> bool:
         """Return True if x and y are inside of the bounds of this map."""
-        return 0 <= location['x'].all() < self.width and 0 <= location['y'].all() < self.height
-             
+        if not location.x is None and not location.y is None:
+            return 0 <= location.x < self.width and 0 <= location.y < self.height
+        return False
+    
+    def walkable(self, location: MapCoords) -> bool:
+        """Return True if the tile at location is walkable."""
+        if self.in_bounds(location) is False:
+            return False
+        
+        return bool(self.tiles["walkable"][location.x, location.y].all())
+           
     def render(self, console: Console, view_mobs: bool=False) -> None:
         for location in self.blocked_tiles:
-            self.tiles['walkable'][location['x'], location['y']] = False
+            self.tiles['walkable'][location.x, location.y] = False
 
         if self.player:
             self.visible[:] = self.player.fov
@@ -99,6 +106,6 @@ class GameMap:
         console.rgb[0:self.width, 0:self.height] = np.select(condlist=[self.visible, self.explored], choicelist=[self.tiles["light"], self.tiles["dark"]],
            default=tile_types.SHROUD)
         
-        for entity in self.entities:
-            if self.visible[entity.x, entity.y] or view_mobs:
-                console.print(entity.x, entity.y, entity.char, fg=entity.color)
+        for entity in self.entities | {self.player}:
+            if self.visible[entity.location.x, entity.location.y] or view_mobs:
+                console.print(entity.location.x, entity.location.y, entity.char, fg=entity.color)

@@ -7,7 +7,8 @@ import tcod
 import tcod.event
 
 from actions import Action, ActionOnTarget, EscapeAction, MoveAction, NoAction, SystemExitAction
-from entities import Charactor
+from entities import AICharactor, Charactor
+from components.ai import HostileAI
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -52,10 +53,13 @@ class PlayerEventHandler:
         
         if event.sym in MOVEMENT_KEYS:
             dx, dy = MOVEMENT_KEYS[event.sym]
-            action = MoveAction(self.player, dx, dy)
+            destination = self.player.game_map.get_map_coords(self.player.location.x + dx, self.player.location.y + dy)
+            action = MoveAction(self.player, destination)
         
         elif event.sym == tcod.event.KeySym.ESCAPE:
             action = SystemExitAction(self.player)
+
+        self.engine.mob_event_handler.handle_events()
 
         return action
 
@@ -74,15 +78,25 @@ class MobEventsHandler:
 
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
+        self.actions = []
 
-    def mobs(self) -> Generator[Charactor]:
-        return self.engine.game_map.live_ai_actors
+    @property
+    def mobs(self) -> Generator[AICharactor]:
+        yield from (mob for mob in self.engine.game_map.live_ai_actors if isinstance(mob.ai, HostileAI))
 
     def handle_events(self) -> None:
-        for mob in self.mobs():
-            if mob.event_handler:
-                mob_action = mob.event_handler._dispatch_events()
-                mob_action.perform()
+        self._dispatch_events()
+        
+        for action in self.actions:
+            action.perform()
+
+    def _dispatch_events(self) -> None:
+        self.actions = []
+        for mob in self.mobs:
+            if mob.ai and mob.in_player_fov:
+                self.actions += [mob.ai.event().to_action()]
+
+        return None
 
 
 class GameOverEventHandler(EventHandler):
