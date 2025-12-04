@@ -105,6 +105,9 @@ class PhysicalObject(BaseEntity):
         if self.destination is not None:
             self.location = self.destination
     
+    def die(self) -> None:
+       raise NotImplementedError()
+
 
 class Charactor(PhysicalObject):
     fov_radius: int
@@ -154,6 +157,12 @@ class Charactor(PhysicalObject):
     def attack(self) -> int:
         return self.combat.attack_power - self.target.combat.defense  # type: ignore
 
+    def die(self) -> None:
+       self.char = "%"
+       self.color = (191, 0, 0)
+       self.blocks_movement = False
+       self.name = f"remains of {self.name}"
+
 
 class AICharactor(Charactor):
     _ai: Optional[BaseAI]
@@ -193,6 +202,12 @@ class AICharactor(Charactor):
             self._ai = None
         return alive
     
-    
+    def die(self) -> None:
+       self.char = "%"
+       self.color = (191, 0, 0)
+       self.blocks_movement = False
+       self._ai = None
+       self.name = f"remains of {self.name}"
+
 EntityTypes = TypeVar("EntityTypes", BaseEntity, PhysicalObject, Charactor, AICharactor)
 ActorTypes = TypeVar("ActorTypes", Charactor, AICharactor)

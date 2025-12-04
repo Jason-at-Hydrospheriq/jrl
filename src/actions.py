@@ -104,5 +104,20 @@ class MeleeAction(ActionOnTarget):
 
             if self.entity.target.physical:
                 self.entity.target.physical.hp -= damage
+                if not self.entity.target.is_alive: #type: ignore
+                    return DeathAction(self.entity.target).perform()
         else:
             print(f"{attack_desc} but does no damage.")
+
+
+class DeathAction(BaseAction):
+    def perform(self) -> None:
+        
+        if hasattr(self.entity, 'die'):
+            if self.engine.player is self.entity:
+                death_message = "You died!"
+            else:
+                death_message = f"{self.entity.name} is dead!"
+
+            self.entity.die()
+            print(death_message)
