@@ -96,8 +96,6 @@ class GameMap:
         return bool(self.tiles["walkable"][location.x, location.y].all())
            
     def render(self, console: Console, view_mobs: bool=False) -> None:
-        # for location in self.blocked_tiles:
-        #     self.tiles['walkable'][location.x, location.y] = False
 
         if self.player:
             self.visible[:] = self.player.fov
@@ -106,6 +104,7 @@ class GameMap:
         console.rgb[0:self.width, 0:self.height] = np.select(condlist=[self.visible, self.explored], choicelist=[self.tiles["light"], self.tiles["dark"]],
            default=tile_types.SHROUD)
         
-        for entity in self.entities | {self.player}:
+        # Render ordered by entity state
+        for entity in sorted(self.entities | {self.player}, key=lambda e: e.is_alive, reverse=True):
             if self.visible[entity.location.x, entity.location.y] or view_mobs:
                 console.print(entity.location.x, entity.location.y, entity.char, fg=entity.color)

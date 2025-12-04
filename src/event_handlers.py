@@ -41,8 +41,8 @@ class EventHandler(Protocol):
             return method(event)
         return []
     
-    def ev_quit(self, event: tcod.event.Quit) -> Optional[Action]:
-       raise SystemExit()
+    def _ev_quit(self, event: tcod.event.Quit) -> Sequence[Action]:
+        return [SystemExitAction(self.player)]
     
 
 class MainEventHandler(EventHandler):
@@ -77,9 +77,6 @@ class MainEventHandler(EventHandler):
         if self.mob_actions:
             for action in self.mob_actions:
                 action.perform()
-
-    def _ev_quit(self, event: tcod.event.Quit) -> Sequence[Action]:
-        return [SystemExitAction(self.player)]
     
     def _ev_keydown(self, event: tcod.event.KeyDown) -> Sequence[Action]:
         actions = [NoAction(self.player)]
