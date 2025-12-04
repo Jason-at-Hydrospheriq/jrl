@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Set, Iterable, Any
 from tcod.context import Context
 from tcod.console import Console
 
-from event_handlers import MainEventHandler
+from event_handlers import EventHandler, MainEventHandler, GameOverEventHandler
 from entities import Charactor
 
 if TYPE_CHECKING:
@@ -14,12 +14,18 @@ if TYPE_CHECKING:
     
 class Engine:
     player: Charactor
-    event_handler: MainEventHandler
     
     def __init__(self, player: Charactor) -> None:
         self.player = player
-        self.event_handler = MainEventHandler(self)
-   
+        self._main_event_handler = MainEventHandler(self)
+        self._gameover_event_handler = GameOverEventHandler(self)
+    
+    @property
+    def event_handler(self) -> EventHandler:
+        if self.gameover:
+            return self._gameover_event_handler
+        return self._main_event_handler
+    
     @property
     def game_map(self) -> GameMap:
         return self.player.game_map
@@ -28,6 +34,10 @@ class Engine:
     def game_map(self, value: GameMap) -> None:
         self.player.game_map = value
 
+    @property
+    def gameover(self) -> bool:
+        return not self.player.is_alive
+    
     def render(self, console: Console, context: Context, view_mobs: bool=False) -> None:
         self.game_map.render(console, view_mobs=view_mobs)
         hp_text = "HP: N/A"

@@ -108,7 +108,7 @@ class PhysicalObject(BaseEntity):
             self.location = self.destination
     
     def die(self) -> None:
-       raise NotImplementedError()
+        raise NotImplementedError()
 
 
 class Charactor(PhysicalObject):
@@ -132,12 +132,12 @@ class Charactor(PhysicalObject):
         self.fov_radius = fov_radius
         self.mental = mental
 
-    @property
-    def event_handler(self):
-        if not hasattr(self, '_ai'):
-            return self.game_map.engine.event_handler if self.game_map else None
-        else:
-            return self.__getattribute__('_ai')
+    # @property
+    # def event_handler(self):
+    #     if not hasattr(self, '_ai'):
+    #         return self.game_map.engine.event_handler if self.game_map else None
+    #     else:
+    #         return self.__getattribute__('_ai')
 
     @property
     def fov(self) -> np.ndarray:
@@ -160,10 +160,10 @@ class Charactor(PhysicalObject):
         return self.combat.attack_power - self.target.combat.defense  # type: ignore
 
     def die(self) -> None:
-       self.char = "%"
-       self.color = (191, 0, 0)
        self.blocks_movement = False
        self.name = f"remains of {self.name}"
+       self.char = "%"
+       self.color = (191, 0, 0)
 
 
 class AICharactor(Charactor):
@@ -205,11 +205,8 @@ class AICharactor(Charactor):
         return alive
     
     def die(self) -> None:
-       self.char = "%"
-       self.color = (191, 0, 0)
-       self.blocks_movement = False
-       self._ai = None
-       self.name = f"remains of {self.name}"
-
+        super().die()
+        self._ai = None
+       
 EntityTypes = TypeVar("EntityTypes", BaseEntity, PhysicalObject, Charactor, AICharactor)
 ActorTypes = TypeVar("ActorTypes", Charactor, AICharactor)
