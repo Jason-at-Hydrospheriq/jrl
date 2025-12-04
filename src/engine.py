@@ -32,5 +32,16 @@ class Engine:
 
     def render(self, console: Console, context: Context, view_mobs: bool=False) -> None:
         self.game_map.render(console, view_mobs=view_mobs)
+        hp_text = "HP: N/A"
+        if self.player.physical:
+            hp_text = f"HP: {self.player.physical.hp}/{self.player.physical.max_hp}"
+        
+        console.print(
+            x=1,
+            y=105,
+            text=hp_text,
+            fg=(255, 0, 0),
+        )
+    
         context.present(console, integer_scaling=True)
         console.clear()    

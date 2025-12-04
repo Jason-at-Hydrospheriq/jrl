@@ -52,7 +52,7 @@ class GameMap:
     
     @property
     def physical_objects(self) -> Set[EntityTypes]:
-        return {entity for entity in self.entities if issubclass(entity.__class__, PhysicalObject)}
+        return {entity for entity in self.entities if entity.physical}
     
     @property
     def live_actors(self) -> List[ActorTypes]:
@@ -90,14 +90,14 @@ class GameMap:
     
     def walkable(self, location: MapCoords) -> bool:
         """Return True if the tile at location is walkable."""
-        if self.in_bounds(location) is False:
+        if not self.in_bounds(location):
             return False
         
         return bool(self.tiles["walkable"][location.x, location.y].all())
            
     def render(self, console: Console, view_mobs: bool=False) -> None:
-        for location in self.blocked_tiles:
-            self.tiles['walkable'][location.x, location.y] = False
+        # for location in self.blocked_tiles:
+        #     self.tiles['walkable'][location.x, location.y] = False
 
         if self.player:
             self.visible[:] = self.player.fov

@@ -93,10 +93,12 @@ class PhysicalObject(BaseEntity):
 
     @property
     def collision(self) -> bool:
-        if not self.game_map.in_bounds(self.destination):
+        entity = self.game_map.get_entity_at_location(self.destination)
+
+        if entity and entity.blocks_movement:
             return True
-        if self.game_map.get_entity_at_location(self.destination) is not None:
-            return True
+        # if not self.game_map.in_bounds(self.destination):
+        #     return True
         if not self.game_map.walkable(self.destination):
             return True
         return False
