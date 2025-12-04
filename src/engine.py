@@ -8,6 +8,7 @@ from tcod.console import Console
 
 from event_handlers import EventHandler, MainEventHandler, GameOverEventHandler
 from entities import Charactor
+from renderers import render_bar
 
 if TYPE_CHECKING:
     from game_map import GameMap
@@ -40,15 +41,18 @@ class Engine:
     
     def render(self, console: Console, context: Context, view_mobs: bool=False) -> None:
         self.game_map.render(console, view_mobs=view_mobs)
-        hp_text = "HP: N/A"
-        if self.player.physical:
-            hp_text = f"HP: {self.player.physical.hp}/{self.player.physical.max_hp}"
         
-        console.print(
-            x=1,
-            y=105,
-            text=hp_text,
-            fg=(255, 0, 0),
+        current_hp = 0
+        max_hp = 0
+        if self.player.physical:
+            current_hp = self.player.physical.hp
+            max_hp = self.player.physical.max_hp
+        
+        render_bar(
+            console=console,
+            current_value=current_hp,
+            maximum_value=max_hp,
+            total_width=20,
         )
     
         context.present(console, integer_scaling=True)

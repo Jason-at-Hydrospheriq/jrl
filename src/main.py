@@ -13,8 +13,8 @@ from entities import Charactor
 from components.stats import CombatStats, PhysicalStats
 
 TITLE = "JRL - Jay's Roguelike"
-WIDTH, HEIGHT = 720, 480  # Window pixel resolution (when not maximized.)
-FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
+WIDTH, HEIGHT = 240, 240  # Window pixel resolution (when not maximized.)
+FLAGS = tcod.context.SDL_WINDOW_RESIZABLE
 
 def main() -> None:
     # Set up game window context
@@ -27,11 +27,11 @@ def main() -> None:
     engine = Engine(player=player)
 
     # Set up game map
-    map_width = 100
-    map_height = 100
-    max_total_mobs = 5
-    max_mobs_per_room = 1
-    max_rooms = 3
+    map_width = 80
+    map_height = 50
+    max_total_mobs = 50
+    max_mobs_per_room = 3
+    max_rooms = 10
     engine.game_map = random_dungeon(engine, map_width, map_height, player=player, max_rooms=max_rooms, max_total_mobs=max_total_mobs, max_mobs_per_room=max_mobs_per_room)
 
 

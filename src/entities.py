@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-import tcod
 from tcod.map import compute_fov
 from tcod import libtcodpy
 import numpy as np
