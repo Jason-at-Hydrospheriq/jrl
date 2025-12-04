@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Generator, Iterable, Any, Protocol, TYPE_CHECKING
+from typing import Generator, Iterable, Any, List, Protocol, TYPE_CHECKING, Sequence
 import tcod
 import tcod.event
 
-from actions import Action, ActionOnTarget, EscapeAction, MoveAction, NoAction, SystemExitAction
+from actions import Action, ActionOnDestination, ActionOnTarget, EscapeAction, MoveAction, NoAction, SystemExitAction
 from entities import AICharactor, Charactor
 from components.ai import HostileAI
 
@@ -18,115 +18,83 @@ MOVEMENT_KEYS = {
     tcod.event.KeySym.DOWN: (0, 1),
     tcod.event.KeySym.LEFT: (-1, 0),
     tcod.event.KeySym.RIGHT: (1, 0),
+    tcod.event.KeySym.W: (0, -1),
+    tcod.event.KeySym.S: (0, 1),
+    tcod.event.KeySym.A: (-1, 0),
+    tcod.event.KeySym.D: (1, 0),
 }
 
-class EventHandler(Protocol):
-    engine: Engine
-
-    def handle_events(self) -> None:
-        ...
-    
-    def _dispatch_events(self) -> Action:
-        ...
-
-
-class PlayerEventHandler:
+class MainEventHandler:
 
     def __init__(self, engine: Engine) -> None:
         self.engine = engine
+        self.action_sequence: Sequence[Action] = []
+        self.mob_actions: List[Action] = []
 
     @property
     def player(self) -> Charactor:
         return self.engine.player
-
-    def handle_events(self) -> None:
-        player_action = self._dispatch_events()
-        player_action.perform()
-        
-    def _event_quit(self, event: tcod.event.Quit) -> Action:
-        action: Action = SystemExitAction(self.player)
-
-        return action
     
-    def _event_keydown(self, event: tcod.event.KeyDown) -> Action:
-        action: Action = NoAction(self.player)
-        
-        if event.sym in MOVEMENT_KEYS:
-            dx, dy = MOVEMENT_KEYS[event.sym]
-            destination = self.player.game_map.get_map_coords(self.player.location.x + dx, self.player.location.y + dy)
-            action = MoveAction(self.player, destination)
-        
-        elif event.sym == tcod.event.KeySym.ESCAPE:
-            action = SystemExitAction(self.player)
-
-        self.engine.mob_event_handler.handle_events()
-
-        return action
-
-    def _dispatch_events(self) -> Action:
-        
-        for event in tcod.event.wait():
-            if isinstance(event, tcod.event.Quit):
-                return self._event_quit(event)
-            elif isinstance(event, tcod.event.KeyDown):
-                return self._event_keydown(event)
-            
-        return NoAction(self.player)
-    
-
-class MobEventsHandler:
-
-    def __init__(self, engine: Engine) -> None:
-        self.engine = engine
-        self.actions = []
-
     @property
     def mobs(self) -> Generator[AICharactor]:
         yield from (mob for mob in self.engine.game_map.live_ai_actors if isinstance(mob.ai, HostileAI))
 
     def handle_events(self) -> None:
-        self._dispatch_events()
-        
-        for action in self.actions:
-            action.perform()
 
-    def _dispatch_events(self) -> None:
-        self.actions = []
-        for mob in self.mobs:
+        # Clear previous actions
+        self.mob_actions = []
+        self.action_sequence = []
+
+        for mob in self.mobs: # Collect mob actions
             if mob.ai and mob.in_player_fov:
-                self.actions += [mob.ai.event().to_action()]
+                self.mob_actions += [mob.ai.event().to_action()]
 
-        return None
+        # Create action sequence
+        self.action_sequence = self._input_events_to_action()
+        
+        # Perform actions
+        for action in self.action_sequence:
+            action.perform()
+            
+        if self.mob_actions:
+            for action in self.mob_actions:
+                action.perform()
 
-
-class GameOverEventHandler(EventHandler):
-
-    def __init__(self, engine: Engine) -> None:
-        self.engine = engine
-
-    def handle_events(self) -> None:
-        game_over_action = self._dispatch_events()
-        game_over_action.perform()
-
-    def _event_quit(self, event: tcod.event.Quit) -> Action:
-        action: Action = SystemExitAction(self.engine.player)
-
-        return action
-
-    def _event_keydown(self, event: tcod.event.KeyDown) -> Action:
-        action: Action = NoAction(self.engine.player)
-
-        if event.sym == tcod.event.KeySym.ESCAPE:
-            action = SystemExitAction(self.engine.player)
-
-        return action
-
-    def _dispatch_events(self) -> Action:
+    def _input_events_to_action(self) -> Sequence[Action]:
+        actions = []
 
         for event in tcod.event.wait():
+            if isinstance(event, tcod.event.KeyDown):
+                actions += self._event_keydown(event)
             if isinstance(event, tcod.event.Quit):
-                return self._event_quit(event)
-            elif isinstance(event, tcod.event.KeyDown):
-                return self._event_keydown(event)
+                actions += self._event_quit(event)
 
-        return NoAction(self.engine.player)
+        return actions
+
+    def _event_quit(self, event: tcod.event.Quit) -> Sequence[Action]:
+        return [SystemExitAction(self.player)]
+    
+    def _event_keydown(self, event: tcod.event.KeyDown) -> Sequence[Action]:
+        actions = [NoAction(self.player)]
+        unused_actions = []
+
+        if event.sym == tcod.event.KeySym.ESCAPE:
+            return [SystemExitAction(self.player)]
+        
+        if event.sym in MOVEMENT_KEYS:
+            dx, dy = MOVEMENT_KEYS[event.sym]
+            destination = self.player.game_map.get_map_coords(self.player.location.x + dx, self.player.location.y + dy)
+            actions += [MoveAction(self.player, destination)]
+        
+        if self.mob_actions:
+            while self.mob_actions:
+                action = self.mob_actions.pop(0)
+
+                if issubclass(action.__class__, ActionOnTarget) or issubclass(action.__class__, ActionOnDestination):
+                    actions += [action]
+                else:
+                    unused_actions += [action]
+            
+            self.mob_actions = unused_actions
+
+        return actions

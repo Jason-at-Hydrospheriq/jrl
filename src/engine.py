@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Set, Iterable, Any
 from tcod.context import Context
 from tcod.console import Console
 
-from event_handlers import PlayerEventHandler, MobEventsHandler
+from event_handlers import MainEventHandler
 from entities import Charactor
 
 if TYPE_CHECKING:
@@ -14,13 +14,11 @@ if TYPE_CHECKING:
     
 class Engine:
     player: Charactor
-    player_event_handler: PlayerEventHandler
-    mob_event_handler: MobEventsHandler
-
+    event_handler: MainEventHandler
+    
     def __init__(self, player: Charactor) -> None:
         self.player = player
-        self.player_event_handler = PlayerEventHandler(self)
-        self.mob_event_handler = MobEventsHandler(self)
+        self.event_handler = MainEventHandler(self)
    
     @property
     def game_map(self) -> GameMap:

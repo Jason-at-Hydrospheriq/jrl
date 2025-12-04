@@ -135,7 +135,7 @@ class Charactor(PhysicalObject):
     @property
     def event_handler(self):
         if not hasattr(self, '_ai'):
-            return self.game_map.engine.player_event_handler if self.game_map else None
+            return self.game_map.engine.event_handler if self.game_map else None
         else:
             return self.__getattribute__('_ai')
 

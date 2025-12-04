@@ -49,7 +49,7 @@ def main() -> None:
             engine.render(console=root_game_console, context=game_window, view_mobs=False)
 
             # Parse, execute, and manage event driven state changes for entities
-            engine.player_event_handler.handle_events()
+            engine.event_handler.handle_events()
 
 if __name__ == "__main__":
     main()
