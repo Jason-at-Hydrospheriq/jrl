@@ -9,6 +9,7 @@ if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
 from src.game_map import GameMap
+from src.components.display.tile_types import graphic_dtype
 
 def test_width_height():
     game_map = GameMap(20, 30)
@@ -21,13 +22,15 @@ def test_width_height():
 
 def test_tiles_initialization():
     game_map = GameMap(10, 10)
+    blank_color =  np.array((0, [0, 0, 0], [0, 0, 0]), dtype=graphic_dtype)
+
     try:
         assert game_map.tiles.shape == (10, 10)
         assert np.all(game_map.tiles['traversable'] == False)
         assert np.all(game_map.tiles['transparent'] == False)
         assert np.all(game_map.tiles['visible'] == False)
         assert np.all(game_map.tiles['explored'] == False)
-        assert np.all(game_map.tiles['color'] == 0)
+        assert np.all(game_map.tiles['color'] == blank_color)
 
     except AssertionError:
         pytest.fail("Tiles initialization did not match expected values")
