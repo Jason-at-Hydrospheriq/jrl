@@ -3,16 +3,16 @@
 
 from __future__ import annotations
 import numpy as np
-import tcod
-from tcod.console import Console
-from tcod.map import compute_fov
-from typing import Generator, Iterable, Set, Optional, Tuple, List, TYPE_CHECKING, TypeVar
+from components.display import tile_types
 
-if TYPE_CHECKING:
-    from engine import Engine
-
-from entities import EntityTypes, ActorTypes, PhysicalObject, Charactor, AICharactor
-import tile_types
+tile_dtype = np.dtype(
+    [   ("tile_type", np.str_), # The type of the tile, e.g., 'floor', 'wall', etc. 
+        ("traversable", np.bool),  # True if this tile can be occupied by or passed through by an entity.
+        ("transparent", np.bool),  # True if this tile doesn't block FOV.
+        ('visible', np.bool),  # True if this tile is currently visible.
+        ('explored', np.bool),  # True if this tile has been explored.
+        ('color', tile_types.graphic_dtype)
+    ])
 
 
 class MapCoords:
@@ -28,59 +28,55 @@ class MapCoords:
             return NotImplemented
         return self.x == other.x and self.y == other.y
 
-class GameMap:
 
-    __slots__ = ("width", "height", "tiles", "player", "entities","visible", "explored", "engine")
+class GameMap:
+    """The Game Map is a stateful coordinate system of Tiles. The Tiles have a State (traversable, transparent, visible, explored, color) that is
+    managed by the Game Engine and rendered by the Game UI. The tile color is determined by the Map UI component based on the tile state and type.
+    
+    tiles: np.ndarray,  width x height x dimension tensor of tile_dtype
+    width: int,  The width of the map in tiles and the rendered map object
+    height: int,  The height of the map in tiles and the rendered map object
+
+    """
+    
+    __slots__ = ("width", "height", "tiles")
 
     width: int
     height: int
-    tiles: np.ndarray
-    player: Charactor
-    entities: Set
-    visible: np.ndarray
-    explored: np.ndarray
-    engine: Engine
+    tiles: np.ndarray 
 
-    def __init__(self, engine: Engine,width: int, height: int, player: Charactor, entities: Iterable[EntityTypes]=[]) -> None:
-        self.engine = engine
-        self.width, self.height = width, height
-        self.tiles = np.full((width, height), fill_value=tile_types.wall, order="F")
-        self.player = player
-        self.entities = set(entities)
-        self.visible: np.ndarray = np.full((width, height), fill_value=False, order="F")
-        self.explored: np.ndarray = np.full((width, height), fill_value=False, order="F")
+    def __init__(self, width: int, height: int) -> None:
+        self.width = width
+        self.height = height
+        self.tiles = np.full((width, height), fill_value=False, order="F", dtype=tile_dtype)
     
     @property
-    def physical_objects(self) -> Set[EntityTypes]:
-        return {entity for entity in self.entities if entity.physical}
+    def tile_types(self) -> np.ndarray:
+        return self.tiles["tile_type"]
     
     @property
-    def live_actors(self) -> List[ActorTypes]:
-        return [entity for entity in self.entities if issubclass(entity.__class__, Charactor) and entity.is_alive]
+    def visible(self) -> np.ndarray:
+        return self.tiles["visible"]
     
     @property
-    def live_ai_actors(self) -> List[AICharactor]:
-        return [entity for entity in self.live_actors if isinstance(entity, AICharactor) and entity.is_alive]
+    def explored(self) -> np.ndarray:
+        return self.tiles["explored"]
     
     @property
-    def blocked_tiles(self) -> List[MapCoords]:
-        blocked = []
-        for obj in self.physical_objects:
-            if obj.blocks_movement:
-                blocked.append(obj.location)
-        return blocked
+    def traversable(self) -> np.ndarray:
+        return self.tiles["traversable"]
+    
+    @property
+    def transparent(self) -> np.ndarray:
+        return self.tiles["transparent"]
+
+    @property
+    def colors(self) -> np.ndarray:
+        return self.tiles["color"]
     
     @staticmethod
     def get_map_coords(x: int, y: int) -> MapCoords:
         return MapCoords(x=x, y=y)
-    
-    def get_entity_at_location(self, location: MapCoords) -> Optional[EntityTypes]:
-        """Return first entity found at location."""
-        if self.in_bounds(location) is True:
-            for entity in self.entities:
-                if entity.location == location:
-                    return entity
-        return None
         
     def in_bounds(self, location: MapCoords) -> bool:
         """Return True if x and y are inside of the bounds of this map."""
@@ -88,23 +84,56 @@ class GameMap:
             return 0 <= location.x < self.width and 0 <= location.y < self.height
         return False
     
-    def walkable(self, location: MapCoords) -> bool:
-        """Return True if the tile at location is walkable."""
+    def is_traversable(self, location: MapCoords) -> bool:
+        """Return True if the tile at location is traversable."""
         if not self.in_bounds(location):
             return False
         
-        return bool(self.tiles["walkable"][location.x, location.y].all())
+        return bool(self.tiles["traversable"][location.x, location.y].all())
            
-    def render(self, console: Console, view_mobs: bool=False) -> None:
-
-        if self.player:
-            self.visible[:] = self.player.fov
-            self.explored |= self.visible
-
-        console.rgb[0:self.width, 0:self.height] = np.select(condlist=[self.visible, self.explored], choicelist=[self.tiles["light"], self.tiles["dark"]],
-           default=tile_types.SHROUD)
+    def is_transparent(self, location: MapCoords) -> bool:
+        """Return True if the tile at location is transparent."""
+        if not self.in_bounds(location):
+            return False
         
-        # Render ordered by entity state
-        for entity in sorted(self.entities | {self.player}, key=lambda e: e.is_alive, reverse=True):
-            if self.visible[entity.location.x, entity.location.y] or view_mobs:
-                console.print(entity.location.x, entity.location.y, entity.char, fg=entity.color)
+        return bool(self.tiles["transparent"][location.x, location.y].all())
+    
+    def is_visible(self, location: MapCoords) -> bool:
+        """Return True if the tile at location is visible."""
+        if not self.in_bounds(location):
+            return False
+        
+        return bool(self.tiles["visible"][location.x, location.y].all())
+    
+    def is_explored(self, location: MapCoords) -> bool:
+        """Return True if the tile at location has been explored."""
+        if not self.in_bounds(location):
+            return False
+        
+        return bool(self.tiles["explored"][location.x, location.y].all())
+    
+    def get_tile_type(self, location: MapCoords) -> str:
+        """Return the tile type at the given location."""
+        if not self.in_bounds(location):
+            return ""
+        
+        return str(self.tiles["tile_types"][location.x, location.y])
+    
+    def get_tile_color(self, location: MapCoords) -> np.ndarray:
+        """Return the tile color at the given location."""
+        if not self.in_bounds(location):
+            return np.empty((3,))
+        
+        return self.tiles["colors"][location.x, location.y]
+    
+    def set_visible(self, fov: np.ndarray) -> None:
+        """Set the visible state of the tiles based on the field of view."""
+        self.tiles["visible"][:] = fov
+    
+    def update_explored(self, fov: np.ndarray) -> None:
+        """Update the explored state of the tiles based on the field of view."""
+        self.tiles["explored"][:] |= fov
+    
+    def reset_visibility(self) -> None:
+        """Reset the visibility of all tiles on the map to not visible."""
+        self.tiles["visible"][:, :] = False 
