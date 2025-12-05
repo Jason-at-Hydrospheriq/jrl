@@ -8,7 +8,7 @@ SRC_DIR = r'C:\Users\jason\workspaces\repos\jrl' or ".."
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
-from src.game_map import GameMap
+from src.components.game_map import GameMap
 from src.components.display.tile_types import graphic_dtype
 
 def test_width_height():

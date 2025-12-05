@@ -9,56 +9,35 @@ import numpy as np
 from typing import Optional, Tuple, Type, TypeVar, TYPE_CHECKING
 from copy import deepcopy
 
-from components.stats import PhysicalStats, MentalStats, CombatStats
-from components.ai import BaseAI
+from components.attributes.stats import PhysicalStats, MentalStats, CombatStats
+from components.action_handlers.ai import BaseAI
 
-if TYPE_CHECKING:
-    from game_map import GameMap, MapCoords
-    from engine import Engine
+from components.game_map import MapCoords
 
-#Type variable used for type hinting 'self' returns
-T = TypeVar("T", bound="BaseEntity")
 
 
 class BaseEntity:
     """
     A generic object to represent players, enemies, items, etc.
     """
-    game_map: GameMap
+
     location: MapCoords
     char: str
     color: Tuple[int, int, int]
     name: str
 
     def __init__(   self, 
-                 game_map: GameMap | None = None, 
                  location: MapCoords | None = None,
                  char: str=' ', 
                  color: Tuple[int, int, int]=(0,0,0), 
-                 name: str='<Unnamed>') -> None:
+                 name: str="<Unnamed>") -> None:
         
-        if game_map:
-            self.game_map = game_map
-            self.game_map.entities.add(self)
-
         if location:
             self.location = location
     
         self.char = char
         self.color = color
         self.name = name
-
-    @property
-    def engine(self) -> Optional[Engine]:
-        return self.game_map.engine if self.game_map else None
-    
-    def spawn(self: T, game_map: GameMap, location: MapCoords) -> T:
-        """Spawn a copy of this entity at the given location."""
-        clone = deepcopy(self)
-        clone.location = location
-        clone.game_map = game_map
-        game_map.entities.add(clone)
-        return clone
 
 
 class PhysicalObject(BaseEntity):
@@ -90,18 +69,6 @@ class PhysicalObject(BaseEntity):
 
         if destination:
             self.destination = destination
-
-    @property
-    def collision(self) -> bool:
-        entity = self.game_map.get_entity_at_location(self.destination)
-
-        if entity and entity.blocks_movement:
-            return True
-        # if not self.game_map.in_bounds(self.destination):
-        #     return True
-        if not self.game_map.walkable(self.destination):
-            return True
-        return False
     
     def move(self) -> None:
         if self.destination is not None:
@@ -139,13 +106,13 @@ class Charactor(PhysicalObject):
     #     else:
     #         return self.__getattribute__('_ai')
 
-    @property
-    def fov(self) -> np.ndarray:
-        """Return the actor's field of view as a boolean array."""
-        if self.game_map and self.location is not None:
-            return compute_fov(self.game_map.tiles["transparent"], (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_SHADOW)
-        else:
-            return np.array([])
+    # @property Make into state variable and an ACTION
+    # def fov(self) -> np.ndarray:
+    #     """Return the actor's field of view as a boolean array."""
+    #     if self.game_map and self.location is not None:
+    #         return compute_fov(self.game_map.tiles["transparent"], (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_SHADOW)
+    #     else:
+    #         return np.array([])
 
     @property
     def is_alive(self) -> bool:
@@ -176,7 +143,7 @@ class AICharactor(Charactor):
                     color: Tuple[int, int, int],
                     name: str = "<Unnamed>",
                     fov_radius: int = 4,
-                    ai_cls: Type[BaseAI],
+                    ai_cls,
                     physical: PhysicalStats | None = None,
                     combat: CombatStats | None = None,
                     mental: MentalStats | None = None,
@@ -184,17 +151,11 @@ class AICharactor(Charactor):
                     ) -> None:
         
         super().__init__(location=location, char=char, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat, mental=mental, targetable=targetable)
-        self._ai = ai_cls(self)
+        self._ai = ai_cls
 
     @property
     def ai(self) -> Optional[BaseAI]:
         return self._ai
-    
-    @property
-    def in_player_fov(self) -> bool:
-        if self.game_map and self.location is not None:
-            return bool(self.game_map.visible[self.location.x, self.location.y])
-        return False
     
     @property
     def is_alive(self) -> bool:

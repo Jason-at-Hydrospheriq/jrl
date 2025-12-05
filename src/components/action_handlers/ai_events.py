@@ -5,11 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 import numpy as np
 
-from actions import Action, MeleeAction, MoveAction, NoAction
+from components.action_handlers.actions import Action, MeleeAction, MoveAction, NoAction
 
 if TYPE_CHECKING:
     from entities import AICharactor, Charactor
-    from game_map import MapCoords
+    from src.components.game_map import MapCoords
 
 class AIEvent(Protocol):
 

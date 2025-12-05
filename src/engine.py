@@ -1,15 +1,31 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from __future__ import annotations
-from typing import TYPE_CHECKING, Set, Iterable, Any
-from tcod.context import Context
-from tcod.console import Console
 
-from entities import Charactor
-from game_map import GameMap
-
+from components import roster, game_map, ui, ai
 
 class Engine:
-    """The Game Engine has a Player, a collection of Game Entities, a Game Map, an Event Handler, a Renderer, and a UI. The Engine manages the state to state transitions
-    of all objects in the game."""
+    """
+    The Engine updates the game state in the main loop. It is has a roster of entities, the game map, the UI manager, and the AI manager. It passes the state of the entities, game map, and UI 
+    to the AI manager. The AI Manager returns a sequence of actions that the Engine then performs to update the state.  
+    """
 
-    player: Charactor
-    game_map: GameMap
+    roster: roster.Roster
+    game_map: game_map.GameMap
+    ui: ui.UIManager
+    ai: ai.AIManager
+
+    def __init__(self, roster: roster.Roster, game_map: game_map.GameMap, ui: ui.UIManager, ai: ai.AIManager):
+        self.roster = roster
+        self.game_map = game_map
+        self.ui = ui
+        self.ai = ai
+
+    def update(self) -> None:
+        """
+        Update the engine state
+        """
+        actions = self.ai.decide_actions(self)
+        for action in actions:
+            action.perform()
