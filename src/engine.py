@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
+from typing import Set
 
 from components import roster, game_map, ui, ai
+from resources.events import BaseGameEvent
 
 class Engine:
     """
@@ -13,19 +15,22 @@ class Engine:
 
     roster: roster.Roster
     game_map: game_map.GameMap
-    ui: ui.UIManager
-    ai: ai.AIManager
+    ui: ui.UIDisplay
+    ai: ai.GameAI
+    game_events: Set[BaseGameEvent]
+    game_over: bool = False
 
-    def __init__(self, roster: roster.Roster, game_map: game_map.GameMap, ui: ui.UIManager, ai: ai.AIManager):
+    def __init__(self, roster: roster.Roster, game_map: game_map.GameMap, ui: ui.UIDisplay, ai: ai.GameAI) -> None:
         self.roster = roster
         self.game_map = game_map
         self.ui = ui
         self.ai = ai
+        self.game_events = set()
 
     def update(self) -> None:
         """
         Update the engine state
         """
-        actions = self.ai.decide_actions(self)
+        actions = self.ai.get_actions(self)
         for action in actions:
             action.perform()

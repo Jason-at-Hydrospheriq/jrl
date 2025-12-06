@@ -16,20 +16,23 @@ graphic_dtype = np.dtype(
     ]
 )
 
-tile_color_dtype = np.dtype([("shroud", graphic_dtype), ("dark", graphic_dtype), ("light", graphic_dtype)])
+tile_dtype = np.dtype([("name", np.str_, 16), ("shroud", graphic_dtype), ("dark", graphic_dtype), ("light", graphic_dtype)])
 
-def new_tile_type(dark: Tuple[int, Tuple[int, int, int], Tuple[int, int, int]], 
+def new_tile_type(name: str,
+                  dark: Tuple[int, Tuple[int, int, int], Tuple[int, int, int]], 
                   light: Tuple[int, Tuple[int, int, int], Tuple[int, int, int]]
                   ) -> np.ndarray:
     """Helper function for defining tile types"""
 
-    return np.array((SHROUD, dark, light), dtype=tile_color_dtype)
+    return np.array((name, SHROUD, dark, light), dtype=tile_dtype)
 
 
 SHROUD = np.array((ord(" "), (255, 255, 255), (0, 0, 0)), dtype=graphic_dtype)  # Unknown tile
 
-floor = new_tile_type(dark=(ord(" "), (255, 255, 255), (50, 50, 150)), 
+floor = new_tile_type(name="floor",
+                      dark=(ord(" "), (255, 255, 255), (50, 50, 150)), 
                       light=(ord(" "), (255, 255, 255), (200, 180, 50)))
 
-wall = new_tile_type(dark=(ord(" "), (255, 255, 255), (0, 0, 100)), 
+wall = new_tile_type(name="wall",
+                     dark=(ord(" "), (255, 255, 255), (0, 0, 100)), 
                      light=(ord(" "), (255, 255, 255), (130, 110, 50)))

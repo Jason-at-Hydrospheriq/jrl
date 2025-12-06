@@ -8,7 +8,7 @@ SRC_DIR = r'C:\Users\jason\workspaces\repos\jrl' or ".."
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
-from src.components.roster import Roster, ORC, TROLL
+from src.components.roster import Roster, ORC, TROLL, PLAYER
 from src.components.game_map import MapCoords
 
 def test_roster_spawn():
@@ -63,11 +63,12 @@ def test_roster_entity_collision():
 def test_roster_live_actors():
     roster = Roster()
     roster.spawn(ORC, MapCoords(1, 1))
-    roster.spawn(TROLL, MapCoords(2, 2))
+    roster.spawn(PLAYER, MapCoords(2, 2))
+    roster.spawn(TROLL, MapCoords(3, 3))
     
     try:
         live_actors = roster.live_actors
-        assert len(live_actors) == 2
+        assert len(live_actors) == 3
         
         # Simulate one actor dying
         for actor in live_actors:
@@ -75,8 +76,9 @@ def test_roster_live_actors():
                 actor.physical.hp = 0  # Orc is dead
         
         live_actors_after_death = roster.live_actors
-        assert len(live_actors_after_death) == 1
-        assert live_actors_after_death[0].name == "Troll"
+        assert len(live_actors_after_death) == 2
+        assert live_actors_after_death[0].name == "Player"
+        assert live_actors_after_death[1].name == "Troll"
 
     except AssertionError:
         pytest.fail("Live actors filtering did not function as expected")
@@ -84,7 +86,8 @@ def test_roster_live_actors():
 def test_roster_live_ai_actors():
     roster = Roster()
     roster.spawn(ORC, MapCoords(1, 1))
-    roster.spawn(TROLL, MapCoords(2, 2))
+    roster.spawn(PLAYER, MapCoords(2, 2))
+    roster.spawn(TROLL, MapCoords(3, 3))
     
     try:
         live_ai_actors = roster.live_ai_actors
@@ -93,7 +96,7 @@ def test_roster_live_ai_actors():
         # Simulate one AI actor dying
         for actor in live_ai_actors:
             if actor.name == "Troll":
-                actor.physical.hp = 0  # Troll is dead
+                actor.physical.hp = 0  #type: ignore  # Troll is dead
         
         live_ai_actors_after_death = roster.live_ai_actors
         assert len(live_ai_actors_after_death) == 1

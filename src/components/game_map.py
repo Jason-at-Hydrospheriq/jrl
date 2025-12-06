@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 import numpy as np
-from components.display import tile_types
+from src.resources import tile_types
 
-tile_dtype = np.dtype(
-    [   ("tile_type", np.str_), # The type of the tile, e.g., 'floor', 'wall', etc. 
+map_dtype = np.dtype(
+    [   ("type", tile_types.tile_dtype), # The type of the tile, e.g., 'floor', 'wall', etc. 
         ("traversable", np.bool),  # True if this tile can be occupied by or passed through by an entity.
         ("transparent", np.bool),  # True if this tile doesn't block FOV.
         ('visible', np.bool),  # True if this tile is currently visible.
@@ -48,7 +48,7 @@ class GameMap:
     def __init__(self, width: int, height: int) -> None:
         self.width = width
         self.height = height
-        self.tiles = np.full((width, height), fill_value=False, order="F", dtype=tile_dtype)
+        self.tiles = np.full((width, height), fill_value=False, order="F", dtype=map_dtype)
     
     @property
     def tile_types(self) -> np.ndarray:
@@ -134,6 +134,10 @@ class GameMap:
         """Update the explored state of the tiles based on the field of view."""
         self.tiles["explored"][:] |= fov
     
+    def update_colors(self, colors: np.ndarray) -> None:
+        """Update the color state of the tiles."""
+        self.tiles["color"][:] = colors
+        
     def reset_visibility(self) -> None:
         """Reset the visibility of all tiles on the map to not visible."""
         self.tiles["visible"][:, :] = False 
