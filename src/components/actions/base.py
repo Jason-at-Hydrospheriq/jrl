@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 from components.events.library import BaseGameEvent
 from components.actions.library import BaseStateAction, NoAction, GameStartAction, SystemExitAction, GameOverAction
 
+
 NOACTION = NoAction()
 GAMEOVER = GameOverAction()
 GAMESTART = GameStartAction()
@@ -20,10 +21,10 @@ SYSTEMEXIT = SystemExitAction()
 
 
 class BaseEventDispatcher(Protocol):
-    state: GameState
 
     def dispatch(self, 
-                 event: tcod.event.Event | BaseGameEvent | None = None) -> List[BaseStateAction]:
+                 event: tcod.event.Event | BaseGameEvent | None = None,
+                 state: GameState | None = None) -> List[BaseStateAction]:
        
         method_name = "_ev_" + event.__class__.__name__.lower()
         method = getattr(self, method_name, None)
@@ -31,10 +32,14 @@ class BaseEventDispatcher(Protocol):
             return method(event)
         return []
     
-    def create_action(self, action: BaseStateAction) -> BaseStateAction:
+    @staticmethod
+    def create_state_action(action: BaseStateAction, 
+                      state: GameState) -> BaseStateAction:
         clone = deepcopy(action)
-        clone.state = self.state
+        clone.state = state
         return clone
 
-    def _ev_quit(self, event: tcod.event.Quit) -> List[BaseStateAction]:
-        return [self.create_action(SYSTEMEXIT)]
+    def _ev_quit(self, 
+                 event: tcod.event.Quit, 
+                 state: GameState) -> List[BaseStateAction]:
+        return [self.create_state_action(SYSTEMEXIT, state)]

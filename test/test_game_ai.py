@@ -10,7 +10,7 @@ if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
 from src.ai import GameAI
-from src.components.queues.library import GameOver
+from src.components.events.library import GameOver
 from src.state import GameState
 
 def test_game_over_event_handling():

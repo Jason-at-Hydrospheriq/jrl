@@ -1,9 +1,11 @@
-from typing import List, Set
+from typing import TYPE_CHECKING, List, Set
 import tcod
 
 from components.events.library import BaseGameEvent, UIEvent, SystemEvent
 from components.actions.dispatchers import InputDispatcher, InterfaceDispatcher, SystemDispatcher
-from state import GameState
+
+if TYPE_CHECKING:
+    from state import GameState
     
 def is_subclass(instance, cls: type) -> bool:
     instance_mro = set([x.__name__ for x in instance.__class__.mro()])
@@ -23,7 +25,7 @@ class GameAI:
         self.interface_dispatcher = InterfaceDispatcher(state)
         self.system_dispatcher = SystemDispatcher(state)
 
-    def get_actions(self) -> List:
+    def get_actions(self, state: GameState) -> List:
         action_sequence = []
         
         for event in tcod.event.wait():
@@ -32,11 +34,11 @@ class GameAI:
             else:
                 action_sequence += [self.input_dispatcher.dispatch(event)]
         
-        while not self.state.game_events.is_empty():
-            event = self.state.game_events.get()
+        while not state.game_events.is_empty():
+            event = state.game_events.get()
 
-            if self.state.game_over:
-                action_sequence = self.system_dispatcher.dispatch(event)
+            if state.game_over:
+                action_sequence = self.system_dispatcher.dispatch(event, state)
 
             else:
                 if is_subclass(event, UIEvent):

@@ -11,14 +11,7 @@ if TYPE_CHECKING:
 from components.actions.base import *
 
 
-class GameEventDispatcher(BaseEventDispatcher):
-    def __init__(self, state: GameState | None = None) -> None:
-
-        if state:
-            self.state = state
-
-
-class EntityDispatcher(GameEventDispatcher):
+class EntityDispatcher(BaseEventDispatcher):
     pass
     # def _ev_targetcollision(self) -> Sequence[BaseAction]:
             
@@ -30,10 +23,10 @@ class EntityDispatcher(GameEventDispatcher):
     #             return EntityMeleeAction(self.engine, self.entity, obstacle).perform() # Immediate melee attack.
 
 
-class InputDispatcher(GameEventDispatcher):
-
-    def __init__(self, state: GameState | None = None) -> None:
-        super().__init__(state)
+class InputDispatcher(BaseEventDispatcher):
+    pass
+    # def __init__(self, state: GameState | None = None) -> None:
+    #     super().__init__(state)
         # self.mob_actions: List[BaseStateAction] = []
 
     # @property
@@ -65,7 +58,7 @@ class InputDispatcher(GameEventDispatcher):
         # return actions
 
 
-class InterfaceDispatcher(GameEventDispatcher):
+class InterfaceDispatcher(BaseEventDispatcher):
     pass
 
     # def ev_mapupdate(self) -> Sequence[BaseStateAction]:
@@ -73,26 +66,29 @@ class InterfaceDispatcher(GameEventDispatcher):
 
 
 class SystemDispatcher(BaseEventDispatcher):
-    def __init__(self, state: GameState | None = None) -> None:
-        if state:
-            self.state = state
             
-    def _ev_gamestart(self, event: GameStart) -> List[BaseStateAction]:
+    def _ev_gamestart(self, 
+                      event: GameStart, 
+                      state: GameState) -> List[BaseStateAction]:
         message = event.message
         # TODO: Message log
 
-        return [self.create_action(GAMESTART)]
+        return [self.create_state_action(GAMESTART, state)]
     
-    def _ev_gameover(self, event: GameOver) -> List[BaseStateAction]:
+    def _ev_gameover(self, 
+                     event: GameOver, 
+                     state: GameState) -> List[BaseStateAction]:
         message = event.message
         # TODO: Message log
 
-        return [self.create_action(GAMEOVER)]
+        return [self.create_state_action(GAMEOVER, state)]
     
-    def _ev_keydown(self, event: tcod.event.KeyDown) -> List[BaseStateAction]:
-        actions = [self.create_action(NOACTION)]
+    def _ev_keydown(self, 
+                    event: tcod.event.KeyDown, 
+                    state: GameState) -> List[BaseStateAction]:
+        state_actions = [self.create_state_action(NOACTION, state)]
 
         if event.sym == tcod.event.KeySym.ESCAPE:
-            actions += [self.create_action(SYSTEMEXIT)]
+            state_actions += [self.create_state_action(SYSTEMEXIT, state)]
 
-        return actions
+        return state_actions

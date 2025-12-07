@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from components.entities.factory import *
+from src.components.entities.factory import *
 from typing import Set, List, Callable, TYPE_CHECKING
 import random
 import numpy as np
