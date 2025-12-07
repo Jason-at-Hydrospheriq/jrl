@@ -3,31 +3,9 @@
 
 from __future__ import annotations
 import numpy as np
-from src.resources import tile_types
 
-map_dtype = np.dtype(
-    [   ("type", tile_types.tile_dtype), # The type of the tile, e.g., 'floor', 'wall', etc. 
-        ("traversable", np.bool),  # True if this tile can be occupied by or passed through by an entity.
-        ("transparent", np.bool),  # True if this tile doesn't block FOV.
-        ('visible', np.bool),  # True if this tile is currently visible.
-        ('explored', np.bool),  # True if this tile has been explored.
-        ('color', tile_types.graphic_dtype)
-    ])
-
-
-class MapCoords:
-    x: int
-    y: int
-
-    def __init__(self, x: int, y: int) -> None:
-        self.x = x
-        self.y = y
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, MapCoords):
-            return NotImplemented
-        return self.x == other.x and self.y == other.y
-
+from components.maps.generators import DungeonGenerator
+from components.maps.base import MapCoords
 
 class GameMap:
     """The Game Map is a stateful coordinate system of Tiles. The Tiles have a State (traversable, transparent, visible, explored, color) that is
@@ -39,17 +17,20 @@ class GameMap:
 
     """
     
-    __slots__ = ("width", "height", "tiles")
+    __slots__ = ("generator", "width", "height", "tiles", "rooms", "corridors")
 
-    width: int
-    height: int
-    tiles: np.ndarray 
+    generator: DungeonGenerator
 
     def __init__(self, width: int = 0, height: int = 0) -> None:
 
+        self.generator = DungeonGenerator()
+        self.generator.generate(map_width=width, map_height=height)
+
         self.width = width
         self.height = height
-        self.tiles = np.full((width, height), fill_value=False, order="F", dtype=map_dtype)
+        self.tiles = self.generator.tile_map.tiles
+        self.rooms = self.generator.rooms
+        self.corridors = self.generator.corridors
     
     @property
     def tile_types(self) -> np.ndarray:
