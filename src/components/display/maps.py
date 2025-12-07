@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from components.display.base import BaseUIComponent
+from src.components.display.base import BaseUIComponent
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -22,7 +22,7 @@ class MainMapDisplay(BaseUIComponent):
     def render(self, engine: Engine) -> None:
         x_slice = slice(self.upper_Left_x, self.lower_Right_x)
         y_slice = slice(self.upper_Left_y, self.lower_Right_y)
-        tile_map = engine.game_map
+        tile_map = engine.map
         
         # Render Tiles
         self.console.rgb[x_slice, y_slice] = tile_map.tiles["color"][:self.width, :self.height]

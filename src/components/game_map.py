@@ -45,7 +45,8 @@ class GameMap:
     height: int
     tiles: np.ndarray 
 
-    def __init__(self, width: int, height: int) -> None:
+    def __init__(self, width: int = 0, height: int = 0) -> None:
+
         self.width = width
         self.height = height
         self.tiles = np.full((width, height), fill_value=False, order="F", dtype=map_dtype)

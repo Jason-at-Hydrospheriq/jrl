@@ -1,41 +1,48 @@
-from typing import TYPE_CHECKING
-
+from typing import List, Set
 import tcod
-from components.dispatch.input import InputDispatcher
-from components.dispatch.interface import InterfaceDispatcher
-from components.dispatch.gameover import GameOverDispatcher
-from resources.events import UIEvent, GameOver
 
-if TYPE_CHECKING:
-    from engine import Engine
+from components.queues.event_lib import BaseGameEvent, UIEvent, SystemEvent
+from components.dispatchers.event_to_action import InputDispatcher, InterfaceDispatcher, SystemDispatcher
+from components.state import GameState
     
+def is_subclass(instance, cls: type) -> bool:
+    instance_mro = set([x.__name__ for x in instance.__class__.mro()])
+    cls_mro = set([x.__name__ for x in cls.mro()])
+    return instance_mro.issuperset(cls_mro)
+
 class GameAI:
+    """ The Game AI is responsible for processing the game state and determining the actions of non-player characters (NPCs) in the game. """
+    state: GameState
     input_dispatcher: InputDispatcher
     interface_dispatcher: InterfaceDispatcher
-    gameover_dispatcher: GameOverDispatcher
-
-    def __init__(self) -> None:
-        self.input_dispatcher = InputDispatcher()
-        self.interface_dispatcher = InterfaceDispatcher()
-        self.gameover_dispatcher = GameOverDispatcher()
-
-
-    """ The Game AI is responsible for processing the game state and determining the actions of non-player characters (NPCs) in the game. """
+    system_dispatcher: SystemDispatcher
     
-    def get_actions(self, engine: Engine) -> list:
+    def __init__(self, state: GameState) -> None:
+        self.state = state
+        self.input_dispatcher = InputDispatcher(state)
+        self.interface_dispatcher = InterfaceDispatcher(state)
+        self.system_dispatcher = SystemDispatcher(state)
+
+    def get_actions(self) -> List:
         action_sequence = []
         
         for event in tcod.event.wait():
-            if engine.game_over:
-                action_sequence = [self.gameover_dispatcher.dispatch(event)]
+            if self.state.game_over:
+                action_sequence = [self.system_dispatcher.dispatch(event)]
             else:
                 action_sequence += [self.input_dispatcher.dispatch(event)]
         
-        for event in engine.game_events:
-            if isinstance(event, UIEvent):
-                action_sequence += [self.interface_dispatcher.dispatch(event)]
+        while not self.state.game_events.is_empty():
+            event = self.state.game_events.get()
 
-            elif isinstance(event, GameOver):
-                action_sequence = [self.gameover_dispatcher.dispatch(event)]
+            if self.state.game_over:
+                action_sequence = self.system_dispatcher.dispatch(event)
+
+            else:
+                if is_subclass(event, UIEvent):
+                    action_sequence += self.interface_dispatcher.dispatch(event)
+
+                if is_subclass(event, SystemEvent):
+                    action_sequence += self.system_dispatcher.dispatch(event)
 
         return action_sequence

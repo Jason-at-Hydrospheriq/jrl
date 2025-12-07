@@ -22,7 +22,7 @@ class BaseAI:
 
     @property
     def engine(self) -> Engine:
-        return self.entity.game_map.engine
+        return self.entity.game_===map.engine
     
     def event(self) -> AIEvent:
         raise NotImplementedError()

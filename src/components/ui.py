@@ -4,7 +4,7 @@ from tcod.console import Console
 if TYPE_CHECKING:
     from engine import Engine
 
-from components.display.base import BaseUIComponent
+from src.components.display.base import BaseUIComponent
 from components.display.maps import MainMapDisplay
 from copy import deepcopy
 
@@ -19,8 +19,12 @@ class UIDisplay:
 
     """ The UI Manager handles the various UI components and their interactions. """
     
-    def __init__(self, console: Console) -> None:
-        self.console = console
+    def __init__(self, console: Console | None = None) -> None:
+
+        if console:
+            self.console = console
+        
+        self.elements = set()
         self.add_element(MAP)
 
     def add_element(self, element: BaseUIComponent, x: int = -1, y: int = -1) -> None:
@@ -46,8 +50,3 @@ class UIDisplay:
     def get_elements_by_type(self, element_type: type) -> Set[BaseUIComponent]:
         """Retrieve all UI elements of a specific type."""
         return {element for element in self.elements if isinstance(element, element_type)}
-    
-    def render(self, engine: Engine) -> None:
-        """ Render all UI components """
-        for element in self.elements:
-            element.render(engine)

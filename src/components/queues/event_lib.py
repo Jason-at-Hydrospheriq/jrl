@@ -2,14 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Protocol
-import numpy as np
-
-from resources.actions import *
-
-if TYPE_CHECKING:
-    from entities import AICharactor, Charactor
-    from components.game_map import MapCoords
+from typing import Protocol
 
 
 class BaseGameEvent(Protocol):
@@ -17,19 +10,52 @@ class BaseGameEvent(Protocol):
 
 
 class SystemEvent(BaseGameEvent):
-    message: str
 
     def __init__(self, message: str) -> None:
         self.message = message
 
 
-class EntityEvent(BaseGameEvent):
-    entity: BaseEntity
-    message: str
+class GameStart(SystemEvent):
+    def __init__(self, message: str = "Game Start") -> None:
+        super().__init__(message)
 
-    def __init__(self, entity: BaseEntity, message: str) -> None:
-        self.entity = entity
-        self.message = message
+
+class GameOver(SystemEvent):
+    pass
+
+
+# class EntityEvent(BaseGameEvent):
+#     entity: BaseEntity
+#     message: str
+
+#     def __init__(self, entity: BaseEntity, message: str) -> None:
+#         self.entity = entity
+#         self.message = message
+
+
+# class NoCollision(EntityEvent):
+#     def __init__(self, entity: BaseEntity, message: str) -> None:
+#         super().__init__(entity, message)
+
+
+# class WallCollision(EntityEvent):
+#     def __init__(self, entity: BaseEntity, message: str) -> None:
+#         super().__init__(entity, message)
+
+
+# class MapBoundaryCollision(EntityEvent):
+#     def __init__(self, entity: BaseEntity, message: str) -> None:
+#         super().__init__(entity, message)
+
+
+# class TargetCollision(EntityEvent):
+#     def __init__(self, entity: BaseEntity, message: str) -> None:
+#         super().__init__(entity, message)
+    
+
+# class MeleeCollision(EntityEvent):
+#     def __init__(self, entity: BaseEntity, message: str) -> None:
+#         super().__init__(entity, message)
 
 
 class UIEvent(BaseGameEvent):
@@ -45,10 +71,6 @@ class MapUpdate(UIEvent):
     def __init__(self, element_name: str, message: str) -> None:
         super().__init__(element_name, message)
 
-
-class GameOver(SystemEvent):
-    def __init__(self, message: str = "Game Over") -> None:
-        super().__init__(message)
 
 # class AIEvent(Protocol):
 
