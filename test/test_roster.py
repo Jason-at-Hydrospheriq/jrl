@@ -1,15 +1,7 @@
 import pytest
-import numpy as np
-import sys
 
-# Ensure the src directory is on sys.path so dataset can be imported
-SRC_DIR = r'C:\Users\jason\workspaces\repos\jrl' or ".."
-
-if SRC_DIR not in sys.path:
-    sys.path.insert(0, SRC_DIR)
-
-from src.components.roster import Roster, ORC, TROLL, PLAYER
-from src.components.game_map import MapCoords
+from components.roster import Roster, ORC, TROLL, PLAYER
+from components.game_map import MapCoords
 
 def test_roster_spawn():
     roster = Roster()

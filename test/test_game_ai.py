@@ -1,17 +1,8 @@
 import pytest
-import numpy as np
-import sys
 
-
-# Ensure the src directory is on sys.path so dataset can be imported
-SRC_DIR = r'C:\Users\jason\workspaces\repos\jrl' or ".."
-
-if SRC_DIR not in sys.path:
-    sys.path.insert(0, SRC_DIR)
-
-from src.ai import GameAI
-from src.components.events.library import GameOver
-from src.state import GameState
+from ai import GameAI
+from components.events.library import GameOver
+from state import GameState
 
 def test_game_over_event_handling():
     state = GameState()

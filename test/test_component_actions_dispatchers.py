@@ -1,14 +1,6 @@
 import pytest
-import sys
-
-# Ensure the src directory is on sys.path so src can be imported
-SRC_DIR = r'C:\Users\jason\workspaces\repos\jrl' or ".."
-
-if SRC_DIR not in sys.path:
-    sys.path.insert(0, SRC_DIR)
-    
-from src.components.actions.dispatchers import *
-from src.state import GameState
+from components.actions.dispatchers import *
+from state import GameState
 
 def test_dispatcher_initialization():
     # Arrange & Act

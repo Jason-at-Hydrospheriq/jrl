@@ -1,15 +1,7 @@
 import pytest
 import numpy as np
-import sys
 
-# Ensure the src directory is on sys.path so dataset can be imported
-SRC_DIR = r'C:\Users\jason\workspaces\repos\jrl' or ".."
-
-if SRC_DIR not in sys.path:
-    sys.path.insert(0, SRC_DIR)
-
-from src.components.game_map import GameMap
-from src.resources.tile_types import graphic_dtype
+from components.game_map import GameMap
 
 def test_width_height():
     game_map = GameMap(20, 30)
