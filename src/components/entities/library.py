@@ -4,8 +4,8 @@
 from __future__ import annotations
 from typing import Optional, Tuple, Type
 
-from components.attributes.stats import *
-# from components.action_handlers.ai import BaseAI
+from components.entities.attributes import *
+from components.entities.ai import BaseAI
 
 from components.game_map import MapCoords
 

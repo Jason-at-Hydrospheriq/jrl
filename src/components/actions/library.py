@@ -10,12 +10,12 @@ import numpy as np
 if TYPE_CHECKING:
     from components.roster import Roster
 
-from src.components.queues.library import MapUpdate
-from src.state import GameState
-from src.components.entities.entity_lib import BaseEntity, CombatEntity, MobileEntity, MortalEntity, TargetableEntity, TargetingEntity
+from components.events.library import MapUpdate
+from state import GameState
+from components.entities.library import BaseEntity, CombatEntity, MobileEntity, MortalEntity, TargetableEntity, TargetingEntity
 from components.game_map import MapCoords
-from src.components.queues.events import GAME_OVER, GAME_START, MAP_UPDATE
-from resources import tile_types
+from components.events.queues import GAME_OVER, GAME_START, MAP_UPDATE
+from components.maps.generators import *
 from components.display.maps import MainMapDisplay
 
 

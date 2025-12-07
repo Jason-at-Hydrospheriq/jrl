@@ -8,8 +8,7 @@ from typing import Iterator, Sequence, Set, List
 import random
 
 from components.maps.room_library import *
-from components.maps.dtype_library import map_dtype, new_tile_type
-from components.maps.base import BaseTileMap, MapCoords
+from components.maps.base import BaseMapGenerator, BaseTileMap, MapCoords, map_dtype, new_tile_type
 
 FLOOR = new_tile_type(name="floor",
                       dark=(ord(" "), (255, 255, 255), (50, 50, 150)), 
@@ -21,11 +20,11 @@ WALL = new_tile_type(name="wall",
 RECTANGULAR_ROOM = RectangularRoom(0, 0, 10, 10)
 CIRCULAR_ROOM = CircularRoom(0, 0, 5)
 
-class DungeonGenerator:
+
+class DungeonGenerator(BaseMapGenerator):
     """Generates dungeons using various algorithms."""
     rooms: List[BaseRoom]
     corridors: List[np.ndarray]
-    tile_map: BaseTileMap
 
     def __init__(self) -> None:
         self.rooms = []
@@ -65,24 +64,7 @@ class DungeonGenerator:
         clone.center = MapCoords(x, y)
 
         return clone
-
-    def random_rooms(self, map: BaseTileMap, max_rooms: int, min_room_size: int, max_room_size: int) -> Iterator[BaseRoom]:
-
-        for _ in range(max_rooms):
-            room_type = random.choice(['rectangular', 'circular'])
-
-            if room_type == 'rectangular':
-                yield self.spawn_room(RECTANGULAR_ROOM,
-                                    x=random.randint(0, map.width - 1),
-                                    y=random.randint(0, map.height - 1),
-                                    width=random.randint(min_room_size, max_room_size),
-                                    height=random.randint(min_room_size, max_room_size))
-            elif room_type == 'circular':
-                yield self.spawn_room(CIRCULAR_ROOM,
-                                    x=random.randint(0, map.width - 1),
-                                    y=random.randint(0, map.height - 1),
-                                    radius=random.randint(min_room_size // 2, max_room_size // 2))
-                
+       
     def spawn_corridor(self, start: MapCoords, end: MapCoords) -> np.ndarray:
         """Carve out a corridor between two points in the tile map."""
 
@@ -109,52 +91,25 @@ class DungeonGenerator:
                 mask[x, max(0, y2 - width):min(self.tile_map.height, y2 + width)] = True
 
         return mask
-    
+
+    def random_rooms(self, map: BaseTileMap, max_rooms: int, min_room_size: int, max_room_size: int) -> Iterator[BaseRoom]:
+
+        for _ in range(max_rooms):
+            room_type = random.choice(['rectangular', 'circular'])
+
+            if room_type == 'rectangular':
+                yield self.spawn_room(RECTANGULAR_ROOM,
+                                    x=random.randint(0, map.width - 1),
+                                    y=random.randint(0, map.height - 1),
+                                    width=random.randint(min_room_size, max_room_size),
+                                    height=random.randint(min_room_size, max_room_size))
+            elif room_type == 'circular':
+                yield self.spawn_room(CIRCULAR_ROOM,
+                                    x=random.randint(0, map.width - 1),
+                                    y=random.randint(0, map.height - 1),
+                                    radius=random.randint(min_room_size // 2, max_room_size // 2))
+             
     def clear(self) -> None:
         self.rooms.clear()
         self.corridors.clear()
 
-# def random_mobs(rooms: List[Room], max_total_mobs: int, max_mobs_per_room: int, game_map: GameMap) -> None:
-#     """Generate mobs """
-#     n_total_mobs_spawned_in_this_map = 0
-#     min_total_mobs_in_this_map = len(rooms) * max_mobs_per_room
-#     max_total_mobs_in_this_map = random.randint(min_total_mobs_in_this_map, max_total_mobs)
-    
-#     # Generate mobs in rooms
-#     for room in rooms:
-#         max_mobs_in_this_room = random.randint(1, max_mobs_per_room)
-
-#         if room.contains(game_map.player.location):
-#             continue  # Skip room if player is inside
-        
-#         else:
-#             n_mobs_spawned_in_this_room = 0
-#             while n_mobs_spawned_in_this_room < max_mobs_in_this_room:
-#                 current_mob_locations = [mob.location for mob in game_map.live_ai_actors]
-#                 spawn_location = room.random_location()
-#                 if not any(mob_location == spawn_location for mob_location in current_mob_locations):
-#                     if random.random() < 0.8:
-#                         mob_factory.ORC.spawn(game_map, spawn_location)
-#                     else:
-#                         mob_factory.TROLL.spawn(game_map, spawn_location)
-                            
-#                     n_total_mobs_spawned_in_this_map += 1
-#                     n_mobs_spawned_in_this_room += 1
-
-#     # Generate remainder of mobs in corridors
-#     while n_total_mobs_spawned_in_this_map < max_total_mobs_in_this_map:
-#         x, y = random.randint(0, game_map.width - 1), random.randint(0, game_map.height - 1)
-#         spawn_location = MapCoords(int(x), int(y))
-#         current_mob_locations = [mob.location for mob in game_map.live_ai_actors]
-
-#         for room in rooms:
-#             if room.contains(spawn_location):
-#                 continue  # Skip if inside a room
-
-#             else: 
-#                 if game_map.tiles[spawn_location.x, spawn_location.y]["walkable"] and not any(mob_location == spawn_location for mob_location in current_mob_locations):
-#                     if random.random() < 0.8:
-#                         mob_factory.ORC.spawn(game_map, spawn_location)
-#                     else:
-#                         mob_factory.TROLL.spawn(game_map, spawn_location)
-#                 n_total_mobs_spawned_in_this_map += 1

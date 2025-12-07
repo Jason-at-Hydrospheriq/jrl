@@ -4,10 +4,38 @@
 from __future__ import annotations
 import numpy as np
 import random
-from typing import Iterator, List, Tuple
+from typing import Tuple
+import numpy as np
 
-from components.maps.dtype_library import *
-from src.components.maps.generators import WALL
+# Define Structured Data Types for Tile Maps
+
+graphic_dtype = np.dtype(
+    [
+        ("ch", np.int32),  # Unicode codepoint.
+        ("fg", "3B"),  # 3 unsigned bytes, for RGB colors.
+        ("bg", "3B"),
+    ]
+)
+tile_dtype = np.dtype([("name", np.str_, 16), ("shroud", graphic_dtype), ("dark", graphic_dtype), ("light", graphic_dtype)])
+map_dtype = np.dtype(
+    [   ("type", tile_dtype), # The type of the tile, e.g., 'floor', 'wall', etc. 
+        ("traversable", np.bool),  # True if this tile can be occupied by or passed through by an entity.
+        ("transparent", np.bool),  # True if this tile doesn't block FOV.
+        ('visible', np.bool),  # True if this tile is currently visible.
+        ('explored', np.bool),  # True if this tile has been explored.
+        ('color', graphic_dtype)
+    ])
+
+SHROUD = np.array((ord(" "), (255, 255, 255), (0, 0, 0)), dtype=graphic_dtype)  # Unknown tile
+
+def new_tile_type(name: str,
+                  dark: Tuple[int, Tuple[int, int, int], Tuple[int, int, int]], 
+                  light: Tuple[int, Tuple[int, int, int], Tuple[int, int, int]]
+                  ) -> np.ndarray:
+    """Helper function for defining tile types"""
+
+    return np.array((name, SHROUD, dark, light), dtype=tile_dtype)
+
 
 class MapCoords:
     x: int
@@ -38,12 +66,13 @@ class BaseTileMap:
     height: int
     tiles: np.ndarray 
 
-    def __init__(self, width: int = 0, height: int = 0, default_tile: np.ndarray = WALL) -> None:
+    def __init__(self, width: int = 0, height: int = 0, default_tile: np.ndarray | None = None) -> None:
 
         self.width = width
         self.height = height
         self.tiles = np.full((width, height), fill_value=False, order="F", dtype=map_dtype)
-        self.tiles["type"][:] = default_tile
+        if default_tile is not None:
+            self.tiles["type"] = default_tile
 
     def add_area(self, area: np.ndarray, tile_types: np.ndarray) -> None:
         """Add tiles to the map at the specified area."""
@@ -90,7 +119,7 @@ class BaseRoom:
 
 class BaseMapGenerator:
     """Base class for map generators."""
-    
-    @staticmethod
-    def generate(width: int, height: int, **kwargs) -> BaseTileMap:
+    tile_map: BaseTileMap
+
+    def generate(self, *args, **kwargs) -> BaseTileMap:
         raise NotImplementedError()

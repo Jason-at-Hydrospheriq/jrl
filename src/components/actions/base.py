@@ -3,13 +3,15 @@
 
 from __future__ import annotations
 from copy import deepcopy
-from typing import List, Protocol, Sequence
+from typing import List, Protocol, TYPE_CHECKING
 import tcod
 import tcod.event
 
-from src.components.queues.library import BaseGameEvent
-from src.state import GameState
-from src.components.dispatchers.library import BaseStateAction, NoAction, GameStartAction, SystemExitAction, GameOverAction
+if TYPE_CHECKING:
+    from state import GameState
+
+from components.events.library import BaseGameEvent
+from components.actions.library import BaseStateAction, NoAction, GameStartAction, SystemExitAction, GameOverAction
 
 NOACTION = NoAction()
 GAMEOVER = GameOverAction()

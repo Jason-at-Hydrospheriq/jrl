@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from components.events.library import GameStart, GameOver
-
-from src.state import GameState
+    from state import GameState
+    
 from components.actions.base import *
 
 

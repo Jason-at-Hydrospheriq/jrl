@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 from copy import deepcopy
-from components.entities.entity_lib import *
+from src.components.entities.library import *
 from components.entities import attributes, ai
 
 

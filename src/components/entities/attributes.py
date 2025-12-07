@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.components.entities.entity_lib import *
+    from src.components.entities.library import *
     from engine import Engine
 
 
