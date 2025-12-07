@@ -5,15 +5,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.components.entities.library import *
+    from components.entities.library import *
     from engine import Engine
 
 
-class BaseComponent:
+class BaseStats:
     entity: BaseEntity | Charactor | AICharactor
 
 
-class PhysicalStats(BaseComponent):
+class PhysicalStats(BaseStats):
     constitution: int
     max_hp: int
 
@@ -34,30 +34,29 @@ class PhysicalStats(BaseComponent):
         return self.hp < 1
     
 
-class MentalStats(BaseComponent):
+class MentalStats(BaseStats):
     intelligence: int
     willpower: int
-    max_psyp: int
+    max_mp: int
     
-    def __init__(self, intelligence: int, willpower: int, max_psyp: int) -> None:
+    def __init__(self, intelligence: int, max_mp: int) -> None:
         self.intelligence = intelligence
-        self.willpower = willpower
-        self.max_psyp = max_psyp
-        self._psyp = max_psyp
+        self.max_mp = max_mp
+        self._mp = max_mp
 
     @property
-    def psyp(self) -> int:
-        return self._psyp
+    def mp(self) -> int:
+        return self._mp
     
-    @psyp.setter
-    def psyp(self, value: int) -> None:
-        self._psyp = max(0, min(value, self.max_psyp))
+    @mp.setter
+    def mp(self, value: int) -> None:
+        self._mp = max(0, min(value, self.max_mp))
 
     def is_conscious(self) -> bool:
-        return self.psyp > 0
+        return self.mp > 0
     
 
-class CombatStats(BaseComponent):
+class CombatStats(BaseStats):
     attack_power: int
     defense: int
 
