@@ -2,7 +2,15 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from components.attributes.base import BaseComponent
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.components.entities.entity_lib import *
+    from engine import Engine
+
+
+class BaseComponent:
+    entity: BaseEntity | Charactor | AICharactor
 
 
 class PhysicalStats(BaseComponent):

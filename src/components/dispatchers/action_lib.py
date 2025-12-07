@@ -11,8 +11,8 @@ if TYPE_CHECKING:
     from components.roster import Roster
 
 from components.queues.event_lib import MapUpdate
-from components.state import GameState
-from resources.entities import BaseEntity, CombatEntity, MobileEntity, MortalEntity, TargetableEntity, TargetingEntity
+from src.state import GameState
+from src.components.entities.entity_lib import BaseEntity, CombatEntity, MobileEntity, MortalEntity, TargetableEntity, TargetingEntity
 from components.game_map import MapCoords
 from components.queues.game_events import GAME_OVER, GAME_START, MAP_UPDATE
 from resources import tile_types

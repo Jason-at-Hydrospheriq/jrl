@@ -3,7 +3,7 @@ import tcod
 
 from components.queues.event_lib import BaseGameEvent, UIEvent, SystemEvent
 from components.dispatchers.event_to_action import InputDispatcher, InterfaceDispatcher, SystemDispatcher
-from components.state import GameState
+from state import GameState
     
 def is_subclass(instance, cls: type) -> bool:
     instance_mro = set([x.__name__ for x in instance.__class__.mro()])

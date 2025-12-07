@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Set
 
-from components import ai
-from src.components.queues.event_lib import BaseGameEvent
-from src.components import state
+from ai import GameAI
+from state import GameState
+
 
 class Engine:
     """
@@ -14,13 +13,13 @@ class Engine:
     The GameAI converts states to a sequence of actions that the Engine performs in the main game loop.  
     """
     
-    state: state.GameState
-    ai: ai.GameAI
+    state: GameState
+    ai: GameAI
 
     def __init__(self) -> None:
 
-        self.state = state.GameState()
-        self.ai = ai.GameAI(self.state)  
+        self.state = GameState()
+        self.ai = GameAI(self.state)  
 
     def render(self) -> None:
         """ Render all UI components """

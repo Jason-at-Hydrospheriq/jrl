@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from components.queues.event_lib import GameStart, GameOver
 
-from components.state import GameState
+from src.state import GameState
 from components.dispatchers.base import *
 
 

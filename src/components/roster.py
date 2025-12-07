@@ -2,38 +2,28 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from copy import deepcopy
-from src.resources.entities import BlockingEntity, Charactor, AICharactor, BaseEntity, TargetableEntity
-from components.attributes.stats import PhysicalStats, MentalStats, CombatStats
-from typing import Set, List
+from components.entities.factory import *
+from typing import Set, List, Callable, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from components.entities.entity_lib import BaseEntity, BlockingEntity, Charactor, AICharactor
+    from components.game_map import MapCoords
+
+from components.entities.entity_lib import *
 from components.game_map import MapCoords
-
-    
-# Spawnable entity templates
-PLAYER = Charactor(name="Player", char="@", color=(255, 255, 255),
-                   physical=PhysicalStats(max_hp=30, constitution=14),
-                   combat=CombatStats(defense=2, attack_power=5))
-
-ORC = AICharactor(name="Orc", char="o", color=(63, 127, 63),
-                  ai_cls=None, 
-                  physical=PhysicalStats(max_hp=10, constitution=12),
-                  combat=CombatStats(defense=0, attack_power=3))
-
-TROLL = AICharactor(name="Troll", char="T", color=(0, 127, 0), 
-                    ai_cls=None,
-                    physical=PhysicalStats(max_hp=16, constitution=12),
-                    combat=CombatStats(defense=1, attack_power=4))
 
 
 class Roster:
     """ The Roster component manages the collection of all entities in the game. """
 
-    __slots__ = ("entities",)
+    __slots__ = ("entities", "spawn")
     
     entities: Set[BaseEntity]
+    spawn: Callable
 
     def __init__(self) -> None:
         self.entities = set()    
+        self.spawn = spawn
 
     @property
     def entity_locations(self) -> List[MapCoords]:
@@ -79,12 +69,6 @@ class Roster:
                 return potential_blocker  # Return the first blocking entity found.
 
         return None
-    
-    def spawn(self, original: BaseEntity, location: MapCoords):
-        """Spawn a copy of this entity at the given location."""
-        clone = deepcopy(original)
-        clone.location = location
-        self.entities.add(clone)
     
     def get_entity_at_location(self, location: MapCoords) -> List[BaseEntity]:
         found_entity = []

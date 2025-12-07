@@ -8,7 +8,7 @@ import tcod
 import tcod.event
 
 from components.queues.event_lib import BaseGameEvent
-from components.state import GameState
+from src.state import GameState
 from components.dispatchers.action_lib import BaseStateAction, NoAction, GameStartAction, SystemExitAction, GameOverAction
 
 NOACTION = NoAction()
