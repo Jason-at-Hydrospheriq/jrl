@@ -7,9 +7,9 @@ from typing import List, Protocol, Sequence
 import tcod
 import tcod.event
 
-from components.queues.event_lib import BaseGameEvent
+from src.components.queues.library import BaseGameEvent
 from src.state import GameState
-from components.dispatchers.action_lib import BaseStateAction, NoAction, GameStartAction, SystemExitAction, GameOverAction
+from src.components.dispatchers.library import BaseStateAction, NoAction, GameStartAction, SystemExitAction, GameOverAction
 
 NOACTION = NoAction()
 GAMEOVER = GameOverAction()

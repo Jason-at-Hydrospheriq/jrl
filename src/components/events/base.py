@@ -7,7 +7,7 @@ from email.mime import message
 from turtle import clone
 from typing import Protocol, Set
 
-from components.queues.event_lib import BaseGameEvent, GameOver, GameStart, MapUpdate
+from components.events.library import BaseGameEvent, GameOver, GameStart, MapUpdate
 
 GAME_OVER = GameOver(message="Game Over! Thanks for playing.")
 GAME_START = GameStart(message="Welcome to the Game! Let the adventure begin.")

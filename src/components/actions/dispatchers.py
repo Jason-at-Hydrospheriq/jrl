@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from components.queues.event_lib import GameStart, GameOver
+    from components.events.library import GameStart, GameOver
 
 from src.state import GameState
-from components.dispatchers.base import *
+from components.actions.base import *
 
 
 class GameEventDispatcher(BaseEventDispatcher):

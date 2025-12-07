@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Set
 
 from components import roster, game_map, ui
-from components.queues.game_events import MainEventQueue
+from components.events.queues import MainEventQueue
 
 class GameState:
     """

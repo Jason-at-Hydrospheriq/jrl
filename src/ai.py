@@ -1,8 +1,8 @@
 from typing import List, Set
 import tcod
 
-from components.queues.event_lib import BaseGameEvent, UIEvent, SystemEvent
-from components.dispatchers.event_to_action import InputDispatcher, InterfaceDispatcher, SystemDispatcher
+from components.events.library import BaseGameEvent, UIEvent, SystemEvent
+from components.actions.dispatchers import InputDispatcher, InterfaceDispatcher, SystemDispatcher
 from state import GameState
     
 def is_subclass(instance, cls: type) -> bool:
