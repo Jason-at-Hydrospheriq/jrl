@@ -88,7 +88,7 @@ class BaseTileMap(Protocol):
     def _generate_dtypes(self) -> None:
         """Generates the tile and tile location dtypes based on the graphic definitions"""
         graphic_fields = [(field, ascii_graphic) for field in self._resources['tile_type_graphic_fields']]
-        tile_type =  np.dtype([("name", "U16")] + graphic_fields, metadata={"__name__": "map_tile"})
+        tile_type =  np.dtype([("name", "U16")] + graphic_fields, metadata={"__name__": "tile_type"})
         self._resources["dtypes"]["tile_type"] = tile_type
 
         tile_location = np.dtype(
@@ -98,7 +98,7 @@ class BaseTileMap(Protocol):
                                 ('visible', np.bool),  # True if this tile is currently visible.
                                 ('explored', np.bool),  # True if this tile has been explored.
                                 ('graphic', ascii_graphic) # The current graphic representation of the tile.
-                            ])
+                            ], metadata={"__name__": "tile_location"})
 
         self._resources["dtypes"]["tile_location"] = tile_location
     
@@ -116,7 +116,7 @@ class BaseTileMap(Protocol):
             tile = np.array(values, dtype=self._resources['dtypes']['tile_type'])
             self._resources['tiles'][tile_name] = tile
 
-    def add_area(self, area: np.ndarray, tile_type: str = "floor") -> None:
+    def add_area(self, area: tuple[slice, slice], tile_type: str = "floor") -> None:
         """Add tiles to the map at the specified area."""
         self.tiles[area]['type'] = self._resources['tiles'][tile_type]
         self.tiles[area]['graphic'] = self._resources['tiles'][tile_type]['g_shroud']

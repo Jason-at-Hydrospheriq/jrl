@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from components.events.library import GameStart, GameOver
+    from core_components.events.library import GameStart, GameOver
     from state import GameState
     
 from components.actions.base import *

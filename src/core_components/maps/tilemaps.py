@@ -7,7 +7,7 @@ from core_components.maps.base import BaseTileMap, ascii_graphic
 
 
 class GenericTileMap(BaseTileMap):
-    def __init__(self, size: Tuple[int, int]) -> None:
+    def __init__(self, size: Tuple[int, int] = (1, 1)) -> None:
         self._resources = {
             'graphics': {"fill_bluebell": (ord(" "), (255, 255, 255), (50, 50, 150)),
                           "fill_light_yellow": (ord(" "), (255, 255, 255), (200, 180, 50)),
