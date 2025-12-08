@@ -42,7 +42,7 @@ def test_generic_tilemap_parameter_init():
     finally:
         pass
         
-def test_generic_tilemap_add_area():
+def test_generic_tilemap_add_area_by_slice():
     # Arrange & Act
     width = 10
     height = 10
@@ -72,6 +72,36 @@ def test_generic_tilemap_add_area():
     finally:
         pass
 
+def test_generic_tilemap_add_area_by_mask():
+    # Arrange & Act
+    width = 10
+    height = 10
+    tile_map = GenericTileMap(size=(width, height))
+
+    mask = np.full((width, height), False)
+    mask[2:5, 2:5] = True
+
+    # Act
+    tile_map.add_area(mask, tile_type="wall")
+
+    # Assert
+    try:
+        for x in range(width):
+            for y in range(height):
+                if 2 <= x < 5 and 2 <= y < 5:
+                    expected_tile_type = "wall"
+                else:
+                    expected_tile_type = "default"
+
+                actual_tile_type = tile_map.tiles['type'][x, y]['name']
+                assert actual_tile_type == expected_tile_type, f"Expected tile at ({x}, {y}) to be of type '{expected_tile_type}', but got '{actual_tile_type}'"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    # Atavise
+    finally:
+        pass
 def test_generic_tilemap_resources():
     # Arrange & Act
     tile_map = GenericTileMap()

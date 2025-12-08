@@ -4,7 +4,6 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
 from core_components.maps.base import MapCoords, ascii_graphic
-from core_components.maps.tilemaps import GenericTileMap
 
 def test_base_empty_map_coords():
     # Arrange & Act
