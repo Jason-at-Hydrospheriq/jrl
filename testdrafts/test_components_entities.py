@@ -1,7 +1,6 @@
 import pytest
-from components.entities.attributes import *
-from components.entities.factory import *
-
+from core_components.entities.attributes import *
+from core_components.entities.factory import *
 def test_physical_attributes():
     physical = PhysicalStats(max_hp=20, constitution=15)
     

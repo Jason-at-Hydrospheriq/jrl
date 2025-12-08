@@ -6,7 +6,7 @@ import numpy as np
 
 from components.maps.generators import DungeonGenerator
 from components.maps.base import MapCoords
-
+        
 class GameMap:
     """The Game Map is a stateful coordinate system of Tiles. The Tiles have a State (traversable, transparent, visible, explored, color) that is
     managed by the Game Engine and rendered by the Game UI. The tile color is determined by the Map UI component based on the tile state and type.

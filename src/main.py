@@ -1,7 +1,7 @@
 # #!/usr/bin/env python3
 # # -*- coding: utf-8 -*-
 
-# from __future__ import annotations
+from __future__ import annotations
 # import tcod
 # from tcod.console import Console
 # from tcod.context import new as new_window
@@ -12,11 +12,12 @@
 # from entities import Charactor
 # from components.stats import CombatStats, PhysicalStats
 
-# TITLE = "JRL - Jay's Roguelike"
-# WIDTH, HEIGHT = 720, 480  # Window pixel resolution (when not maximized.)
+TITLE = "JRL - Jay's Roguelike"
+WIDTH, HEIGHT = 720, 480  # Window pixel resolution (when not maximized.)
 # FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
 
-# def main() -> None:
+def main() -> None:
+    pass
 #     # Set up game window context
 #     tileset = load_tilesheet("dejavu10x10_gs_tc.png", 32, 8, CHARMAP_TCOD)
 

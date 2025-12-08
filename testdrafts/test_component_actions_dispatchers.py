@@ -1,6 +1,6 @@
 import pytest
-from components.actions.dispatchers import *
-from state import GameState
+from src.core_components.actions.dispatchers import *
+from src.state import GameState
 
 def test_dispatcher_initialization():
     # Arrange & Act

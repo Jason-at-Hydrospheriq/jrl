@@ -7,16 +7,23 @@ import numpy as np
 from typing import Iterator, Sequence, Set, List
 import random
 
-from components.maps.room_library import *
-from components.maps.base import BaseMapGenerator, BaseTileMap, MapCoords, map_dtype, new_tile_type
+from core_components.maps.room_library import *
+from core_components.maps.base import BaseMapGenerator, BaseTileMap, MapCoords, map_dtype, new_tile_type, graphic_dtype, tile_dtype
 
+# GRAPHIC CONSTANTS
+SHROUD = (ord(" "), (255, 255, 255), (0, 0, 0))  # Unknown tile
+
+# TILE TYPES
 FLOOR = new_tile_type(name="floor",
+                      shroud=SHROUD,
                       dark=(ord(" "), (255, 255, 255), (50, 50, 150)), 
                       light=(ord(" "), (255, 255, 255), (200, 180, 50)))
 WALL = new_tile_type(name="wall",
+                     shroud=SHROUD,
                      dark=(ord(" "), (255, 255, 255), (0, 0, 100)), 
                      light=(ord(" "), (255, 255, 255), (130, 110, 50)))
 
+# ROOM TEMPLATES
 RECTANGULAR_ROOM = RectangularRoom(0, 0, 10, 10)
 CIRCULAR_ROOM = CircularRoom(0, 0, 5)
 
