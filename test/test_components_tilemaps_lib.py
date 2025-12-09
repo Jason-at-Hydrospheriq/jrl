@@ -3,8 +3,7 @@ from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
-from core_components.maps.tilemaps import GenericTileMap
-from core_components.maps.base import ascii_graphic
+from core_components.tilemaps.library import GenericTileMap
 
 def test_generic_tilemap_empty_init():
     # Arrange & Act
@@ -102,6 +101,7 @@ def test_generic_tilemap_add_area_by_mask():
     # Atavise
     finally:
         pass
+    
 def test_generic_tilemap_resources():
     # Arrange & Act
     tile_map = GenericTileMap()

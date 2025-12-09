@@ -3,7 +3,7 @@ from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
-from core_components.maps.base import MapCoords, ascii_graphic
+from core_components.tilemaps.base import MapCoords, ascii_graphic
 
 def test_base_empty_map_coords():
     # Arrange & Act

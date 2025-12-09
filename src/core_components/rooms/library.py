@@ -4,18 +4,14 @@
 from __future__ import annotations
 import numpy as np
 from typing import Tuple
-from core_components.maps.base import BaseRoom, MapCoords
+from core_components.rooms.base import BaseRoom, MapCoords
 
 
-class RectangularRoom(BaseRoom):
-
+class GenericRoom(BaseRoom):
     def __init__(self, center: MapCoords = MapCoords(0, 0), size: Tuple[int, int] = (4, 4)) -> None:
         self.center = center
-        self.width = size[0]
-        self.height = size[1]
-        self.upperLeft_corner = MapCoords(center.x - self.width // 2, center.y - self.height // 2)
-        self.lowerRight_corner = MapCoords(center.x + self.width // 2, center.y + self.height // 2)
-
+        self.resize(size)
+        
     @property
     def center(self) -> MapCoords:
         return self._center
@@ -23,7 +19,10 @@ class RectangularRoom(BaseRoom):
     @center.setter
     def center(self, value: MapCoords) -> None:
         self._center = value
-    
+
+
+class RectangularRoom(GenericRoom):
+
     @property
     def inner_area(self) -> np.ndarray:
         """Return the inner area of this room as a 2D array index."""
@@ -33,14 +32,22 @@ class RectangularRoom(BaseRoom):
         return mask
 
 
-class CircularRoom(RectangularRoom):
-    radius: int
+class CircularRoom(GenericRoom):
+    _radius: int
 
     def __init__(self, center: MapCoords = MapCoords(0, 0), radius: int = 3):
         super().__init__(center, (radius * 2, radius * 2))
-        
-        self.radius = radius
+        self._radius = radius
 
+    @property
+    def radius(self) -> int:
+        return self._radius
+    
+    @radius.setter
+    def radius(self, value: int) -> None:
+        self._radius = value
+        self.resize((value * 2, value * 2))
+        
     @property
     def inner_area(self) -> np.ndarray:
         """Return the inner area of this room as a 2D array index."""

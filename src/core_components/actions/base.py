@@ -10,8 +10,8 @@ import tcod.event
 if TYPE_CHECKING:
     from state import GameState
 
-from components.events.library import BaseGameEvent
-from components.actions.library import BaseStateAction, NoAction, GameStartAction, SystemExitAction, GameOverAction
+from core_components.events.library import BaseGameEvent
+from core_components.actions.library import BaseStateAction, NoAction, GameStartAction, SystemExitAction, GameOverAction
 
 
 NOACTION = NoAction()

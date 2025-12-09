@@ -3,39 +3,46 @@
 
 from __future__ import annotations
 from copy import deepcopy
+from turtle import clone
 import numpy as np
-from typing import Iterator, List
+from typing import Generator, Iterator, List, Tuple
 import random
 
-from core_components.maps.rooms import *
-from core_components.maps.base import BaseMapGenerator, BaseTileMap
-from core_components.maps.tilemaps import GenericTileMap
+from core_components.rooms.library import *
+from core_components.generators.base import BaseMapGenerator
+from core_components.tilemaps.library import GenericTileMap
 
+RECTANGULAR_ROOM_TEMPLATE = RectangularRoom()
+CIRCULAR_ROOM_TEMPLATE = CircularRoom()
 
 class GenericDungeonGenerator(BaseMapGenerator):
     """Generates dungeons using various algorithms."""
     rooms: List[BaseRoom]
     corridors: List[np.ndarray]
     
-    def __init__(self, size: tuple[int, int] | None = None) -> None:
+    def __init__(self, size: Tuple[int, int] | None = None) -> None:
         self.rooms = []
         self.corridors = []
-        self.room_templates = {"rectangular": RectangularRoom(), "circular": CircularRoom()}
+        
         if size is None:
             self.tilemap = GenericTileMap()
         else:
             self.tilemap = GenericTileMap(size=size)
 
-    def generate(self, max_rooms: int=10, min_room_size: int=5, max_room_size: int=20) -> BaseTileMap:
+    def generate(self, 
+                 max_rooms: int=10, 
+                 min_room_size: int=5, 
+                 max_room_size: int=20) -> GenericTileMap:
         #TODO Use LLM to generate more complex dungeons
         self.clear()
         self.tilemap.tiles[:] = self.tilemap.resources['tile_types']["wall"]
 
         # Create rooms
-        for new_room in self.random_rooms(max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size):
-            if all(not new_room.intersects(existing_room) for existing_room in self.rooms):
-                self.tilemap.add_area(new_room.inner_area, "floor")
-                self.rooms.append(new_room)
+        for new_room in self.spawn_random_rooms(max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size):
+            if new_room is not None:
+                if all(not new_room.intersects(existing_room) for existing_room in self.rooms):
+                    self.tilemap.add_area(new_room.inner_area, "floor")
+                    self.rooms.append(new_room)
 
         # Connect rooms with corridors
         for idx, room in enumerate(self.rooms):
@@ -46,21 +53,7 @@ class GenericDungeonGenerator(BaseMapGenerator):
             self.tilemap.add_area(corridor, "floor")
         
         return deepcopy(self.tilemap)
-
-    def spawn_room(self, room_name: str, center: MapCoords, size: Tuple[int, int] = (-1, -1), radius: int = -1) -> BaseRoom:
-        clone = deepcopy(self.room_templates[room_name])
-
-        if clone == self.room_templates["rectangular"] and radius == -1:
-            clone.width = size[0] #type: ignore
-            clone.height = size[1] #type: ignore
-        
-        elif clone == self.room_templates["circular"] and size == (-1, -1):
-            clone.radius = radius #type: ignore
-
-        clone.center = center
-
-        return clone
-       
+    
     def spawn_corridor(self, start: MapCoords, end: MapCoords) -> np.ndarray:
         """Carve out a corridor between two points in the tile map."""
 
@@ -88,23 +81,42 @@ class GenericDungeonGenerator(BaseMapGenerator):
 
         return mask
 
-    def random_rooms(self, max_rooms: int, min_room_size: int, max_room_size: int) -> Iterator[BaseRoom]:
+    def spawn_random_rooms(self, max_rooms: int, min_room_size: int, max_room_size: int) -> Generator[GenericRoom | None]:
 
         for _ in range(max_rooms):
             room_type = random.choice(['rectangular', 'circular'])
-
+            center = MapCoords(random.randint(0, self.tilemap.width - 1),
+                              random.randint(0, self.tilemap.height - 1))
+            size = (random.randint(min_room_size, max_room_size),
+                    random.randint(min_room_size, max_room_size))
+            
             if room_type == 'rectangular':
-                yield self.spawn_room('rectangular',
-                                    center=MapCoords(random.randint(0, self.tilemap.width - 1),
-                                                     random.randint(0, self.tilemap.height - 1)),
-                                    size=(random.randint(min_room_size, max_room_size),
-                                          random.randint(min_room_size, max_room_size)))
+                yield self.spawn_room(RECTANGULAR_ROOM_TEMPLATE, center=center, size=size)
+                
             elif room_type == 'circular':
-                yield self.spawn_room('circular',
-                                    center=MapCoords(random.randint(0, self.tilemap.width - 1),
-                                                     random.randint(0, self.tilemap.height - 1)),
-                                    radius=random.randint(min_room_size // 2, max_room_size // 2))
-             
+                size = (size[0], size[0])  # Ensure circular rooms are truly circular
+                yield self.spawn_room(CIRCULAR_ROOM_TEMPLATE, center=center, size=size)
+
+    def _spawn_rectangular_room(self,
+                                room: RectangularRoom,
+                                center: MapCoords, 
+                                size: Tuple[int, int]) -> GenericRoom | None:
+        """Spawn a room of the specified type at the given center with the given size."""
+        clone = deepcopy(room)
+        clone.center = center
+        clone.resize(size)
+
+        return clone
+    
+    def _spawn_circular_room(self, 
+                   room: CircularRoom,
+                   center: MapCoords, 
+                   size: Tuple[int, int]) -> GenericRoom | None: 
+        clone = deepcopy(room)
+        clone.center = center
+        clone.radius = size[0] // 2
+        return clone
+      
     def clear(self) -> None:
         self.rooms.clear()
         self.corridors.clear()

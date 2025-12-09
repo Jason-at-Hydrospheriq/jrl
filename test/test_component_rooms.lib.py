@@ -3,8 +3,8 @@ from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
-from core_components.maps.rooms import RectangularRoom, CircularRoom
-from core_components.maps.base import MapCoords
+from core_components.rooms.library import RectangularRoom, CircularRoom
+from core_components.tilemaps.base import MapCoords
 
 def test_rectangular_room_empty_init():
     # Arrange & Act
@@ -140,6 +140,24 @@ def test_rectangular_room_random_location():
     # Assert
     try:
         assert room.contains(random_location) == True, "Expected random location to be inside the room"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_rectangular_room_resize():
+    # Arrange & Act
+    room = RectangularRoom(center=MapCoords(5, 5), size=(6, 4))
+    room.resize(new_size=(10, 8))
+
+    # Assert
+    try:
+        assert room.width == 10, "Expected width to be 10 after resize"
+        assert room.height == 8, "Expected height to be 8 after resize"
+        assert room.center == MapCoords(5, 5), "Expected center to remain at (5,5) after resize"
 
     except AssertionError as e:
         pytest.fail(str(e))
