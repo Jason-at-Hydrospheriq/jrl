@@ -8,7 +8,7 @@ from typing import Protocol, Dict, Tuple, List
 from copy import deepcopy
 import numpy as np
 
-from core_components.maps.base import MapCoords
+from core_components.tilemaps.base import MapCoords
 
 
 class BaseRoom(Protocol):

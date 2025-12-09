@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 from typing import Tuple
-from core_components.maps.base import BaseTileMap, ascii_graphic
+from core_components.tilemaps.base import BaseTileMap, ascii_graphic
 
 
 class GenericTileMap(BaseTileMap):
