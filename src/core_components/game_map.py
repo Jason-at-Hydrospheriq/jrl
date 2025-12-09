@@ -121,5 +121,4 @@ class GameMap:
         self.tiles["color"][:] = colors
         
     def reset_visibility(self) -> None:
-        """Reset the visibility of all tiles on the map to not visible."""
-        self.tiles["visible"][:, :] = False 
+    

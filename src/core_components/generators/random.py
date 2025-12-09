@@ -35,13 +35,17 @@ class GenericDungeonGenerator(BaseMapGenerator):
                  max_room_size: int=20) -> GenericTileMap:
         #TODO Use LLM to generate more complex dungeons
         self.clear()
-        self.tilemap.tiles[:] = self.tilemap.resources['tile_types']["wall"]
+        self.tilemap.tiles['type'][:] = self.tilemap.resources['tiles']['wall']
+        self.tilemap.tiles['graphic'][:] = self.tilemap.resources['tiles']['wall']['g_shroud']  
 
         # Create rooms
         for new_room in self.spawn_random_rooms(max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size):
             if new_room is not None:
-                if all(not new_room.intersects(existing_room) for existing_room in self.rooms):
-                    self.tilemap.add_area(new_room.inner_area, "floor")
+                no_overlap = all(not new_room.intersects(existing_room) for existing_room in self.rooms)
+                no_out_of_bounds = new_room.is_within_bounds(self.tilemap.width, self.tilemap.height)
+                
+                if no_overlap and no_out_of_bounds:
+                    self.tilemap.add_area(new_room.area_coordinates(), "floor")
                     self.rooms.append(new_room)
 
         # Connect rooms with corridors
@@ -97,7 +101,7 @@ class GenericDungeonGenerator(BaseMapGenerator):
                 size = (size[0], size[0])  # Ensure circular rooms are truly circular
                 yield self.spawn_room(CIRCULAR_ROOM_TEMPLATE, center=center, size=size)
 
-    def _spawn_rectangular_room(self,
+    def _spawn_rectangularroom(self,
                                 room: RectangularRoom,
                                 center: MapCoords, 
                                 size: Tuple[int, int]) -> GenericRoom | None:
@@ -108,13 +112,14 @@ class GenericDungeonGenerator(BaseMapGenerator):
 
         return clone
     
-    def _spawn_circular_room(self, 
+    def _spawn_circularroom(self, 
                    room: CircularRoom,
                    center: MapCoords, 
                    size: Tuple[int, int]) -> GenericRoom | None: 
         clone = deepcopy(room)
         clone.center = center
         clone.radius = size[0] // 2
+
         return clone
       
     def clear(self) -> None:

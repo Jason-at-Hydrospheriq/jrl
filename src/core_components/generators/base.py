@@ -28,5 +28,5 @@ class BaseMapGenerator(Protocol):
         method_name = "_spawn_" + room.__class__.__name__.lower()
         method = getattr(self, method_name, None)
         if method:
-            return method(room)
+            return method(room, center, size)
         return None
