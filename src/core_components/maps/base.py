@@ -9,10 +9,10 @@ from typing import Protocol, Dict, Tuple, List
 from copy import deepcopy
 import numpy as np
 
-from core_components.tiles.base import BaseTileGrid, TileCoordinates, ascii_graphic
+from core_components.tiles.base import TileArea, TileCoordinates, ascii_graphic
 
 
-class BaseTileMap(BaseTileGrid):
+class BaseTileMap(TileArea):
     __slots__ = ("_resources",)
     _resources: Dict
    

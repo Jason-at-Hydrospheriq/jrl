@@ -5,11 +5,11 @@ from __future__ import annotations
 from warnings import warn
 import numpy as np
 import random
-from typing import Protocol, Dict, Tuple, List
+from typing import Protocol, Dict, Tuple, List, NewType
 from copy import deepcopy
 import numpy as np
 
-# Defined as a global constant dtypes
+# Defined as a global constant types and dtypes
 ascii_graphic = np.dtype(
     [
         ("ch", np.int32),  # Unicode codepoint.
@@ -18,7 +18,7 @@ ascii_graphic = np.dtype(
     ], metadata={"__name__": "ascii_graphic"}
 )
 
-def new_tile_location_dtype(tile_type: np.dtype, graphic_dtype: np.dtype = ascii_graphic) -> np.dtype:
+def new_tile_dtype(tile_type: np.dtype, graphic_dtype: np.dtype = ascii_graphic) -> np.dtype:
     """Generates the tile location dtype based on the provided tile_type dtype"""
     return np.dtype(
                     [   ("type", tile_type), # The type of the tile, e.g., 'floor', 'wall', etc. with associated graphic options.
@@ -29,8 +29,221 @@ def new_tile_location_dtype(tile_type: np.dtype, graphic_dtype: np.dtype = ascii
                         ('graphic', graphic_dtype) # The current graphic representation of the tile.
                     ], metadata={"__name__": "tile_location"})
 
+TileTuple = NewType("TileTuple", tuple[List[int], List[int]])
 
-class TileCoordinates:
+
+class TileCoordinateSystem(Protocol):
+
+    """A protocol defining methods for coordinate systems using TileTuple."""
+
+    __slots__ = ("_size",)
+    _size: TileTuple
+    
+    @property
+    def _origin(self) -> TileTuple:
+        return TileTuple( ([0], [0]) )
+    
+    @property
+    def _system_coordinates(self) -> TileTuple:
+        top_left = self._origin
+        bottom_right = self._size
+        
+        return self._tiletuple_to_area_tiletuple(top_left, bottom_right)
+    
+    def _xy_to_tiletuple(self, x: int, y: int) -> TileTuple:
+        return TileTuple(([x], [y]))
+    
+    def _tiletuple_to_area_tiletuple(self, top_left: TileTuple, lower_right: TileTuple) -> TileTuple:
+        return TileTuple( (list(range(top_left[0][0], lower_right[0][0])),
+                           list(range(top_left[1][0], lower_right[1][0])) ) )
+    
+    def _area_to_tiletuple(self, area: TileTuple) -> Tuple[TileTuple, TileTuple]:
+        top_left = TileTuple( ([area[0][0]], [area[1][0]]) )
+        lower_right = TileTuple( ([area[0][-1]], [area[1][-1]]) )
+        return top_left, lower_right
+    
+    def _tiletuple_to_xy_tuple(self, x_y: TileTuple) -> Tuple[int, int]:
+        return (x_y[0][0], x_y[1][0])
+    
+    def _tiletuple_to_tile_coordinate(self, x_y: TileTuple) -> TileCoordinate:
+        return TileCoordinate(x_y, self._size)
+    
+    def _tiletuple_to_tile_area(self, area: TileTuple) -> TileArea:
+        top_left, lower_right = self._area_to_tiletuple(area)
+
+        return TileArea(self._tiletuple_to_tile_coordinate(top_left), 
+                        self._tiletuple_to_tile_coordinate(lower_right))
+
+    @staticmethod
+    def _overhang(dimension1: TileTuple, dimension2: TileTuple) -> bool:
+        dim1_set1 = set(dimension1[0])
+        dim1_set2 = set(dimension2[0])
+        dim1_overhang = dim1_set2.issubset(dim1_set1)
+
+        dim2_set1 = set(dimension1[1])
+        dim2_set2 = set(dimension2[1])
+        dim2_overhang = dim2_set2.issubset(dim2_set1)
+    
+        return not (dim1_overhang and dim2_overhang)
+
+    @staticmethod
+    def _overlap(dimension1: TileTuple, dimension2: TileTuple) -> bool:
+        dim1_set1 = set(dimension1[0])
+        dim1_set2 = set(dimension2[0])
+        dim1_overlap = dim1_set1.isdisjoint(dim1_set2)
+
+        dim2_set1 = set(dimension1[1])
+        dim2_set2 = set(dimension2[1])
+        dim2_overlap = dim2_set1.isdisjoint(dim2_set2)
+        
+        return not (dim1_overlap or dim2_overlap)   
+
+
+class TileCoordinateSystemElement(TileCoordinateSystem):
+    """A protocol defining elements with parent coordinate systems that utilize TileCoordinateSystem methods."""
+    
+    @property
+    def parent_map_size(self) -> TileTuple:
+        if not hasattr(self, "_size"):
+            raise AttributeError("Attribute 'parent_map_size' has not been set.")
+        return self._size
+    
+    @parent_map_size.setter
+    def parent_map_size(self, value: TileTuple) -> None:
+        self._size = value
+
+    @property
+    def parent_map_width(self) -> int:
+        if not hasattr(self, "_size"):
+            raise AttributeError("Attribute 'parent_map_size' has not been set.")
+        return self._size[0][0]
+    
+    @property
+    def parent_map_height(self) -> int:
+        if not hasattr(self, "_size"):
+            raise AttributeError("Attribute 'parent_map_size' has not been set.")
+        return self._size[1][0]
+    
+    @property
+    def parent_map_coords(self) -> TileTuple:
+        if not hasattr(self, "_size"):
+            raise AttributeError("Attribute 'parent_map_size' has not been set.")
+        return self._system_coordinates
+ 
+
+class TileGrid(Protocol):
+    """A simple class for defining rectangular areas of Tiles using TileCoordinate for top-left and bottom-right corners.
+    A TileArea is a 2D numpy array of Tiles. Tiles are defined using a custom numpy dtype defined in the new_tile_type
+    function. A TileArea can be initialized with or without parameters."""
+
+    __slots__ = ("_width", "_height", "_tiles", "_dtype")
+
+    _width: int
+    _height: int
+    _tiles: np.ndarray
+    _dtype: np.dtype
+
+    @property
+    def width(self) -> int:
+        return self._width
+    
+    @property
+    def height(self) -> int:
+        return self._height
+    
+    @property
+    def center(self) -> Tuple[int, int]:
+        return (self.width // 2, self.height // 2)
+    
+    @property
+    def size(self) -> Tuple[int, int]:
+        return (self._width, self._height)
+    
+    @property
+    def dtype(self) -> np.dtype:
+        return self._dtype
+    
+    @property
+    def tiles(self) -> np.ndarray:
+        return self._tiles
+    
+    # @property
+    # def tile_types(self) -> np.ndarray:
+    #     return self.tiles["type"]
+    
+    # @property
+    # def visible_tiles(self) -> np.ndarray:
+    #     return self.tiles["visible"]
+    
+    # @property
+    # def explored_tiles(self) -> np.ndarray:
+    #     return self.tiles["explored"]
+    
+    # @property
+    # def traversable_tiles(self) -> np.ndarray:
+    #     return self.tiles["traversable"]
+    
+    # @property
+    # def transparent_tiles(self) -> np.ndarray:
+    #     return self.tiles["transparent"]
+
+    # @property
+    # def tile_graphics(self) -> np.ndarray:
+    #     return self.tiles["graphic"]
+    
+    # def _initialize_grid(self) -> None:
+    #     """Initializes the tile grid with default values."""
+    #     self._tiles = np.full((self._width, self._height), fill_value=False, dtype=self._dtype)
+        
+    # def get_coordinate(self, x: int, y: int) -> TileCoordinate:
+    #     return TileCoordinate(x=x, y=y, parent_map_size=self.size)
+    
+    # def get_area()
+
+    # def get_type_at(self, location: TileCoordinate) -> np.ndarray:
+    #     """Return the tile type at the given location."""
+    #     if not location.is_inbounds:
+    #         return np.empty((1,))
+        
+    #     return self.tiles["type"][location.x, location.y]
+    
+    # def get_graphic_at(self, location: TileCoordinate) -> np.ndarray:
+    #     """Return the tile color at the given location."""
+    #     if not location.is_inbounds:
+    #         return np.empty((3,))
+        
+    #     return self.tiles["colors"][location.x, location.y]
+    
+    # def is_traversable_at(self, location: TileCoordinate) -> bool:
+    #     """Return True if the tile at location is traversable."""
+    #     if not location.is_inbounds:
+    #         return False
+        
+    #     return bool(self.tiles["traversable"][location.x, location.y].all())
+           
+    # def is_transparent_at(self, location: TileCoordinate) -> bool:
+    #     """Return True if the tile at location is transparent."""
+    #     if not location.is_inbounds:
+    #         return False
+        
+    #     return bool(self.tiles["transparent"][location.x, location.y].all())
+    
+    # def is_visible_at(self, location: TileCoordinate) -> bool:
+    #     """Return True if the tile at location is visible."""
+    #     if not location.is_inbounds:
+    #         return False
+        
+    #     return bool(self.tiles["visible"][location.x, location.y].all())
+    
+    # def is_explored_at(self, location: TileCoordinate) -> bool:
+    #     """Return True if the tile at location has been explored."""
+    #     if not location.is_inbounds:
+    #         return False
+        
+    #     return bool(self.tiles["explored"][location.x, location.y].all())
+ 
+
+class TileCoordinate(TileCoordinateSystemElement):
     """A simple class for x,y map coordinates. This class does not initialize the x,y attributes by default and can be 
     instantiated without parameters.
     
@@ -38,42 +251,51 @@ class TileCoordinates:
         x: int, The x coordinate on the map
         y: int, The y coordinate on the map
     Empty Initialization:
-        coords = TileCoordinates()
+        coords = TileCoordinate()
     Parameterized Initialization:
-        coords = TileCoordinates(3, 4)
+        coords = TileCoordinate(3, 4)
     Methods:
-        __eq__(other: object) -> bool:  Compare two TileCoordinates instances for equality
+        __eq__(other: object) -> bool:  Compare two TileCoordinate instances for equality
     Raises:
         ValueError: If x or y are not integers.
         AttributeError: If x or y are accessed before being set.
     """
-    __slots__ = ("x", "y", "parent_map_size")
+    __slots__ = ("x", "y")
 
     x: int 
-    y: int 
-    parent_map_size: Tuple[int, int]
+    y: int
 
-    def __init__(self, x: int | None = None, y: int | None = None, parent_map_size: Tuple[int, int] | None = None) -> None:
-        if x is not None:
-            self.x = x
-        if y is not None:
-            self.y = y
+    def __init__(self, 
+                 location: Tuple[List[int], List[int]] | None = None, 
+                 parent_map_size: TileTuple | None = None) -> None:
+        if location is not None:
+            if not location[0]:
+                pass
+            else:
+                self.x = location[0][0]
+            if not location[1]:
+                pass
+            else:
+                self.y = location[1][0]
         if parent_map_size is not None:
-            self.parent_map_size = parent_map_size
+            if not parent_map_size[0] or not parent_map_size[1]:
+                pass
+            else:
+                self._size = parent_map_size
 
     def __eq__(self, other: object) -> bool:
         try:
-            if not isinstance(other, TileCoordinates):
+            if not isinstance(other, TileCoordinate):
                 return False
             
             return hash(self) == hash(other)
         
         except AttributeError as e:
-            e.add_note("Both TileCoordinates instances must have 'x', 'y', and 'map_size' attributes set for comparison.")
+            e.add_note("Both TileCoordinate instances must have 'x', 'y', and 'map_size' attributes set for comparison.")
             raise
           
     def __repr__(self) -> str:
-        rep = "TileCoordinates("
+        rep = "TileCoordinate("
 
         if hasattr(self, "x"):
             rep += f"x={self.x}, "
@@ -93,28 +315,37 @@ class TileCoordinates:
         return rep
     
     def __hash__(self) -> int:
-        return hash((self.x, self.y, self.parent_map_size))
+        return hash((self.x, self.y, self.parent_map_size[0][0], self.parent_map_size[1][0]))
+
+    @property
+    def to_xy_tuple(self) -> TileTuple:
+        if not hasattr(self, "x") or not hasattr(self, "y"):
+            raise AttributeError("Both 'x' and 'y' attributes must be set before converting to tuple.")
+        
+        return TileTuple( ([self.x], [self.y]) )
     
     @property
     def is_inbounds(self) -> bool:
-        if not hasattr(self, "x") or not hasattr(self, "y") or not hasattr(self, "parent_map_size"):
+        if not hasattr(self, "x") or not hasattr(self, "y") or not hasattr(self, "_size"):
             raise AttributeError("Attributes 'x', 'y', and 'parent_map_size' must be set to check inbounds status.")
         
-        width, height = self.parent_map_size
-        return 0 <= self.x < width and 0 <= self.y < height
-        
+        return self._overlap(self.parent_map_coords, self.to_xy_tuple)
+    
+    @property
     def to_tuple(self) -> Tuple[int, int]:
         if not hasattr(self, "x") or not hasattr(self, "y"):
             raise AttributeError("Both 'x' and 'y' attributes must be set before converting to tuple.")
         
         return (self.x, self.y)
     
+    @property
     def to_array(self) -> np.ndarray:
         if not hasattr(self, "x") or not hasattr(self, "y"):
             raise AttributeError("Both 'x' and 'y' attributes must be set before converting to array.")
         
         return np.array([self.x, self.y])
     
+    @property
     def to_list(self) -> list[int]:
         if not hasattr(self, "x") or not hasattr(self, "y"):
             raise AttributeError("Both 'x' and 'y' attributes must be set before converting to list.")
@@ -122,104 +353,144 @@ class TileCoordinates:
         return [self.x, self.y]
 
 
-class BaseTileGrid(Protocol):
-    __slots__ = ("_width", "_height", "_tiles", "_dtype")
+class TileArea(TileCoordinateSystemElement):
 
-    _width: int
-    _height: int
-    _tiles: np.ndarray
-    _dtype: np.dtype
+    """A simple class for defining rectangular areas on a map using TileCoordinate for top-left and bottom-right corners.
+    
+    Attributes:
+        top_left: TileCoordinate, The top-left corner of the area
+        bottom_right: TileCoordinate, The bottom-right corner of the area
+    Initialization:
+        area = TileArea(top_left: TileCoordinate, bottom_right: TileCoordinate)
+    Methods:
+        width() -> int: Returns the width of the area
+        height() -> int: Returns the height of the area
+    Raises:
+        ValueError: If top_left or bottom_right are not TileCoordinate instances.
+    """
+    __slots__ = ("_top_left", "_bottom_right")
+
+    _top_left: TileCoordinate
+    _bottom_right: TileCoordinate
+
+    def __init__(self, top_left: TileCoordinate | None = None, bottom_right: TileCoordinate | None = None) -> None:
+
+        if top_left is not None:
+            self.top_left = top_left
+        if bottom_right is not None:
+            self.bottom_right = bottom_right
+
+    def __repr__(self) -> str:
+        return f"TileArea(top_left={self.top_left}, bottom_right={self.bottom_right})"
+    
+    def __hash__(self) -> int:
+        return hash((self.top_left, self.bottom_right))
+    
+    def __eq__(self, other: object) -> bool:
+        try:
+            if not isinstance(other, TileArea):
+                return False
+            
+            return hash(self) == hash(other)
+        
+        except AttributeError as e:
+            e.add_note("Both MapArea instances must have 'top_left' and 'bottom_right' attributes set for comparison.")
+            raise
+    
+    @property
+    def top_left(self) -> TileCoordinate:
+        if not hasattr(self, "_top_left"):
+            raise AttributeError("Attribute 'top_left' has not been set.")
+        return self._top_left
+    
+    @top_left.setter
+    def top_left(self, value: TileCoordinate) -> None:
+        if hasattr(self, "bottom_right"):
+            if value.x > self.bottom_right.x or value.y > self.bottom_right.y:
+                raise ValueError("top_left coordinates must be less than or equal to bottom_right coordinates.")
+            if not value.parent_map_size == self.bottom_right.parent_map_size:
+                raise ValueError("Parent_map_size of top_left and bottom_right must match. Parent map size cannot be inferred from TileCoordinate instances.")
+
+        self._size = value.parent_map_size
+        self._top_left = value
+
+    @property
+    def bottom_right(self) -> TileCoordinate:
+        if not hasattr(self, "_bottom_right"):
+            raise AttributeError("Attribute 'bottom_right' has not been set.")
+        return self._bottom_right
+    
+    @bottom_right.setter
+    def bottom_right(self, value: TileCoordinate) -> None:
+        if hasattr(self, "top_left"):
+            if value.x < self.top_left.x or value.y < self.top_left.y:
+                raise ValueError("Top_left coordinates must be less than or equal to bottom_right coordinates.")
+            if not value.parent_map_size == self.top_left.parent_map_size:
+                raise ValueError("Parent_map_size of top_left and bottom_right must match. Parent map size cannot be inferred from TileCoordinate instances.")
+
+        self._size = value.parent_map_size
+        self._bottom_right = value
 
     @property
     def width(self) -> int:
-        return self._width
+        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
+            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before accessing width.")
+        
+        return self.bottom_right.x - self.top_left.x + 1
     
     @property
     def height(self) -> int:
-        return self._height
+        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
+            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before accessing height.")
+        
+        return self.bottom_right.y - self.top_left.y + 1
     
     @property
-    def size(self) -> Tuple[int, int]:
-        return (self._width, self._height)
+    def center(self) -> TileCoordinate:
+        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
+            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before accessing center.")
+        
+        center_x = (self.top_left.x + self.bottom_right.x) // 2
+        center_y = (self.top_left.y + self.bottom_right.y) // 2
+        return TileCoordinate(TileTuple(([center_x], [center_y])), self.parent_map_size)
     
     @property
-    def dtype(self) -> np.dtype:
-        return self._dtype
+    def to_area_tuple(self) -> TileTuple:
+        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
+            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before converting to area tuple.")
+        
+        return self._tiletuple_to_area_tiletuple(self.top_left.to_xy_tuple, self.bottom_right.to_xy_tuple)
     
     @property
-    def tiles(self) -> np.ndarray:
-        return self._tiles
-    
-    @property
-    def types(self) -> np.ndarray:
-        return self.tiles["type"]
-    
-    @property
-    def visible(self) -> np.ndarray:
-        return self.tiles["visible"]
-    
-    @property
-    def explored(self) -> np.ndarray:
-        return self.tiles["explored"]
-    
-    @property
-    def traversable(self) -> np.ndarray:
-        return self.tiles["traversable"]
-    
-    @property
-    def transparent(self) -> np.ndarray:
-        return self.tiles["transparent"]
+    def is_inbounds(self) -> bool:
+        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right") or not hasattr(self, "_size"):
+            raise AttributeError("Attributes 'top_left', 'bottom_right', and 'parent_map_size' must be set to check inbounds status.")
+        
+        overhang = self._overhang(self.parent_map_coords, self.to_area_tuple)
+        overlap = self._overlap(self.parent_map_coords, self.to_area_tuple)
+
+        return overlap and not overhang
 
     @property
-    def graphics(self) -> np.ndarray:
-        return self.tiles["graphic"]
+    def to_slices(self):
+        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
+            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before converting to slices.")
+        
+        return (slice(self.top_left.x, self.bottom_right.x + 1), slice(self.top_left.y, self.bottom_right.y + 1))
+
+    @property
+    def to_mask(self) -> np.ndarray:
+        """ Return the coordinates of the area covered by this TileArea as a 2D numpy array of TileCoordinates."""
+        map_tuple = self._tiletuple_to_xy_tuple(self.parent_map_size)
+        mask = np.full(map_tuple, fill_value=False, dtype=bool)
+        mask[self.to_slices] = True
+        return mask
     
-    def _initialize_grid(self) -> None:
-        """Initializes the tile grid with default values."""
-        self._tiles = np.full((self._width, self._height), fill_value=False, dtype=self._dtype)
+    def intersects(self, another_area: TileArea):
+        """Check if this area intersects with another area."""
+        if not isinstance(another_area, TileArea):
+            raise TypeError("another_area must be an instance of TileArea.")
         
-    def get_coordinate(self, x: int, y: int) -> TileCoordinates:
-        return TileCoordinates(x=x, y=y, parent_map_size=self.size)
-    
-    def get_type_at(self, location: TileCoordinates) -> np.ndarray:
-        """Return the tile type at the given location."""
-        if not location.is_inbounds:
-            return np.empty((1,))
-        
-        return self.tiles["type"][location.x, location.y]
-    
-    def get_graphic_at(self, location: TileCoordinates) -> np.ndarray:
-        """Return the tile color at the given location."""
-        if not location.is_inbounds:
-            return np.empty((3,))
-        
-        return self.tiles["colors"][location.x, location.y]
-    
-    def is_traversable_at(self, location: TileCoordinates) -> bool:
-        """Return True if the tile at location is traversable."""
-        if not location.is_inbounds:
-            return False
-        
-        return bool(self.tiles["traversable"][location.x, location.y].all())
-           
-    def is_transparent_at(self, location: TileCoordinates) -> bool:
-        """Return True if the tile at location is transparent."""
-        if not location.is_inbounds:
-            return False
-        
-        return bool(self.tiles["transparent"][location.x, location.y].all())
-    
-    def is_visible_at(self, location: TileCoordinates) -> bool:
-        """Return True if the tile at location is visible."""
-        if not location.is_inbounds:
-            return False
-        
-        return bool(self.tiles["visible"][location.x, location.y].all())
-    
-    def is_explored_at(self, location: TileCoordinates) -> bool:
-        """Return True if the tile at location has been explored."""
-        if not location.is_inbounds:
-            return False
-        
-        return bool(self.tiles["explored"][location.x, location.y].all())
- 
+        return self._overlap(self.to_area_tuple, another_area.to_area_tuple)   
+
+

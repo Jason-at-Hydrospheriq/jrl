@@ -3,8 +3,8 @@ from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
-from core_components.tiles.base import BaseTileGrid, TileCoordinates
-from core_components.tiles.library import TileArea, BaseTileGrid
+from core_components.tiles.base import TileArea, TileCoordinates
+from core_components.tiles.library import TileArea, TileArea
 
 # Test Cases for TileArea
 def test_base_tile_area_empty_init():
@@ -362,12 +362,12 @@ def test_base_tile_area_properties():
     # Assert
     try:        
         assert area.size == (width, height), "'size' property shape does not match expected"
-        assert area.traversable.shape == (width, height), "'traversable' property shape does not match expected"
-        assert area.transparent.shape == (width, height), "'transparent' property shape does not match expected"
-        assert area.types.shape == (width, height), "'types' property shape does not match expected"
-        assert area.visible.shape == (width, height), "'visible' property shape does not match expected"
-        assert area.explored.shape == (width, height), "'explored' property shape does not match expected"
-        assert area.graphics.shape == (width, height), "'graphics' property shape does not match expected"
+        assert area.traversable_tiles.shape == (width, height), "'traversable' property shape does not match expected"
+        assert area.transparent_tiles.shape == (width, height), "'transparent' property shape does not match expected"
+        assert area.tile_types.shape == (width, height), "'types' property shape does not match expected"
+        assert area.visible_tiles.shape == (width, height), "'visible' property shape does not match expected"
+        assert area.explored_tiles.shape == (width, height), "'explored' property shape does not match expected"
+        assert area.tile_graphics.shape == (width, height), "'graphics' property shape does not match expected"
 
     except AssertionError as e:
         pytest.fail(str(e))
