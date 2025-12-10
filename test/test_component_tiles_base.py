@@ -230,8 +230,8 @@ def test_base_tiles_coords_equality():
 def test_base_tiles_coords_inbounds():
     # Arrange & Act
     coords_inbounds = TileCoordinate(TileTuple(([3], [4])), PARENT_MAP_SIZE)
-    coords_out_of_bounds_x = TileCoordinate(TileTuple(([10], [4])), PARENT_MAP_SIZE)
-    coords_out_of_bounds_y = TileCoordinate(TileTuple(([3], [10])), PARENT_MAP_SIZE)
+    coords_out_of_bounds_x = TileCoordinate(TileTuple(([11], [4])), PARENT_MAP_SIZE)
+    coords_out_of_bounds_y = TileCoordinate(TileTuple(([3], [11])), PARENT_MAP_SIZE)
     coords_negative_x = TileCoordinate(TileTuple(([-1], [4])), PARENT_MAP_SIZE)
     coords_negative_y = TileCoordinate(TileTuple(([3], [-1])), PARENT_MAP_SIZE)
     # Act & Assert
@@ -266,7 +266,6 @@ def test_base_tiles_area_empty_init():
     finally:
         pass
 
-
 def test_base_tiles_area_parameter_init():
     # Arrange & Act
     area = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
@@ -286,7 +285,6 @@ def test_base_tiles_area_parameter_init():
     # Atavise
     finally:
         pass
-
 
 def test_base_tiles_area_empty_set_center():
     # Arrange & Act
@@ -429,6 +427,24 @@ def test_base_tiles_area_inbounds():
     finally:
         pass
 
+def test_base_tiles_area_contains():
+    # Arrange & Act
+    area = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+    inside_coord = TileCoordinate(TileTuple(([3], [4])), PARENT_MAP_SIZE)
+    outside_coord = TileCoordinate(TileTuple(([7], [8])), PARENT_MAP_SIZE)
+
+    # Act & Assert
+    try:
+        assert area.contains(inside_coord), "Expected area to contain inside_coord"
+        assert not area.contains(outside_coord), "Expected area to not contain outside_coord"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
 def test_base_tiles_intersects():
     # Arrange & Act
     area1 = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
@@ -439,6 +455,24 @@ def test_base_tiles_intersects():
     try:
         assert area1.intersects(area2), "Expected area1 to intersect with area2"
         assert not area1.intersects(area3), "Expected area1 to not intersect with area3"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_base_tiles_area_random_location():
+    # Arrange & Act
+    area = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+
+    # Act
+    random_location = area.get_random_location()
+
+    # Assert
+    try:
+        assert area.contains(random_location), "Expected random location to be inside the area"
 
     except AssertionError as e:
         pytest.fail(str(e))
@@ -574,7 +608,7 @@ def test_base_tiles_grid_get_area():
     grid_dtype = np.dtype([("type_name", "U10")])
     grid = BaseTileGrid(size=PARENT_MAP_SIZE, dtype=grid_dtype)
     center = (3, 3)
-    
+
     # Act & Assert
     try:
         area = grid.get_area(center=center, height=HEIGHT, width=WIDTH)

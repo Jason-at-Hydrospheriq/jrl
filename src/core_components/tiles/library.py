@@ -13,6 +13,7 @@ DEFAULT_CENTER_LOCATION = TileTuple( ([5], [5]) )
 DEFAULT_CENTER_COORDINATE = TileCoordinate(DEFAULT_CENTER_LOCATION, DEFAULT_GRID_SIZE)
 
 class GenericRoom(TileArea):
+    wall_thickness: int = 1
 
     def __init__(self, center: TileCoordinate = DEFAULT_CENTER_COORDINATE, 
                  height: int=5, width: int=5) -> None:
@@ -32,8 +33,20 @@ class RectangularRoom(GenericRoom):
     @property
     def to_mask(self) -> np.ndarray:
         """Return the inner area of this room as a 2D array index."""
-        mask = np.full((self.width, self.height), False, dtype=bool)
-        mask[1:-1, 1:-1] = True
+        grid_tuple = self._tiletuple_to_xy_tuple(self.parent_map_size)
+
+        area_indices = self.to_area_indicies_tuple
+        x_left_ = area_indices[0][0] + self.wall_thickness
+        x_right_ = area_indices[0][-1] - self.wall_thickness + 1
+        y_top_ = area_indices[1][0] + self.wall_thickness
+        y_bottom_ = area_indices[1][-1] - self.wall_thickness + 1
+        
+        x_slice = slice(x_left_, x_right_)
+        y_slice = slice(y_top_, y_bottom_)
+
+        mask = np.full(grid_tuple, fill_value=False, dtype=bool)
+
+        mask[x_slice, y_slice] = True
 
         return mask
 
@@ -41,8 +54,9 @@ class RectangularRoom(GenericRoom):
 class CircularRoom(GenericRoom):
     _radius: int
 
-    def __init__(self, center: TileCoordinate, radius: int = 3):
-        super().__init__(center, (radius * 2, radius * 2))
+    def __init__(self, center: TileCoordinate = DEFAULT_CENTER_COORDINATE, 
+                 radius: int = 3):
+        super().__init__(center=center, width=radius * 2, height=radius * 2)
         self._radius = radius
 
     @property
@@ -58,9 +72,11 @@ class CircularRoom(GenericRoom):
     @property
     def to_mask(self) -> np.ndarray:
         """Return the inner area of this room as a 2D array index."""
-        center = (self.width // 2, self.height // 2)
-        mask = np.fromfunction(lambda xx, yy: (xx - center[0]) ** 2 + (yy - center[1]) ** 2 + 2 <= self.radius ** 2,
-                               (self.width + 1, self.height + 1), dtype=int)
+        grid_tuple = self._tiletuple_to_xy_tuple(self.parent_map_size)
+        inner_radius = self.radius - self.wall_thickness
+        center = self.center.to_xy_tuple
+        mask = np.fromfunction(lambda xx, yy: (xx - center[0]) ** 2 + (yy - center[1]) ** 2 + 2 <= inner_radius ** 2,
+                               grid_tuple, dtype=int)
         return mask
 
         # @property

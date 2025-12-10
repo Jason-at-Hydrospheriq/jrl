@@ -35,8 +35,8 @@ class TileCoordinateSystem(Protocol):
         return TileTuple(([x], [y]))
     
     def _tiletuple_to_area_tiletuple(self, top_left: TileTuple, lower_right: TileTuple) -> TileTuple:
-        return TileTuple( (list(range(top_left[0][0], lower_right[0][0])),
-                           list(range(top_left[1][0], lower_right[1][0])) ) )
+        return TileTuple( (list(range(top_left[0][0], lower_right[0][0] + 1)),
+                           list(range(top_left[1][0], lower_right[1][0] + 1)) ) )
     
     def _tiletuple_to_xy_tuple(self, x_y: TileTuple) -> Tuple[int, int]:
         return (x_y[0][0], x_y[1][0])
@@ -382,23 +382,25 @@ class TileArea(TileCoordinateSystemElement):
         self._center = value
         self._size = value.parent_map_size
         self._align_corners()
-
-    @property
-    def to_area_tuple(self) -> TileTuple:
-        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
-            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before converting to area tuple.")
-        
-        return self._tiletuple_to_area_tiletuple(self.top_left.to_xy_tuple, self.bottom_right.to_xy_tuple)
     
     @property
     def is_inbounds(self) -> bool:
         if not hasattr(self, "top_left") or not hasattr(self, "bottom_right") or not hasattr(self, "_size"):
             raise AttributeError("Attributes 'top_left', 'bottom_right', and 'parent_map_size' must be set to check inbounds status.")
         
-        overhang = self._overhang(self.parent_map_coords, self.to_area_tuple)
-        overlap = self._overlap(self.parent_map_coords, self.to_area_tuple)
+        overhang = self._overhang(self.parent_map_coords, self.to_area_indicies_tuple)
+        overlap = self._overlap(self.parent_map_coords, self.to_area_indicies_tuple)
 
         return overlap and not overhang
+
+    @property
+    def to_area_indicies_tuple(self) -> TileTuple:
+        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
+            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before converting to area tuple.")
+        top_left_grid_indices = self.top_left.to_xy_tuple
+        bottom_right_grid_indices = self.bottom_right.to_xy_tuple
+
+        return self._tiletuple_to_area_tiletuple(top_left_grid_indices, bottom_right_grid_indices)
 
     @property
     def to_slices(self):
@@ -415,12 +417,17 @@ class TileArea(TileCoordinateSystemElement):
         mask[self.to_slices] = True
         return mask
     
+    def contains(self, location: TileCoordinate) -> bool:
+        """Check if this area contains the given location."""
+        mask = self.to_mask
+        return bool(mask[location.x, location.y])
+    
     def intersects(self, another_area: TileArea):
         """Check if this area intersects with another area."""
         if not isinstance(another_area, TileArea):
             raise TypeError("another_area must be an instance of TileArea.")
         
-        return self._overlap(self.to_area_tuple, another_area.to_area_tuple)   
+        return self._overlap(self.to_area_indicies_tuple, another_area.to_area_indicies_tuple)   
     
     def get_random_location(self) -> TileCoordinate:
         """Return a random location within this area."""

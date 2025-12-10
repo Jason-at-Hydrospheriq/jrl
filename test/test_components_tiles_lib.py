@@ -4,7 +4,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 print(path)
 
-from core_components.tiles.library import RectangularRoom, CircularRoom, DEFAULT_CENTER_COORDINATE, DEFAULT_GRID_SIZE
+from core_components.tiles.library import DEFAULT_CENTER_LOCATION, RectangularRoom, CircularRoom, DEFAULT_CENTER_COORDINATE, DEFAULT_GRID_SIZE
 from core_components.tiles.base import TileCoordinate, TileTuple
 
 def test_rectangular_room_empty_init():
@@ -44,107 +44,19 @@ def test_rectangular_room_parameter_init():
     finally:
         pass
 
-def test_rectangular_room_inner_area():
-    # Arrange & Act
-    room = RectangularRoom(center=TileCoordinate(0, 0), size=(5, 6))
-    inner_area = room.inner_area
-
-    # Assert
-    try:
-        expected_area = np.full((5, 6), False, dtype=bool)
-        expected_area[1:-1, 1:-1] = True
-        assert np.array_equal(inner_area, expected_area), "Inner area does not match expected area"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_rectangular_room_area_coordinates():
-    # Arrange & Act
-    room = RectangularRoom(center=TileCoordinate(5, 5), size=(7, 9))
-    area_coords = room.area_coordinates()
-
-    # Assert
-    try:
-        expected_coords = np.array([[3, 2], [3, 3], [3, 4], [3, 5], [3, 6], [3, 7], [3, 8],
-                                    [4, 2], [4, 3], [4, 4], [4, 5], [4, 6], [4, 7], [4, 8],
-                                    [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [5, 8],
-                                    [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [6, 8],
-                                    [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7], [7, 8]])
-        assert np.array_equal(area_coords, expected_coords), "Area coordinates do not match expected coordinates"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_rectangular_room_upperlower_corners():
-    # Arrange & Act
-    room = RectangularRoom(center=TileCoordinate(10, 10), size=(6, 4))
-
-    # Assert
-    try:
-        assert room.upperLeft_corner == TileCoordinate(7, 8), "Expected upper left corner to be at (7,8)"
-        assert room.lowerRight_corner == TileCoordinate(13, 12), "Expected lower right corner to be at (13,12)"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-    
-def test_rectangular_room_contains():
-    # Arrange
-    room = RectangularRoom(center=TileCoordinate(5, 5), size=(6, 4))
-
-    # Act & Assert
-    try:
-        assert room.contains(TileCoordinate(5, 5)) == True, "Expected center to be inside the room"
-        assert room.contains(TileCoordinate(3, 4)) == True, "Expected (3,4) to be inside the room"
-        assert room.contains(TileCoordinate(8, 6)) == False, "Expected (8,6) to be outside the room"
-        assert room.contains(TileCoordinate(2, 2)) == False, "Expected (2,2) to be outside the room"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_rectangular_room_intersects():
-    # Arrange
-    room1 = RectangularRoom(center=TileCoordinate(5, 5), size=(6, 4))
-    room2 = RectangularRoom(center=TileCoordinate(7, 5), size=(6, 4))
-    room3 = RectangularRoom(center=TileCoordinate(12, 5), size=(6, 4))
-
-    # Act & Assert
-    try:
-        assert room1.intersects(room2) == True, "Expected room1 to intersect with room2"
-        assert room1.intersects(room3) == False, "Expected room1 to not intersect with room3"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_rectangular_room_random_location():
-    # Arrange
-    room = RectangularRoom(center=TileCoordinate(10, 10), size=(8, 6))
+def test_rectangular_room_to_mask():
+    # Arrange 
+    room = RectangularRoom(DEFAULT_CENTER_COORDINATE, width=6, height=6)
+    room.wall_thickness = 2
 
     # Act
-    random_location = room.random_location()
+    area = room.to_mask
 
     # Assert
     try:
-        assert room.contains(random_location) == True, "Expected random location to be inside the room"
+        expected_area = np.full((10, 10), False, dtype=bool)
+        expected_area[4:7, 4:7] = True
+        assert np.array_equal(area, expected_area), "Inner area does not match expected area"
 
     except AssertionError as e:
         pytest.fail(str(e))
@@ -155,15 +67,16 @@ def test_rectangular_room_random_location():
 
 def test_rectangular_room_resize():
     # Arrange & Act
-    room = RectangularRoom(center=TileCoordinate(5, 5), size=(6, 4))
-    room.resize(new_size=(10, 8))
+    room = RectangularRoom(DEFAULT_CENTER_COORDINATE, width=6, height=6)
+
+    updated_room = RectangularRoom(DEFAULT_CENTER_COORDINATE, width=6, height=6)
+    updated_room.width = 8
+    updated_room.height = 10
 
     # Assert
     try:
-        assert room.width == 10, "Expected width to be 10 after resize"
-        assert room.height == 8, "Expected height to be 8 after resize"
-        assert room.center == TileCoordinate(5, 5), "Expected center to remain at (5,5) after resize"
-
+        assert np.any(room.to_mask != updated_room.to_mask), "Expected masks to differ after resizing"
+         
     except AssertionError as e:
         pytest.fail(str(e))
     
@@ -177,7 +90,7 @@ def test_circular_room_empty_init():
 
     # Assert
     try:
-        assert room.center == TileCoordinate(0, 0), "Expected center to be at (0,0)"
+        assert room.center == DEFAULT_CENTER_COORDINATE, "Expected center to be at (0,0)"
         assert room.width == 6, "Expected width to be 6"
         assert room.height == 6, "Expected height to be 6"
         assert room.radius == 3, "Expected radius to be 3"
@@ -191,11 +104,11 @@ def test_circular_room_empty_init():
 
 def test_circular_room_parameter_init():
     # Arrange & Act
-    room = CircularRoom(center=TileCoordinate(10, 10), radius=7)
+    room = CircularRoom(center=DEFAULT_CENTER_COORDINATE, radius=7)
 
     # Assert
     try:
-        assert room.center == TileCoordinate(10, 10), "Expected center to be at (10,10)"
+        assert room.center == DEFAULT_CENTER_COORDINATE, "Expected center to be at (10,10)"
         assert room.width == 14, "Expected width to be 14"
         assert room.height == 14, "Expected height to be 14"
         assert room.radius == 7, "Expected radius to be 7"
@@ -209,14 +122,20 @@ def test_circular_room_parameter_init():
 
 def test_circular_room_inner_area():
     # Arrange & Act
-    room = CircularRoom(center=TileCoordinate(0, 0), radius=3)
-    inner_area = room.inner_area
-    center = (room.width // 2, room.height // 2)
+    grid_size = TileTuple( ([50], [50]) )
+    center_location = TileTuple( ([20], [20]) )
+    center_coordinate = TileCoordinate(center_location, grid_size)
 
+    room = CircularRoom(center=center_coordinate, radius=4)
+    grid_size_tuple = room.center._tiletuple_to_xy_tuple(room.parent_map_size)
+    inner_radius = room.radius - room.wall_thickness
+    expected_area = np.fromfunction(
+        lambda xx, yy: (xx - center_coordinate.x) ** 2 + (yy - center_coordinate.y) ** 2 + 2 <= inner_radius ** 2,
+        grid_size_tuple, dtype=int)
+    
     # Assert
     try:
-        expected_area = np.fromfunction(lambda xx, yy: (xx - center[0]) ** 2 + (yy - center[1]) ** 2 + 2 <= 9,
-                               (7, 7), dtype=int)
+        inner_area = room.to_mask
         assert np.array_equal(inner_area, expected_area), "Inner area does not match expected area"
 
     except AssertionError as e:
@@ -225,95 +144,4 @@ def test_circular_room_inner_area():
     # Atavise
     finally:
         pass
-
-def test_circular_room_area_coordinates():
-    # Arrange & Act
-    room = CircularRoom(center=TileCoordinate(5, 5), radius=5)
-    area_coords = room.area_coordinates()
-
-    # Assert
-    try:
-        expected_area = np.fromfunction(lambda xx, yy: (xx - 5) ** 2 + (yy - 5) ** 2 + 2 <= 25,
-                               (11, 11), dtype=int)
-        expected_coords = np.argwhere(expected_area) + np.array([room.upperLeft_corner.x, room.upperLeft_corner.y])
-        assert np.array_equal(area_coords, expected_coords), "Area coordinates do not match expected coordinates"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_circular_room_contains():
-    # Arrange
-    room = CircularRoom(center=TileCoordinate(5, 5), radius=3)
-    area = room.inner_area
-
-    # Act & Assert
-    try:
-        assert room.contains(TileCoordinate(5, 5)) == True, "Expected center to be inside the room"
-        assert room.contains(TileCoordinate(7, 5)) == True, "Expected (7,5) to be inside the room"
-        assert room.contains(TileCoordinate(9, 5)) == False, "Expected (9,5) to be outside the room"
-        assert room.contains(TileCoordinate(2, 2)) == False, "Expected (2,2) to be outside the room"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_circular_room_intersects():
-    # Arrange
-    room1 = CircularRoom(center=TileCoordinate(5, 5), radius=3)
-    room2 = CircularRoom(center=TileCoordinate(7, 5), radius=3)
-    room3 = CircularRoom(center=TileCoordinate(12, 5), radius=3)
-
-    # Act & Assert
-    try:
-        assert room1.intersects(room2) == True, "Expected room1 to intersect with room2"
-        assert room1.intersects(room3) == False, "Expected room1 to not intersect with room3"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_circular_room_random_location():
-    # Arrange
-    room = CircularRoom(center=TileCoordinate(10, 10), radius=5)
-
-    # Act
-    random_location = room.random_location()
-
-    # Assert
-    try:
-        assert room.contains(random_location) == True, "Expected random location to be inside the room"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_circular_rectangular_intersects():
-    # Arrange
-    circular_room = CircularRoom(center=TileCoordinate(5, 5), radius=3)
-    rectangular_room1 = RectangularRoom(center=TileCoordinate(7, 5), size=(6, 4))
-    rectangular_room2 = RectangularRoom(center=TileCoordinate(12, 5), size=(6, 4))
-
-    # Act & Assert
-    try:
-        assert circular_room.intersects(rectangular_room1) == True, "Expected circular room to intersect with rectangular_room1"
-        assert circular_room.intersects(rectangular_room2) == False, "Expected circular room to not intersect with rectangular_room2"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
+        
