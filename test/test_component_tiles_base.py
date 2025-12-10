@@ -9,7 +9,10 @@ from core_components.maps.base import ascii_graphic
 
 PARENT_MAP_SIZE = TileTuple( ([10], [10]) )
 TOP_LEFT = TileCoordinate(TileTuple(([1], [2])), PARENT_MAP_SIZE)
-BOTTOM_RIGHT = TileCoordinate(TileTuple(([4], [5])), PARENT_MAP_SIZE)
+BOTTOM_RIGHT = TileCoordinate(TileTuple(([5], [4])), PARENT_MAP_SIZE)
+CENTER = TileCoordinate(TileTuple(([3], [3])), PARENT_MAP_SIZE)
+WIDTH = 5
+HEIGHT = 3
 
 # Test Cases for TileCoordinate
 def test_base_empty_coords():
@@ -247,23 +250,59 @@ def test_base_tiles_coords_inbounds():
         pass
 
 # Test Cases for TileArea
-def test_base_tiles_area_empty():
+def test_base_tiles_area_empty_init():
     # Arrange & Act
     area = TileArea()
-
-    set_area = TileArea()
-    set_area.top_left = TOP_LEFT
-    set_area.bottom_right = BOTTOM_RIGHT
 
     # Act & Assert
     try:
         assert not hasattr(area, "top_left"), "Expected no 'top_left' attribute for TileArea instantiated without parameters"
         assert not hasattr(area, "bottom_right"), "Expected no 'bottom_right' attribute for TileArea instantiated without parameters"
-       
-        assert set_area.top_left == TOP_LEFT, "Expected 'top_left' attribute to be TOP_LEFT after setting"
-        assert set_area.bottom_right == BOTTOM_RIGHT, "Expected 'bottom_right' attribute to be BOTTOM_RIGHT after setting"
-        assert set_area.parent_map_size == PARENT_MAP_SIZE, "Expected 'parent_map_size' attribute to be (10, 10) after setting"
+ 
+    except AssertionError as e:
+        pytest.fail(str(e))
     
+    # Atavise
+    finally:
+        pass
+
+
+def test_base_tiles_area_parameter_init():
+    # Arrange & Act
+    area = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+
+    # Act & Assert
+    try:
+        assert area.top_left == TOP_LEFT, "Expected 'top_left' attribute to be TOP_LEFT after setting: (1,2)"
+        assert area.bottom_right == BOTTOM_RIGHT, "Expected 'bottom_right' attribute to be BOTTOM_RIGHT after setting: (4,5)"
+        assert area.parent_map_size == PARENT_MAP_SIZE, "Expected 'parent_map_size' attribute to be (10, 10) after setting"
+        assert area.width == 5, "Expected 'width' attribute to be 5 after setting corners"
+        assert area.height == 3, "Expected 'height' attribute to be 3 after setting corners"
+        assert area.center == TileCoordinate(TileTuple(([3], [3])), PARENT_MAP_SIZE), "Expected 'center' attribute to be (3, 3) after setting corners"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+
+def test_base_tiles_area_empty_set_center():
+    # Arrange & Act
+
+    set_area = TileArea(width=WIDTH, height=HEIGHT)
+    set_area.center = CENTER
+
+    # Act & Assert
+    try:       
+        assert set_area.top_left == TOP_LEFT, "Expected 'top_left' attribute to be TOP_LEFT after setting: (1,2)"
+        assert set_area.bottom_right == BOTTOM_RIGHT, "Expected 'bottom_right' attribute to be BOTTOM_RIGHT after setting: (4,5)"
+        assert set_area.parent_map_size == PARENT_MAP_SIZE, "Expected 'parent_map_size' attribute to be (10, 10) after setting"
+        assert set_area.width == 5, "Expected 'width' attribute to be 5 after setting corners"
+        assert set_area.height == 3, "Expected 'height' attribute to be 3 after setting corners"
+        assert set_area.center == TileCoordinate(TileTuple(([3], [3])), PARENT_MAP_SIZE), "Expected 'center' attribute to be (3, 3) after setting corners"
+
     except AssertionError as e:
         pytest.fail(str(e))
     
@@ -290,35 +329,18 @@ def test_base_tiles_area_empty_to_types():
     finally:
         pass
 
-def test_base_tiles_area_init():
-    # Arrange & Act
-    area = TileArea(TOP_LEFT, BOTTOM_RIGHT)
-
-    # Act & Assert
-    try:
-        assert area.top_left == TOP_LEFT, "Expected 'top_left' attribute to be TOP_LEFT for TileArea instantiated with parameters"
-        assert area.bottom_right == BOTTOM_RIGHT, "Expected 'bottom_right' attribute to be BOTTOM_RIGHT for TileArea instantiated with parameters"
-        assert area.parent_map_size == PARENT_MAP_SIZE, "Expected 'parent_map_size' attribute to be (10, 10) for TileArea instantiated with parameters"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
 def test_base_tiles_area_to_types():
     # Arrange & Act
-    area = TileArea(TOP_LEFT, BOTTOM_RIGHT)
+    area = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
 
     # Act & Assert
     try:
         slices = area.to_slices
         mask = area.to_mask
 
-        expected_slices = (slice(1, 5, None), slice(2, 6, None))
+        expected_slices = (slice(1, 6, None), slice(2, 5, None))
         expected_mask = np.full((10, 10), fill_value=False, dtype=bool)
-        expected_mask[1:5, 2:6] = True
+        expected_mask[1:6, 2:5] = True
 
         assert slices == expected_slices, f"Expected slices to be {expected_slices}, got {slices}"
         assert np.array_equal(mask, expected_mask), "Expected mask to match the expected boolean array"
@@ -332,17 +354,11 @@ def test_base_tiles_area_to_types():
 
 def test_base_tiles_area_hash():
     # Arrange & Act
-    area1 = TileArea(TOP_LEFT, BOTTOM_RIGHT)
-    area2 = TileArea(TOP_LEFT, BOTTOM_RIGHT)
-
-    tl3 = TileCoordinate(TileTuple(([0], [0])), PARENT_MAP_SIZE)
-    br3 = TileCoordinate(TileTuple(([3], [3])), PARENT_MAP_SIZE)
-    area3 = TileArea(tl3, br3) # Different coordinates
-
-    tl4 = TileCoordinate(TileTuple(([1], [2])), TileTuple( ([20], [20]) ))
-    br4 = TileCoordinate(TileTuple(([4], [5])), TileTuple( ([20], [20]) ))
-    area4 = TileArea(tl4, br4)  # Different map_size
-
+    area1 = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+    area2 = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+    area3 = TileArea(center=TileCoordinate(TileTuple(([4], [5])), PARENT_MAP_SIZE), width=WIDTH, height=HEIGHT) # Different center
+    area4 = TileArea(center=CENTER, width=WIDTH + 1, height=HEIGHT) # Different size
+    
     # Act & Assert
     try:
         assert hash(area1) == hash(area2), "Expected hashes of area1 and area2 to be equal"
@@ -358,11 +374,11 @@ def test_base_tiles_area_hash():
 
 def test_base_tiles_area_repr():
     # Arrange & Act
-    area = TileArea(TOP_LEFT, BOTTOM_RIGHT)
+    area = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
 
     # Act & Assert
     try:
-        expected_repr = "TileArea(top_left=TileCoordinate(x=1, y=2, parent_map_size=([10], [10])), bottom_right=TileCoordinate(x=4, y=5, parent_map_size=([10], [10])))"
+        expected_repr = "TileArea(center=TileCoordinate(x=3, y=3, parent_map_size=([10], [10])), width=5, height=3)"
         assert repr(area) == expected_repr, f"Expected repr to be '{expected_repr}'"
 
     except AssertionError as e:
@@ -374,17 +390,11 @@ def test_base_tiles_area_repr():
 
 def test_base_tiles_area_equality():
     # Arrange & Act
-    area1 = TileArea(TOP_LEFT, BOTTOM_RIGHT)
-    area2 = TileArea(TOP_LEFT, BOTTOM_RIGHT)
-
-    tl3 = TileCoordinate(TileTuple(([0], [0])), PARENT_MAP_SIZE)
-    br3 = TileCoordinate(TileTuple(([3], [3])), PARENT_MAP_SIZE)
-    area3 = TileArea(tl3, br3) # Different coordinates
-
-    tl4 = TileCoordinate(TileTuple(([1], [2])), TileTuple( ([20], [20]) ))
-    br4 = TileCoordinate(TileTuple(([4], [5])), TileTuple( ([20], [20]) ))
-    area4 = TileArea(tl4, br4)  # Different map_size
-
+    area1 = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+    area2 = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+    area3 = TileArea(center=TileCoordinate(TileTuple(([4], [5])), PARENT_MAP_SIZE), width=WIDTH, height=HEIGHT) # Different center
+    area4 = TileArea(center=CENTER, width=WIDTH + 1, height=HEIGHT) # Different size
+    
     # Act & Assert
     try:
         assert area1 == area2, "Expected area1 to be equal to area2"
@@ -400,20 +410,16 @@ def test_base_tiles_area_equality():
 
 def test_base_tiles_area_inbounds():
     # Arrange & Act
-    area_inbounds = TileArea(TOP_LEFT, BOTTOM_RIGHT)
-
-    tl_out_of_bounds = TileCoordinate(TileTuple(([8], [2])), PARENT_MAP_SIZE)
-    br_out_of_bounds = TileCoordinate(TileTuple(([12], [5])), PARENT_MAP_SIZE)
-    area_out_of_bounds = TileArea(tl_out_of_bounds, br_out_of_bounds)
-
-    tl_negative = TileCoordinate(TileTuple(([-1], [2])), PARENT_MAP_SIZE)
-    br_negative = TileCoordinate(TileTuple(([4], [5])), PARENT_MAP_SIZE)
-    area_negative = TileArea(tl_negative, br_negative)
+    area_inbounds = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+    area_out_of_bounds1 = TileArea(center=CENTER, width=WIDTH + 10, height=HEIGHT)
+    area_out_of_bounds2 = TileArea(center=CENTER, width=WIDTH, height=HEIGHT + 10)
+    area_negative = TileArea(center=TileCoordinate(TileTuple(([-1], [-1])), PARENT_MAP_SIZE), width=WIDTH, height=HEIGHT)
 
     # Act & Assert
     try:
         assert area_inbounds.is_inbounds, "Expected area_inbounds to be in bounds"
-        assert not area_out_of_bounds.is_inbounds, "Expected area_out_of_bounds to be out of bounds"
+        assert not area_out_of_bounds1.is_inbounds, "Expected area_out_of_bounds1 to be out of bounds"
+        assert not area_out_of_bounds2.is_inbounds, "Expected area_out_of_bounds2 to be out of bounds"
         assert not area_negative.is_inbounds, "Expected area_negative to be out of bounds"
 
     except AssertionError as e:
@@ -425,15 +431,9 @@ def test_base_tiles_area_inbounds():
 
 def test_base_tiles_intersects():
     # Arrange & Act
-    area1 = TileArea(TOP_LEFT, BOTTOM_RIGHT)
-
-    tl2 = TileCoordinate(TileTuple(([3], [4])), PARENT_MAP_SIZE)
-    br2 = TileCoordinate(TileTuple(([6], [7])), PARENT_MAP_SIZE)
-    area2 = TileArea(tl2, br2)  # Overlaps with area1
-
-    tl3 = TileCoordinate(TileTuple(([5], [6])), PARENT_MAP_SIZE)
-    br3 = TileCoordinate(TileTuple(([8], [9])), PARENT_MAP_SIZE)
-    area3 = TileArea(tl3, br3)  # Does not overlap with area1
+    area1 = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+    area2 = TileArea(center=CENTER, width=WIDTH - 1, height=HEIGHT -1) # Overlapping area
+    area3 = TileArea(center=TileCoordinate(TileTuple(([8], [8])), PARENT_MAP_SIZE), width=2, height=2) # Non-overlapping area
 
     # Act & Assert
     try:
@@ -447,20 +447,29 @@ def test_base_tiles_intersects():
     finally:
         pass
 
-def test_base_tiles_area__align_center_size_change():
+def test_base_tiles_area_size_change():
     # Arrange
-    area = TileArea(TOP_LEFT, BOTTOM_RIGHT)
+    area1 = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+    expected_top_left1 = TileCoordinate(TileTuple(([0], [2])), PARENT_MAP_SIZE)
+    expected_bottom_right1 = TileCoordinate(TileTuple(([6], [4])), PARENT_MAP_SIZE)
+
+    area2 = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+    expected_top_left2 = TileCoordinate(TileTuple(([1], [1])), PARENT_MAP_SIZE)
+    expected_bottom_right2 = TileCoordinate(TileTuple(([5], [5])), PARENT_MAP_SIZE)
 
     # Act
-    area._width += 2
-    area._height += 2
-    expected_center = TileCoordinate(TileTuple(([2], [3])), PARENT_MAP_SIZE)
-    area._align_center()
-    
-    # Act & Assert
+    area1.width += 2
+    area2.height += 2
+
+    # Assert
     try:
-    
-        assert area.center == expected_center, "Expected aligned center to match updated center"
+        assert area1.width == WIDTH + 2, "Expected width to be updated after change"
+        assert area1.top_left == expected_top_left1, "Expected aligned top_left to updated top_left after width change"
+        assert area1.bottom_right == expected_bottom_right1, "Expected aligned bottom_right to updated bottom_right after width change"
+
+        assert area2.height == HEIGHT + 2, "Expected height to be updated after change"
+        assert area2.top_left == expected_top_left2, "Expected aligned top_left to updated top_left after height change"
+        assert area2.bottom_right == expected_bottom_right2, "Expected aligned bottom_right to updated bottom_right after height change"
 
     except AssertionError as e:
         pytest.fail(str(e))
@@ -469,70 +478,24 @@ def test_base_tiles_area__align_center_size_change():
     finally:
         pass
 
-def test_base_tiles_area__align_center_corner_change():
+def test_base_tiles_area_center_change():
     # Arrange
-    area = TileArea(TOP_LEFT, BOTTOM_RIGHT)
-
+    area = TileArea(center=CENTER, width=WIDTH, height=HEIGHT)
+    new_center = TileCoordinate(TileTuple(([4], [5])), PARENT_MAP_SIZE)
+    expected_top_left = TileCoordinate(TileTuple(([2], [4])), PARENT_MAP_SIZE)
+    expected_bottom_right = TileCoordinate(TileTuple(([6], [6])), PARENT_MAP_SIZE)
+    
     # Act
-    area._top_left = TileCoordinate(TileTuple(([2], [3])), PARENT_MAP_SIZE)
-    area._bottom_right = TileCoordinate(TileTuple(([5], [6])), PARENT_MAP_SIZE)
-    expected_center = TileCoordinate(TileTuple(([3], [4])), PARENT_MAP_SIZE)
-    area._align_center()
-    
-    # Act & Assert
-    try:
-    
-        assert area.center == expected_center, "Expected aligned center to updated center"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_base_tiles_area__align_corners_size_change():
-    # Arrange
-    area = TileArea(TOP_LEFT, BOTTOM_RIGHT)
-
-    # Act
-    area._width += 2
-    area._height += 2
-    expected_top_left = TileCoordinate(TileTuple(([-1], [0])), PARENT_MAP_SIZE)
-    expected_bottom_right = TileCoordinate(TileTuple(([5], [6])), PARENT_MAP_SIZE)
-    area._align_center()
-    area._align_corners()
+    area.center = new_center
 
     # Act & Assert
     try:
-    
-        assert area.top_left == expected_top_left, "Expected aligned top_left to match updated top_left"
-        assert area.bottom_right == expected_bottom_right, "Expected aligned bottom_right to match updated bottom_right"
+        assert area.height == HEIGHT, "Expected height to remain unchanged after center change"
+        assert area.width == WIDTH, "Expected width to remain unchanged after center change"
+        assert area.center == new_center, "Expected center to be updated after change"
+        assert area.top_left == expected_top_left, "Expected aligned top_left to updated top_left after center change"
+        assert area.bottom_right == expected_bottom_right, "Expected aligned bottom_right to updated bottom_right after center change"
 
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_base_tiles_area__align_corners_center_change():
-    # Arrange
-    area = TileArea(TOP_LEFT, BOTTOM_RIGHT)
-    original_center = area.center
-
-    # Act
-    area._center = TileCoordinate(TileTuple(([3], [4])), PARENT_MAP_SIZE)
-    expected_top_left = TileCoordinate(TileTuple(([1], [2])), PARENT_MAP_SIZE)
-    expected_bottom_right = TileCoordinate(TileTuple(([5], [6])), PARENT_MAP_SIZE)
-    area._align_corners()
-
-    # Act & Assert
-    try:
-        assert area.center != original_center, "Expected center to remain unchanged after aligning corners"
-        assert area.center == TileCoordinate(TileTuple(([3], [4])), PARENT_MAP_SIZE), "Expected center to remain unchanged after aligning corners"
-        assert area.top_left == expected_top_left, "Expected aligned top_left to updated top_left"
-        assert area.bottom_right == expected_bottom_right, "Expected aligned bottom_right to updated bottom_right"
 
     except AssertionError as e:
         pytest.fail(str(e))
@@ -608,20 +571,17 @@ def test_base_tiles_grid_get_location():
 
 def test_base_tiles_grid_get_area():
     # Arrange & Act
-    grid_size = TileTuple( ([5], [5]) )
     grid_dtype = np.dtype([("type_name", "U10")])
-    grid = BaseTileGrid(size=grid_size, dtype=grid_dtype)
-
-    top_left = (1,1)
-    bottom_right = (3,3)
-
+    grid = BaseTileGrid(size=PARENT_MAP_SIZE, dtype=grid_dtype)
+    center = (3, 3)
+    
     # Act & Assert
     try:
-        area = grid.get_area(top_left, bottom_right)
+        area = grid.get_area(center=center, height=HEIGHT, width=WIDTH)
         assert isinstance(area, TileArea), "Expected get_area to return a TileArea instance"
-        assert area.top_left == TileCoordinate(TileTuple(([1], [1])), grid_size), "Expected TileArea to have correct top_left"
-        assert area.bottom_right == TileCoordinate(TileTuple(([3], [3])), grid_size), "Expected TileArea to have correct bottom_right"
-        assert area.parent_map_size == grid_size, "Expected TileArea to have correct parent_map_size"
+        assert area.center == CENTER, "Expected get_area returns TileArea with correct center"
+        assert area.width == WIDTH, "Expected get_area returns TileArea with correct width"
+        assert area.height == HEIGHT, "Expected get_area returns TileArea with correct height"
 
     except AssertionError as e:
         pytest.fail(str(e))

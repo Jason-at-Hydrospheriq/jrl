@@ -4,8 +4,8 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 print(path)
 
-from core_components.tiles.library import RectangularRoom, CircularRoom, DEFAULT_CENTER_COORDINATE
-from core_components.tiles.base import TileCoordinate
+from core_components.tiles.library import RectangularRoom, CircularRoom, DEFAULT_CENTER_COORDINATE, DEFAULT_GRID_SIZE
+from core_components.tiles.base import TileCoordinate, TileTuple
 
 def test_rectangular_room_empty_init():
     # Arrange & Act
@@ -17,7 +17,9 @@ def test_rectangular_room_empty_init():
         assert room.width == DEFAULT_CENTER_COORDINATE.x, "Expected width to be DEFAULT_CENTER_COORDINATE.x"
         assert room.height == DEFAULT_CENTER_COORDINATE.y, "Expected height to be DEFAULT_CENTER_COORDINATE.y"
         assert room.parent_map_size == DEFAULT_CENTER_COORDINATE.parent_map_size, "Expected parent_map_size to match DEFAULT_CENTER_COORDINATE.parent_map_size"
-        
+        assert room.top_left == TileCoordinate(TileTuple(([3], [3])), DEFAULT_CENTER_COORDINATE.parent_map_size), "Expected top left corner to be at (0,0)"
+        assert room.bottom_right == TileCoordinate(TileTuple(([7], [7])), DEFAULT_CENTER_COORDINATE.parent_map_size), "Expected bottom right corner to be at (width,height)"
+
     except AssertionError as e:
         pytest.fail(str(e))
     
@@ -27,12 +29,12 @@ def test_rectangular_room_empty_init():
 
 def test_rectangular_room_parameter_init():
     # Arrange & Act
-    room = RectangularRoom(center=TileCoordinate(5, 5), size=(8, 6))
+    room = RectangularRoom(DEFAULT_CENTER_COORDINATE, width=6, height=6)
 
     # Assert
     try:
-        assert room.center == TileCoordinate(5, 5), "Expected center to be at (5,5)"
-        assert room.width == 8, "Expected width to be 8"
+        assert room.center == DEFAULT_CENTER_COORDINATE
+        assert room.width == 6, "Expected width to be 6"
         assert room.height == 6, "Expected height to be 6"
 
     except AssertionError as e:
