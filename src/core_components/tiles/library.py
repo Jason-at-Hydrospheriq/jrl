@@ -6,15 +6,20 @@ from warnings import warn
 from typing import Tuple
 import numpy as np
 
-from core_components.tiles.base import BaseTileGrid, TileCoordinate, TileArea
+from core_components.tiles.base import BaseTileGrid, TileCoordinate, TileArea, TileTuple
+
+DEFAULT_GRID_SIZE = TileTuple( ([10], [10]) )
+DEFAULT_CENTER_LOCATION = TileTuple( ([5], [5]) )
+DEFAULT_CENTER_COORDINATE = TileCoordinate(DEFAULT_CENTER_LOCATION, DEFAULT_GRID_SIZE)
 
 class GenericRoom(TileArea):
 
-    def __init__(self, center: TileCoordinate, size: Tuple[int, int]) -> None:
+    def __init__(self, center: TileCoordinate = DEFAULT_CENTER_COORDINATE, 
+                 height: int=5, width: int=5) -> None:
         self.parent_map_size = center.parent_map_size
         self.center = center
-        self.width = size[0]
-        self.height = size[1]
+        self.width = width
+        self.height = height
 
     @property
     def to_mask(self) -> np.ndarray:

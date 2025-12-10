@@ -2,204 +2,21 @@ import pytest
 from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
+print(path)
 
-from core_components.tiles.base import TileArea, TileCoordinates
-from core_components.tiles.library import TileArea, TileArea
+from core_components.tiles.library import RectangularRoom, CircularRoom, DEFAULT_CENTER_COORDINATE
+from core_components.tiles.base import TileCoordinate
 
-# Test Cases for TileArea
-def test_base_tile_area_empty_init():
+def test_rectangular_room_empty_init():
     # Arrange & Act
-    empty_area = TileArea()
+    room = RectangularRoom()
 
-    set_area = TileArea()
-    set_area.top_left = TileCoordinates(1, 2, (10, 10))
-    set_area.bottom_right = TileCoordinates(5, 6, (10, 10))
-
-    # Act
+    # Assert
     try:
-        assert not hasattr(empty_area, "top_left"), "Expected no 'top_left' attribute for TileArea instantiated without parameters"
-        assert not hasattr(empty_area, "bottom_right"), "Expected no 'bottom_right' attribute for TileArea instantiated without parameters"
-
-        assert set_area.top_left == TileCoordinates(1, 2, (10, 10)), "Expected 'top_left' attribute to be TileCoordinates(1, 2) after setting"
-        assert set_area.bottom_right == TileCoordinates(5, 6, (10, 10)), "Expected 'bottom_right' attribute to be TileCoordinates(5, 6) after setting"
-        assert set_area.parent_map_size == (10, 10), "Expected 'parent_map_size' attribute to be (10, 10) after setting coordinates"
-        assert set_area.tiles.shape == (5, 5), "Expected 'tiles' attribute shape to be (5, 5) after setting coordinates"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_base_tile_area_init():
-    # Arrange & Act
-    top_left = TileCoordinates(2, 3, (10, 10))
-    bottom_right = TileCoordinates(6, 7, (10, 10))
-    area = TileArea(top_left=top_left, bottom_right=bottom_right)
-
-    # Act & Assert
-    try:
-        assert area.top_left == top_left, "Expected 'top_left' attribute to match the initialized value"
-        assert area.bottom_right == bottom_right, "Expected 'bottom_right' attribute to match the initialized value"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_base_tile_area_hash():
-    # Arrange & Act
-    area1 = TileArea(
-        top_left=TileCoordinates(1, 1, (10, 10)),
-        bottom_right=TileCoordinates(5, 5, (10, 10))
-    )
-    area2 = TileArea(
-        top_left=TileCoordinates(1, 1, (10, 10)),
-        bottom_right=TileCoordinates(5, 5, (10, 10))
-    )
-    area3 = TileArea(
-        top_left=TileCoordinates(2, 2, (10, 10)),
-        bottom_right=TileCoordinates(6, 6, (10, 10))
-    )
-
-    # Act & Assert
-    try:
-        assert hash(area1) == hash(area2), "Expected hashes of area1 and area2 to be equal"
-        assert hash(area1) != hash(area3), "Expected hashes of area1 and area3 to be different"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_base_tile_area_repr():
-    # Arrange & Act
-    area = TileArea(
-        top_left=TileCoordinates(1, 2, (10, 10)),
-        bottom_right=TileCoordinates(5, 6, (10, 10))
-    )
-
-    # Act & Assert
-    try:
-        expected_repr = "TileArea(top_left=TileCoordinates(x=1, y=2, parent_map_size=(10, 10)), bottom_right=TileCoordinates(x=5, y=6, parent_map_size=(10, 10)))"
-        assert repr(area) == expected_repr, f"Expected repr to be '{expected_repr}'"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_base_tile_area_equality():
-    # Arrange & Act
-    area1 = TileArea(
-        top_left=TileCoordinates(1, 1, (10, 10)),
-        bottom_right=TileCoordinates(5, 5, (10, 10))
-    )
-    area2 = TileArea(
-        top_left=TileCoordinates(1, 1, (10, 10)),
-        bottom_right=TileCoordinates(5, 5, (10, 10))
-    )
-    area3 = TileArea(
-        top_left=TileCoordinates(2, 2, (10, 10)),
-        bottom_right=TileCoordinates(6, 6, (10, 10))
-    )
-
-    # Act & Assert
-    try:
-        assert area1 == area2, "Expected area1 to be equal to area2"
-        assert area1 != area3, "Expected area1 to not be equal to area3"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_base_tile_area_parent_map_size():
-    # Arrange & Act
-    area = TileArea(
-        top_left=TileCoordinates(1, 1, (10, 10)),
-        bottom_right=TileCoordinates(5, 5, (10, 10))
-    )
-
-    # Act & Assert
-    try:
-        assert area.parent_map_size == (10, 10), "Expected 'parent_map_size' attribute to be (10, 10)"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_base_tile_area_dimensions():
-    # Arrange & Act
-    area = TileArea(
-        top_left=TileCoordinates(2, 3, (10, 10)),
-        bottom_right=TileCoordinates(7, 9, (10, 10))
-    )
-
-    # Act & Assert
-    try:
-        assert area.width == 6, "Expected width to be 6"
-        assert area.height == 7, "Expected height to be 7"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_base_tile_area_is_inbounds():
-    # Arrange & Act
-    area_inbounds = TileArea(
-        top_left=TileCoordinates(1, 1, (10, 10)),
-        bottom_right=TileCoordinates(5, 5, (10, 10))
-    )
-    area_out_of_bounds = TileArea(
-        top_left=TileCoordinates(8, 8, (10, 10)),
-        bottom_right=TileCoordinates(12, 12, (10, 10))
-    )
-
-    # Act & Assert
-    try:
-        assert area_inbounds.is_inbounds, "Expected area_inbounds to be in bounds"
-        assert not area_out_of_bounds.is_inbounds, "Expected area_out_of_bounds to be out of bounds"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-def test_base_tile_area_to_slices():
-    # Arrange & Act
-    area = TileArea(
-        top_left=TileCoordinates(2, 3, (10, 10)),
-        bottom_right=TileCoordinates(6, 8, (10, 10))
-    )
-    map_array = np.zeros((10, 10))
-
-    # Act
-    slices = area.to_slices()
-
-    # Act & Assert
-    try:
-        expected_slices = (slice(2, 7), slice(3, 9))
-        assert slices == expected_slices, f"Expected slices to be {expected_slices}"
-        sub_array = map_array[slices]
-        assert sub_array.shape == (5, 6), "Expected sub-array shape to be (5, 6)"
+        assert room.center == DEFAULT_CENTER_COORDINATE, "Expected center to be at DEFAULT_CENTER_COORDINATE"
+        assert room.width == DEFAULT_CENTER_COORDINATE.x, "Expected width to be DEFAULT_CENTER_COORDINATE.x"
+        assert room.height == DEFAULT_CENTER_COORDINATE.y, "Expected height to be DEFAULT_CENTER_COORDINATE.y"
+        assert room.parent_map_size == DEFAULT_CENTER_COORDINATE.parent_map_size, "Expected parent_map_size to match DEFAULT_CENTER_COORDINATE.parent_map_size"
         
     except AssertionError as e:
         pytest.fail(str(e))
@@ -208,170 +25,293 @@ def test_base_tile_area_to_slices():
     finally:
         pass
 
-def test_base_tile_area_is_traversable_at():
+def test_rectangular_room_parameter_init():
     # Arrange & Act
-    area = TileArea(
-        top_left=TileCoordinates(2, 3, (10, 10)),
-        bottom_right=TileCoordinates(6, 8, (10, 10))
-    )
-
-    # Act
-    area.tiles['traversable'][2:4, 2:4] = True
+    room = RectangularRoom(center=TileCoordinate(5, 5), size=(8, 6))
 
     # Assert
     try:
-        for x in range(5):
-            for y in range(6):
-                location = area.get_coordinate(x, y)
-                if 2 <= x < 4 and 2 <= y < 4:
-                    expected_traversable = True
-                else:
-                    expected_traversable = False
-
-                actual_traversable = area.is_traversable_at(location)
-                assert actual_traversable == expected_traversable, f"Expected traversability at ({x}, {y}) to be '{expected_traversable}', but got '{actual_traversable}'"
+        assert room.center == TileCoordinate(5, 5), "Expected center to be at (5,5)"
+        assert room.width == 8, "Expected width to be 8"
+        assert room.height == 6, "Expected height to be 6"
 
     except AssertionError as e:
         pytest.fail(str(e))
-
-    # Atavise
-    finally:
-        pass
-
-def test_base_tile_area_is_transparent_at():
-    # Arrange & Act
-    area = TileArea(
-        top_left=TileCoordinates(2, 3, (10, 10)),
-        bottom_right=TileCoordinates(6, 8, (10, 10))
-    )
-
-    # Act
-    area.tiles['transparent'][1:5, 1:5] = True
-
-    # Assert
-    try:
-        for x in range(5):
-            for y in range(6):
-                location = area.get_coordinate(x, y)
-                if 1 <= x < 5 and 1 <= y < 5:
-                    expected_transparent = True
-                else:
-                    expected_transparent = False
-
-                actual_transparent = area.is_transparent_at(location)
-                assert actual_transparent == expected_transparent, f"Expected transparency at ({x}, {y}) to be '{expected_transparent}', but got '{actual_transparent}'"
-    except AssertionError as e:
-        pytest.fail(str(e))
-    # Atavise
-    finally:
-        pass
-
-def test_base_tile_area_is_visible_at():
-    # Arrange & Act
-    area = TileArea(
-        top_left=TileCoordinates(2, 3, (10, 10)),
-        bottom_right=TileCoordinates(6, 8, (10, 10))
-    )
-
-    # Act
-    area.tiles['visible'][0:3, 0:3] = True
-
-    # Assert
-    try:
-        for x in range(5):
-            for y in range(6):
-                location = area.get_coordinate(x, y)
-                if 0 <= x < 3 and 0 <= y < 3:
-                    expected_visible = True
-                else:
-                    expected_visible = False
-
-                actual_visible = area.is_visible_at(location)
-                assert actual_visible == expected_visible, f"Expected visibility at ({x}, {y}) to be '{expected_visible}', but got '{actual_visible}'"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-
-    # Atavise
-    finally:
-        pass
-
-def test_base_tile_area_is_explored_at():
-    # Arrange & Act
-    area = TileArea(
-        top_left=TileCoordinates(2, 3, (10, 10)),
-        bottom_right=TileCoordinates(6, 8, (10, 10))
-    )
-
-    # Act
-    area.tiles['explored'][1:4, 1:4] = True
-
-    # Assert
-    try:
-        for x in range(5):
-            for y in range(6):
-                location = area.get_coordinate(x, y)
-                if 1 <= x < 4 and 1 <= y < 4:
-                    expected_explored = True
-                else:
-                    expected_explored = False
-
-                actual_explored = area.is_explored_at(location)
-                assert actual_explored == expected_explored, f"Expected explored status at ({x}, {y}) to be '{expected_explored}', but got '{actual_explored}'"
     
-    except AssertionError as e:
-        pytest.fail(str(e))
-
     # Atavise
     finally:
         pass
 
-def test_base_tile_area_get_type_at():
-    # Arrange 
-    area = TileArea(
-        top_left=TileCoordinates(2, 3, (10, 10)),
-        bottom_right=TileCoordinates(6, 8, (10, 10))
-    )
-    area.tiles['type']['name'][:, :] = "default"
-
-    # Act
-    location = area.get_coordinate(4, 4)
-    actual_tile_type = area.get_type_at(location)['name']
+def test_rectangular_room_inner_area():
+    # Arrange & Act
+    room = RectangularRoom(center=TileCoordinate(0, 0), size=(5, 6))
+    inner_area = room.inner_area
 
     # Assert
     try:
-        expected_tile_type = "default"
-        assert actual_tile_type == expected_tile_type, f"Expected tile type at (4,4) to be '{expected_tile_type}', but got '{actual_tile_type}'"
+        expected_area = np.full((5, 6), False, dtype=bool)
+        expected_area[1:-1, 1:-1] = True
+        assert np.array_equal(inner_area, expected_area), "Inner area does not match expected area"
 
     except AssertionError as e:
         pytest.fail(str(e))
-
+    
     # Atavise
     finally:
         pass
 
-def test_base_tile_area_properties():
+def test_rectangular_room_area_coordinates():
     # Arrange & Act
-    area = TileArea(
-        top_left=TileCoordinates(2, 3, (10, 10)),
-        bottom_right=TileCoordinates(6, 8, (10, 10))
-    )
-    width = 5
-    height = 6
+    room = RectangularRoom(center=TileCoordinate(5, 5), size=(7, 9))
+    area_coords = room.area_coordinates()
 
     # Assert
-    try:        
-        assert area.size == (width, height), "'size' property shape does not match expected"
-        assert area.traversable_tiles.shape == (width, height), "'traversable' property shape does not match expected"
-        assert area.transparent_tiles.shape == (width, height), "'transparent' property shape does not match expected"
-        assert area.tile_types.shape == (width, height), "'types' property shape does not match expected"
-        assert area.visible_tiles.shape == (width, height), "'visible' property shape does not match expected"
-        assert area.explored_tiles.shape == (width, height), "'explored' property shape does not match expected"
-        assert area.tile_graphics.shape == (width, height), "'graphics' property shape does not match expected"
+    try:
+        expected_coords = np.array([[3, 2], [3, 3], [3, 4], [3, 5], [3, 6], [3, 7], [3, 8],
+                                    [4, 2], [4, 3], [4, 4], [4, 5], [4, 6], [4, 7], [4, 8],
+                                    [5, 2], [5, 3], [5, 4], [5, 5], [5, 6], [5, 7], [5, 8],
+                                    [6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [6, 8],
+                                    [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7], [7, 8]])
+        assert np.array_equal(area_coords, expected_coords), "Area coordinates do not match expected coordinates"
 
     except AssertionError as e:
         pytest.fail(str(e))
-
+    
     # Atavise
     finally:
-        pass    
+        pass
+
+def test_rectangular_room_upperlower_corners():
+    # Arrange & Act
+    room = RectangularRoom(center=TileCoordinate(10, 10), size=(6, 4))
+
+    # Assert
+    try:
+        assert room.upperLeft_corner == TileCoordinate(7, 8), "Expected upper left corner to be at (7,8)"
+        assert room.lowerRight_corner == TileCoordinate(13, 12), "Expected lower right corner to be at (13,12)"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+    
+def test_rectangular_room_contains():
+    # Arrange
+    room = RectangularRoom(center=TileCoordinate(5, 5), size=(6, 4))
+
+    # Act & Assert
+    try:
+        assert room.contains(TileCoordinate(5, 5)) == True, "Expected center to be inside the room"
+        assert room.contains(TileCoordinate(3, 4)) == True, "Expected (3,4) to be inside the room"
+        assert room.contains(TileCoordinate(8, 6)) == False, "Expected (8,6) to be outside the room"
+        assert room.contains(TileCoordinate(2, 2)) == False, "Expected (2,2) to be outside the room"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_rectangular_room_intersects():
+    # Arrange
+    room1 = RectangularRoom(center=TileCoordinate(5, 5), size=(6, 4))
+    room2 = RectangularRoom(center=TileCoordinate(7, 5), size=(6, 4))
+    room3 = RectangularRoom(center=TileCoordinate(12, 5), size=(6, 4))
+
+    # Act & Assert
+    try:
+        assert room1.intersects(room2) == True, "Expected room1 to intersect with room2"
+        assert room1.intersects(room3) == False, "Expected room1 to not intersect with room3"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_rectangular_room_random_location():
+    # Arrange
+    room = RectangularRoom(center=TileCoordinate(10, 10), size=(8, 6))
+
+    # Act
+    random_location = room.random_location()
+
+    # Assert
+    try:
+        assert room.contains(random_location) == True, "Expected random location to be inside the room"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_rectangular_room_resize():
+    # Arrange & Act
+    room = RectangularRoom(center=TileCoordinate(5, 5), size=(6, 4))
+    room.resize(new_size=(10, 8))
+
+    # Assert
+    try:
+        assert room.width == 10, "Expected width to be 10 after resize"
+        assert room.height == 8, "Expected height to be 8 after resize"
+        assert room.center == TileCoordinate(5, 5), "Expected center to remain at (5,5) after resize"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_circular_room_empty_init():
+    # Arrange & Act
+    room = CircularRoom()
+
+    # Assert
+    try:
+        assert room.center == TileCoordinate(0, 0), "Expected center to be at (0,0)"
+        assert room.width == 6, "Expected width to be 6"
+        assert room.height == 6, "Expected height to be 6"
+        assert room.radius == 3, "Expected radius to be 3"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_circular_room_parameter_init():
+    # Arrange & Act
+    room = CircularRoom(center=TileCoordinate(10, 10), radius=7)
+
+    # Assert
+    try:
+        assert room.center == TileCoordinate(10, 10), "Expected center to be at (10,10)"
+        assert room.width == 14, "Expected width to be 14"
+        assert room.height == 14, "Expected height to be 14"
+        assert room.radius == 7, "Expected radius to be 7"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_circular_room_inner_area():
+    # Arrange & Act
+    room = CircularRoom(center=TileCoordinate(0, 0), radius=3)
+    inner_area = room.inner_area
+    center = (room.width // 2, room.height // 2)
+
+    # Assert
+    try:
+        expected_area = np.fromfunction(lambda xx, yy: (xx - center[0]) ** 2 + (yy - center[1]) ** 2 + 2 <= 9,
+                               (7, 7), dtype=int)
+        assert np.array_equal(inner_area, expected_area), "Inner area does not match expected area"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_circular_room_area_coordinates():
+    # Arrange & Act
+    room = CircularRoom(center=TileCoordinate(5, 5), radius=5)
+    area_coords = room.area_coordinates()
+
+    # Assert
+    try:
+        expected_area = np.fromfunction(lambda xx, yy: (xx - 5) ** 2 + (yy - 5) ** 2 + 2 <= 25,
+                               (11, 11), dtype=int)
+        expected_coords = np.argwhere(expected_area) + np.array([room.upperLeft_corner.x, room.upperLeft_corner.y])
+        assert np.array_equal(area_coords, expected_coords), "Area coordinates do not match expected coordinates"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_circular_room_contains():
+    # Arrange
+    room = CircularRoom(center=TileCoordinate(5, 5), radius=3)
+    area = room.inner_area
+
+    # Act & Assert
+    try:
+        assert room.contains(TileCoordinate(5, 5)) == True, "Expected center to be inside the room"
+        assert room.contains(TileCoordinate(7, 5)) == True, "Expected (7,5) to be inside the room"
+        assert room.contains(TileCoordinate(9, 5)) == False, "Expected (9,5) to be outside the room"
+        assert room.contains(TileCoordinate(2, 2)) == False, "Expected (2,2) to be outside the room"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_circular_room_intersects():
+    # Arrange
+    room1 = CircularRoom(center=TileCoordinate(5, 5), radius=3)
+    room2 = CircularRoom(center=TileCoordinate(7, 5), radius=3)
+    room3 = CircularRoom(center=TileCoordinate(12, 5), radius=3)
+
+    # Act & Assert
+    try:
+        assert room1.intersects(room2) == True, "Expected room1 to intersect with room2"
+        assert room1.intersects(room3) == False, "Expected room1 to not intersect with room3"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_circular_room_random_location():
+    # Arrange
+    room = CircularRoom(center=TileCoordinate(10, 10), radius=5)
+
+    # Act
+    random_location = room.random_location()
+
+    # Assert
+    try:
+        assert room.contains(random_location) == True, "Expected random location to be inside the room"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_circular_rectangular_intersects():
+    # Arrange
+    circular_room = CircularRoom(center=TileCoordinate(5, 5), radius=3)
+    rectangular_room1 = RectangularRoom(center=TileCoordinate(7, 5), size=(6, 4))
+    rectangular_room2 = RectangularRoom(center=TileCoordinate(12, 5), size=(6, 4))
+
+    # Act & Assert
+    try:
+        assert circular_room.intersects(rectangular_room1) == True, "Expected circular room to intersect with rectangular_room1"
+        assert circular_room.intersects(rectangular_room2) == False, "Expected circular room to not intersect with rectangular_room2"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass

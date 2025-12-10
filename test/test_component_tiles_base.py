@@ -3,7 +3,9 @@ from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
-from core_components.tiles.base import TileCoordinate, TileArea, TileTuple, BaseTileGrid, ascii_graphic, new_tile_dtype
+from core_components.tiles.base import TileCoordinate, TileArea, TileTuple, BaseTileGrid
+from core_components.maps.base import new_tile_dtype
+from core_components.maps.base import ascii_graphic
 
 PARENT_MAP_SIZE = TileTuple( ([10], [10]) )
 TOP_LEFT = TileCoordinate(TileTuple(([1], [2])), PARENT_MAP_SIZE)
@@ -437,6 +439,100 @@ def test_base_tiles_intersects():
     try:
         assert area1.intersects(area2), "Expected area1 to intersect with area2"
         assert not area1.intersects(area3), "Expected area1 to not intersect with area3"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_base_tiles_area__align_center_size_change():
+    # Arrange
+    area = TileArea(TOP_LEFT, BOTTOM_RIGHT)
+
+    # Act
+    area._width += 2
+    area._height += 2
+    expected_center = TileCoordinate(TileTuple(([2], [3])), PARENT_MAP_SIZE)
+    area._align_center()
+    
+    # Act & Assert
+    try:
+    
+        assert area.center == expected_center, "Expected aligned center to match updated center"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_base_tiles_area__align_center_corner_change():
+    # Arrange
+    area = TileArea(TOP_LEFT, BOTTOM_RIGHT)
+
+    # Act
+    area._top_left = TileCoordinate(TileTuple(([2], [3])), PARENT_MAP_SIZE)
+    area._bottom_right = TileCoordinate(TileTuple(([5], [6])), PARENT_MAP_SIZE)
+    expected_center = TileCoordinate(TileTuple(([3], [4])), PARENT_MAP_SIZE)
+    area._align_center()
+    
+    # Act & Assert
+    try:
+    
+        assert area.center == expected_center, "Expected aligned center to updated center"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_base_tiles_area__align_corners_size_change():
+    # Arrange
+    area = TileArea(TOP_LEFT, BOTTOM_RIGHT)
+
+    # Act
+    area._width += 2
+    area._height += 2
+    expected_top_left = TileCoordinate(TileTuple(([-1], [0])), PARENT_MAP_SIZE)
+    expected_bottom_right = TileCoordinate(TileTuple(([5], [6])), PARENT_MAP_SIZE)
+    area._align_center()
+    area._align_corners()
+
+    # Act & Assert
+    try:
+    
+        assert area.top_left == expected_top_left, "Expected aligned top_left to match updated top_left"
+        assert area.bottom_right == expected_bottom_right, "Expected aligned bottom_right to match updated bottom_right"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_base_tiles_area__align_corners_center_change():
+    # Arrange
+    area = TileArea(TOP_LEFT, BOTTOM_RIGHT)
+    original_center = area.center
+
+    # Act
+    area._center = TileCoordinate(TileTuple(([3], [4])), PARENT_MAP_SIZE)
+    expected_top_left = TileCoordinate(TileTuple(([1], [2])), PARENT_MAP_SIZE)
+    expected_bottom_right = TileCoordinate(TileTuple(([5], [6])), PARENT_MAP_SIZE)
+    area._align_corners()
+
+    # Act & Assert
+    try:
+        assert area.center != original_center, "Expected center to remain unchanged after aligning corners"
+        assert area.center == TileCoordinate(TileTuple(([3], [4])), PARENT_MAP_SIZE), "Expected center to remain unchanged after aligning corners"
+        assert area.top_left == expected_top_left, "Expected aligned top_left to updated top_left"
+        assert area.bottom_right == expected_bottom_right, "Expected aligned bottom_right to updated bottom_right"
 
     except AssertionError as e:
         pytest.fail(str(e))

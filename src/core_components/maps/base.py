@@ -9,15 +9,24 @@ from typing import Protocol, Dict, Tuple, List
 from copy import deepcopy
 import numpy as np
 
-from core_components.tiles.base import TileArea, TileCoordinates, ascii_graphic
+from core_components.tiles.base import BaseTileGrid
+
+ascii_graphic = np.dtype(
+    [
+        ("ch", np.int32),  # Unicode codepoint.
+        ("fg", "3B"),  # 3 unsigned bytes, for RGB colors.
+        ("bg", "3B"),
+    ], metadata={"__name__": "ascii_graphic"}
+)
 
 
-class BaseTileMap(TileArea):
+class BaseTileMap(Protocol):
     __slots__ = ("_resources",)
     _resources: Dict
-   
+    _grid: BaseTileGrid
+
     def __init__(self, size: Tuple[int, int]) -> None:
-        self._width, self._height = size
+
 
         self._resources = {
             "graphics": {},
@@ -80,14 +89,6 @@ class BaseTileMap(TileArea):
         self._tiles['type'] = self._resources['tiles']['default']
         self._tiles['graphic'] = self._resources['tiles']['default']['g_shroud']
     
-    def get_map_coordinate(self, x: int, y: int) -> TileCoordinates:
-        return TileCoordinates(x=x, y=y, map_size=self.size)
-
-    def get_map_area(self, top_left_x: int, bottom_right_x: int, top_left_y: int, bottom_right_y: int) -> TileArea:
-        top_left = TileCoordinates(x=top_left_x, y=top_left_y, map_size=self.size)
-        bottom_right = TileCoordinates(x=bottom_right_x, y=bottom_right_y, map_size=self.size)
-        return TileArea(top_left=top_left, bottom_right=bottom_right)
-
     def get_type_at(self, location: TileCoordinates) -> str:
         """Return the tile type at the given location."""
         if not location.is_inbounds:
@@ -143,5 +144,17 @@ class BaseTileMap(TileArea):
 
         """Reset the exploration state of all tiles on the map to not explored."""
         self.tiles["explored"][:, :] = False 
+
+
+def new_tile_dtype(tile_type: np.dtype, graphic_dtype: np.dtype = ascii_graphic) -> np.dtype:
+    """Generates the tile location dtype based on the provided tile_type dtype"""
+    return np.dtype(
+                    [   ("type", tile_type), # The type of the tile, e.g., 'floor', 'wall', etc. with associated graphic options.
+                        ("traversable", np.bool),  # True if this tile can be occupied by or passed through by an entity.
+                        ("transparent", np.bool),  # True if this tile doesn't block FOV.
+                        ('visible', np.bool),  # True if this tile is currently visible.
+                        ('explored', np.bool),  # True if this tile has been explored.
+                        ('graphic', graphic_dtype) # The current graphic representation of the tile.
+                    ], metadata={"__name__": "tile_location"})
 
         

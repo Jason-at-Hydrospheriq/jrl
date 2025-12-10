@@ -9,25 +9,6 @@ from typing import Protocol, Dict, Tuple, List, NewType
 from copy import deepcopy
 import numpy as np
 
-# Defined as a global constant types and dtypes
-ascii_graphic = np.dtype(
-    [
-        ("ch", np.int32),  # Unicode codepoint.
-        ("fg", "3B"),  # 3 unsigned bytes, for RGB colors.
-        ("bg", "3B"),
-    ], metadata={"__name__": "ascii_graphic"}
-)
-
-def new_tile_dtype(tile_type: np.dtype, graphic_dtype: np.dtype = ascii_graphic) -> np.dtype:
-    """Generates the tile location dtype based on the provided tile_type dtype"""
-    return np.dtype(
-                    [   ("type", tile_type), # The type of the tile, e.g., 'floor', 'wall', etc. with associated graphic options.
-                        ("traversable", np.bool),  # True if this tile can be occupied by or passed through by an entity.
-                        ("transparent", np.bool),  # True if this tile doesn't block FOV.
-                        ('visible', np.bool),  # True if this tile is currently visible.
-                        ('explored', np.bool),  # True if this tile has been explored.
-                        ('graphic', graphic_dtype) # The current graphic representation of the tile.
-                    ], metadata={"__name__": "tile_location"})
 
 TileTuple = NewType("TileTuple", tuple[List[int], List[int]])
 

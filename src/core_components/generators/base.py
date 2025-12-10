@@ -9,9 +9,9 @@ from copy import deepcopy
 import numpy as np
 
 # Defined as a global constant for graphic dtype
-from core_components.tilemaps.base import MapCoords
+from core_components.tiles.base import TileCoordinate, TileTuple
 from core_components.tilemaps.library import GenericTileMap
-from core_components.rooms.library import GenericRoom
+from core_components.tiles.library import GenericRoom
 
 class BaseMapGenerator(Protocol):
     """Base class for map generators."""
@@ -22,7 +22,7 @@ class BaseMapGenerator(Protocol):
     
     def spawn_room(self,
                    room: GenericRoom,
-                   center: MapCoords,
+                   center: TileCoordinate,
                    size: Tuple[int, int]) -> GenericRoom | None:
         
         method_name = "_spawn_" + room.__class__.__name__.lower()
