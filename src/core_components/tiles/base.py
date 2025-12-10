@@ -131,117 +131,78 @@ class TileCoordinateSystemElement(TileCoordinateSystem):
         return self._system_coordinates
  
 
-class TileGrid(Protocol):
+class BaseTileGrid(TileCoordinateSystem):
     """A simple class for defining rectangular areas of Tiles using TileCoordinate for top-left and bottom-right corners.
     A TileArea is a 2D numpy array of Tiles. Tiles are defined using a custom numpy dtype defined in the new_tile_type
     function. A TileArea can be initialized with or without parameters."""
 
-    __slots__ = ("_width", "_height", "_tiles", "_dtype")
-
-    _width: int
-    _height: int
     _tiles: np.ndarray
     _dtype: np.dtype
+    
+    def __init__(self, dtype: np.dtype, size: TileTuple | None = None) -> None:
+
+        warn("BaseTileGrid is an abstract class and should not be instantiated directly.", UserWarning)
+
+        self._dtype = dtype
+        if self._dtype.names:
+            for prop in self._dtype.names:
+                if not prop.startswith("_"):
+                    setattr(self, prop, self._dtype[prop])
+            
+        if size is not None:
+            self.size = size
 
     @property
     def width(self) -> int:
-        return self._width
+        return self.size[0][0]
     
     @property
     def height(self) -> int:
-        return self._height
+        return self.size[1][0]
     
     @property
     def center(self) -> Tuple[int, int]:
         return (self.width // 2, self.height // 2)
     
     @property
-    def size(self) -> Tuple[int, int]:
-        return (self._width, self._height)
+    def size(self) -> TileTuple:
+        if not hasattr(self, "_size"):
+            raise AttributeError("Attribute 'size' has not been set.")
+        return self._size
     
+    @size.setter
+    def size(self, value: TileTuple) -> None:
+        self._size = value
+        if hasattr(self, "_dtype"):
+            self._initialize_grid()
+
     @property
     def dtype(self) -> np.dtype:
+        if not hasattr(self, "_dtype"):
+            raise AttributeError("Attribute 'dtype' has not been set.")
         return self._dtype
     
     @property
     def tiles(self) -> np.ndarray:
+        if not hasattr(self, "_tiles"):
+            raise AttributeError("Attribute 'tiles' has not been set.")
         return self._tiles
     
-    # @property
-    # def tile_types(self) -> np.ndarray:
-    #     return self.tiles["type"]
+    def get_location(self, x: int, y: int) -> TileCoordinate:
+        return TileCoordinate( TileTuple( ([x], [y]) ), self._size )
     
-    # @property
-    # def visible_tiles(self) -> np.ndarray:
-    #     return self.tiles["visible"]
+    def get_area(self, top_left_xy: Tuple[int, int], bottom_right_xy: Tuple[int, int]) -> TileArea:
+        top_left = TileCoordinate( TileTuple( ([top_left_xy[0]], [top_left_xy[1]]) ), self._size )
+        bottom_right = TileCoordinate( TileTuple( ([bottom_right_xy[0]], [bottom_right_xy[1]]) ), self._size )
+        return TileArea(top_left, bottom_right)
     
-    # @property
-    # def explored_tiles(self) -> np.ndarray:
-    #     return self.tiles["explored"]
-    
-    # @property
-    # def traversable_tiles(self) -> np.ndarray:
-    #     return self.tiles["traversable"]
-    
-    # @property
-    # def transparent_tiles(self) -> np.ndarray:
-    #     return self.tiles["transparent"]
-
-    # @property
-    # def tile_graphics(self) -> np.ndarray:
-    #     return self.tiles["graphic"]
-    
-    # def _initialize_grid(self) -> None:
-    #     """Initializes the tile grid with default values."""
-    #     self._tiles = np.full((self._width, self._height), fill_value=False, dtype=self._dtype)
+    def set_area(self, *args, **kwargs) -> None:
+        raise NotImplementedError()
         
-    # def get_coordinate(self, x: int, y: int) -> TileCoordinate:
-    #     return TileCoordinate(x=x, y=y, parent_map_size=self.size)
-    
-    # def get_area()
-
-    # def get_type_at(self, location: TileCoordinate) -> np.ndarray:
-    #     """Return the tile type at the given location."""
-    #     if not location.is_inbounds:
-    #         return np.empty((1,))
+    def _initialize_grid(self) -> None:
+        """This method should be overridden by subclasses to initialize the tile grid."""
+        self._tiles = np.zeros((self.width, self.height), dtype=self._dtype)
         
-    #     return self.tiles["type"][location.x, location.y]
-    
-    # def get_graphic_at(self, location: TileCoordinate) -> np.ndarray:
-    #     """Return the tile color at the given location."""
-    #     if not location.is_inbounds:
-    #         return np.empty((3,))
-        
-    #     return self.tiles["colors"][location.x, location.y]
-    
-    # def is_traversable_at(self, location: TileCoordinate) -> bool:
-    #     """Return True if the tile at location is traversable."""
-    #     if not location.is_inbounds:
-    #         return False
-        
-    #     return bool(self.tiles["traversable"][location.x, location.y].all())
-           
-    # def is_transparent_at(self, location: TileCoordinate) -> bool:
-    #     """Return True if the tile at location is transparent."""
-    #     if not location.is_inbounds:
-    #         return False
-        
-    #     return bool(self.tiles["transparent"][location.x, location.y].all())
-    
-    # def is_visible_at(self, location: TileCoordinate) -> bool:
-    #     """Return True if the tile at location is visible."""
-    #     if not location.is_inbounds:
-    #         return False
-        
-    #     return bool(self.tiles["visible"][location.x, location.y].all())
-    
-    # def is_explored_at(self, location: TileCoordinate) -> bool:
-    #     """Return True if the tile at location has been explored."""
-    #     if not location.is_inbounds:
-    #         return False
-        
-    #     return bool(self.tiles["explored"][location.x, location.y].all())
- 
 
 class TileCoordinate(TileCoordinateSystemElement):
     """A simple class for x,y map coordinates. This class does not initialize the x,y attributes by default and can be 

@@ -3,7 +3,7 @@ from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
-from core_components.tiles.base import TileCoordinate, TileArea, TileTuple, ascii_graphic, new_tile_dtype
+from core_components.tiles.base import TileCoordinate, TileArea, TileTuple, BaseTileGrid, ascii_graphic, new_tile_dtype
 
 PARENT_MAP_SIZE = TileTuple( ([10], [10]) )
 TOP_LEFT = TileCoordinate(TileTuple(([1], [2])), PARENT_MAP_SIZE)
@@ -437,6 +437,95 @@ def test_base_tiles_intersects():
     try:
         assert area1.intersects(area2), "Expected area1 to intersect with area2"
         assert not area1.intersects(area3), "Expected area1 to not intersect with area3"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+# Test Cases for TileGrid
+def test_base_tiles_grid_empty():
+    # Arrange & Act
+    empty_grid = BaseTileGrid(np.dtype([("type_name", "U10")]))
+
+    set_grid = BaseTileGrid(np.dtype([("type_name", "U10")]))
+    set_grid.size = TileTuple( ([5], [5]) )
+
+    # Act & Assert
+    try:
+        assert not hasattr(empty_grid, "size"), "Expected no 'size' attribute for BaseTileGrid instantiated without parameters"
+        assert not hasattr(empty_grid, "tiles"), "Expected no 'tiles' attribute for BaseTileGrid instantiated without parameters"
+
+        assert set_grid.size == TileTuple( ([5], [5]) ), "Expected 'size' attribute to be (5, 5) after setting"
+        assert set_grid.tiles.shape == (5, 5), "Expected 'tiles' attribute to have shape (5, 5) after setting size and dtype"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_base_tiles_grid_init():
+    # Arrange & Act
+    grid_size = TileTuple( ([4], [6]) )
+    grid_dtype = np.dtype([("visible_field", "U10"), ("_hidden_field", "i4")])
+    grid = BaseTileGrid(size=grid_size, dtype=grid_dtype)
+
+    # Act & Assert
+    try:
+        assert grid.size == grid_size, "Expected 'size' attribute to match provided size"
+        assert grid.dtype == grid_dtype, "Expected 'dtype' attribute to match provided dtype"
+        assert grid.tiles.shape == (4, 6), "Expected 'tiles' attribute to have shape (4, 6)"
+        assert hasattr(grid, "visible_field"), "Expected 'visible_field' attribute to be initialized"
+        assert not hasattr(grid, "_hidden_field"), "Expected '_hidden_field' attribute to be private and not directly accessible"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_base_tiles_grid_get_location():
+    # Arrange & Act
+    grid_size = TileTuple( ([3], [3]) )
+    grid_dtype = np.dtype([("type_name", "U10")])
+    grid = BaseTileGrid(size=grid_size, dtype=grid_dtype)
+
+
+    # Act & Assert
+    try:
+        location = grid.get_location(2, 2)
+        assert isinstance(location, TileCoordinate), "Expected get_location to return a TileCoordinate instance"
+        assert location.x == 2 and location.y == 2, "Expected TileCoordinate to have correct x and y values"
+        assert location.parent_map_size == grid_size, "Expected TileCoordinate to have correct parent_map_size"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_base_tiles_grid_get_area():
+    # Arrange & Act
+    grid_size = TileTuple( ([5], [5]) )
+    grid_dtype = np.dtype([("type_name", "U10")])
+    grid = BaseTileGrid(size=grid_size, dtype=grid_dtype)
+
+    top_left = (1,1)
+    bottom_right = (3,3)
+
+    # Act & Assert
+    try:
+        area = grid.get_area(top_left, bottom_right)
+        assert isinstance(area, TileArea), "Expected get_area to return a TileArea instance"
+        assert area.top_left == TileCoordinate(TileTuple(([1], [1])), grid_size), "Expected TileArea to have correct top_left"
+        assert area.bottom_right == TileCoordinate(TileTuple(([3], [3])), grid_size), "Expected TileArea to have correct bottom_right"
+        assert area.parent_map_size == grid_size, "Expected TileArea to have correct parent_map_size"
 
     except AssertionError as e:
         pytest.fail(str(e))

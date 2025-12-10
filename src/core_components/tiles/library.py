@@ -10,9 +10,6 @@ from core_components.tiles.base import TileArea, TileCoordinates, new_tile_dtype
 
 DEFAULT_TILE_LOCATION_DTYPE = new_tile_dtype(np.dtype([("name", "U16"),("g_shroud", ascii_graphic)], metadata={"__name__": "tile_type"}))
 
-class TileArea(TileArea):
-
-
 class GenericRoom(TileArea):
     
 
@@ -47,4 +44,75 @@ class GenericRoom(TileArea):
         self.height = new_size[1]
         self.upperLeft_corner = TileCoordinates(self.center.x - self.width // 2, self.center.y - self.height // 2)
         self.lowerRight_corner = TileCoordinates(self.center.x + self.width // 2, self.center.y + self.height // 2)
+    
+
+        # @property
+    # def tile_types(self) -> np.ndarray:
+    #     return self.tiles["type"]
+    
+    # @property
+    # def visible_tiles(self) -> np.ndarray:
+    #     return self.tiles["visible"]
+    
+    # @property
+    # def explored_tiles(self) -> np.ndarray:
+    #     return self.tiles["explored"]
+    
+    # @property
+    # def traversable_tiles(self) -> np.ndarray:
+    #     return self.tiles["traversable"]
+    
+    # @property
+    # def transparent_tiles(self) -> np.ndarray:
+    #     return self.tiles["transparent"]
+
+    # @property
+    # def tile_graphics(self) -> np.ndarray:
+    #     return self.tiles["graphic"]
+    
+    # def _initialize_grid(self) -> None:
+    #     """Initializes the tile grid with default values."""
+    #     self._tiles = np.full((self._width, self._height), fill_value=False, dtype=self._dtype)
+
+    # def get_type_at(self, location: TileCoordinate) -> np.ndarray:
+    #     """Return the tile type at the given location."""
+    #     if not location.is_inbounds:
+    #         return np.empty((1,))
+        
+    #     return self.tiles["type"][location.x, location.y]
+    
+    # def get_graphic_at(self, location: TileCoordinate) -> np.ndarray:
+    #     """Return the tile color at the given location."""
+    #     if not location.is_inbounds:
+    #         return np.empty((3,))
+        
+    #     return self.tiles["colors"][location.x, location.y]
+    
+    # def is_traversable_at(self, location: TileCoordinate) -> bool:
+    #     """Return True if the tile at location is traversable."""
+    #     if not location.is_inbounds:
+    #         return False
+        
+    #     return bool(self.tiles["traversable"][location.x, location.y].all())
            
+    # def is_transparent_at(self, location: TileCoordinate) -> bool:
+    #     """Return True if the tile at location is transparent."""
+    #     if not location.is_inbounds:
+    #         return False
+        
+    #     return bool(self.tiles["transparent"][location.x, location.y].all())
+    
+    # def is_visible_at(self, location: TileCoordinate) -> bool:
+    #     """Return True if the tile at location is visible."""
+    #     if not location.is_inbounds:
+    #         return False
+        
+    #     return bool(self.tiles["visible"][location.x, location.y].all())
+    
+    # def is_explored_at(self, location: TileCoordinate) -> bool:
+    #     """Return True if the tile at location has been explored."""
+    #     if not location.is_inbounds:
+    #         return False
+        
+    #     return bool(self.tiles["explored"][location.x, location.y].all())
+ 
