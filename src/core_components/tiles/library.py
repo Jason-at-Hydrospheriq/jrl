@@ -6,45 +6,57 @@ from warnings import warn
 from typing import Tuple
 import numpy as np
 
-from core_components.tiles.base import TileArea, TileCoordinates, new_tile_dtype, ascii_graphic
-
-DEFAULT_TILE_LOCATION_DTYPE = new_tile_dtype(np.dtype([("name", "U16"),("g_shroud", ascii_graphic)], metadata={"__name__": "tile_type"}))
+from core_components.tiles.base import BaseTileGrid, TileCoordinate, TileArea
 
 class GenericRoom(TileArea):
+
+    def __init__(self, center: TileCoordinate, size: Tuple[int, int]) -> None:
+        self.parent_map_size = center.parent_map_size
+        self.center = center
+        self.width = size[0]
+        self.height = size[1]
+
+    @property
+    def to_mask(self) -> np.ndarray:
+        """Override TileArea.to_mask to return a mask of the room area."""
+        raise NotImplementedError("Subclasses must implement the to_mask property.")
+
+
+class RectangularRoom(GenericRoom):
+
+    @property
+    def to_mask(self) -> np.ndarray:
+        """Return the inner area of this room as a 2D array index."""
+        mask = np.full((self.width, self.height), False, dtype=bool)
+        mask[1:-1, 1:-1] = True
+
+        return mask
+
+
+class CircularRoom(GenericRoom):
+    _radius: int
+
+    def __init__(self, center: TileCoordinate, radius: int = 3):
+        super().__init__(center, (radius * 2, radius * 2))
+        self._radius = radius
+
+    @property
+    def radius(self) -> int:
+        return self._radius
     
-
-
-    def intersects(self, other_room: ) -> bool:
-        """ Return True if this room intersects with another room."""
-        this_room_x = set(np.arange(self.upperLeft_corner.x, self.lowerRight_corner.x))
-        this_room_y = set(np.arange(self.upperLeft_corner.y, self.lowerRight_corner.y))
-
-        other_room_x = set(np.arange(other_room.upperLeft_corner.x, other_room.lowerRight_corner.x))
-        other_room_y = set(np.arange(other_room.upperLeft_corner.y, other_room.lowerRight_corner.y))
+    @radius.setter
+    def radius(self, value: int) -> None:
+        self._radius = value
+        self.width = value * 2
+        self.height = value * 2
         
-        return not this_room_x.isdisjoint(other_room_x) and not this_room_y.isdisjoint(other_room_y)
-    
-    def contains(self, location: TileCoordinates) -> bool:
-        """ Return True if the given location is within this room."""
-        
-        return any((location.to_array() == coord).all() for coord in self.area_coordinates())
-        
-    def random_location(self) -> TileCoordinates:
-        """Return a random location within this room."""
-        area_coords = self.area_coordinates()
-        x_range = area_coords[:, 0]
-        y_range = area_coords[:, 1]
-        x_choice = random.choice(x_range)
-        y_choice = random.choice(y_range)
-        return TileCoordinates(int(x_choice), int(y_choice))
-
-    def resize(self, new_size: Tuple[int, int]) -> None:
-        """ Resize the room to the new size."""
-        self.width = new_size[0]
-        self.height = new_size[1]
-        self.upperLeft_corner = TileCoordinates(self.center.x - self.width // 2, self.center.y - self.height // 2)
-        self.lowerRight_corner = TileCoordinates(self.center.x + self.width // 2, self.center.y + self.height // 2)
-    
+    @property
+    def to_mask(self) -> np.ndarray:
+        """Return the inner area of this room as a 2D array index."""
+        center = (self.width // 2, self.height // 2)
+        mask = np.fromfunction(lambda xx, yy: (xx - center[0]) ** 2 + (yy - center[1]) ** 2 + 2 <= self.radius ** 2,
+                               (self.width + 1, self.height + 1), dtype=int)
+        return mask
 
         # @property
     # def tile_types(self) -> np.ndarray:

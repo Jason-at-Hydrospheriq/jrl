@@ -329,10 +329,13 @@ class TileArea(TileCoordinateSystemElement):
     Raises:
         ValueError: If top_left or bottom_right are not TileCoordinate instances.
     """
-    __slots__ = ("_top_left", "_bottom_right")
+    __slots__ = ("_top_left", "_bottom_right", "_center", "_height", "_width")
 
     _top_left: TileCoordinate
     _bottom_right: TileCoordinate
+    _center: TileCoordinate
+    _height: int
+    _width: int
 
     def __init__(self, top_left: TileCoordinate | None = None, bottom_right: TileCoordinate | None = None) -> None:
 
@@ -374,6 +377,11 @@ class TileArea(TileCoordinateSystemElement):
 
         self._size = value.parent_map_size
         self._top_left = value
+        
+        if hasattr(self, "bottom_right"):
+            self._width = self._calculated_width()
+            self._height = self._calculated_height()
+            self._align_center()
 
     @property
     def bottom_right(self) -> TileCoordinate:
@@ -388,17 +396,24 @@ class TileArea(TileCoordinateSystemElement):
                 raise ValueError("Top_left coordinates must be less than or equal to bottom_right coordinates.")
             if not value.parent_map_size == self.top_left.parent_map_size:
                 raise ValueError("Parent_map_size of top_left and bottom_right must match. Parent map size cannot be inferred from TileCoordinate instances.")
-
+            
         self._size = value.parent_map_size
         self._bottom_right = value
 
+        if hasattr(self, "top_left"):
+            self._width = self._calculated_width()
+            self._height = self._calculated_height()
+            self._align_center()
+
     @property
     def width(self) -> int:
-        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
-            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before accessing width.")
-        
-        return self.bottom_right.x - self.top_left.x + 1
+        return self._width
     
+    @width.setter
+    def width(self, value: int) -> None:
+        self._width = value
+        self._align_corners()
+
     @property
     def height(self) -> int:
         if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
@@ -406,15 +421,21 @@ class TileArea(TileCoordinateSystemElement):
         
         return self.bottom_right.y - self.top_left.y + 1
     
+    @height.setter
+    def height(self, value: int) -> None:
+        self._height = value
+        self._align_corners()
+
     @property
     def center(self) -> TileCoordinate:
-        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
-            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before accessing center.")
-        
-        center_x = (self.top_left.x + self.bottom_right.x) // 2
-        center_y = (self.top_left.y + self.bottom_right.y) // 2
-        return TileCoordinate(TileTuple(([center_x], [center_y])), self.parent_map_size)
+        return self._center
     
+    @center.setter
+    def center(self, value: TileCoordinate) -> None:
+        self._center = value
+        self._size = value.parent_map_size
+        self._align_corners()
+
     @property
     def to_area_tuple(self) -> TileTuple:
         if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
@@ -453,5 +474,44 @@ class TileArea(TileCoordinateSystemElement):
             raise TypeError("another_area must be an instance of TileArea.")
         
         return self._overlap(self.to_area_tuple, another_area.to_area_tuple)   
+    
+    def get_random_location(self) -> TileCoordinate:
+        """Return a random location within this area."""
+    
+        x, y = random.choice(np.argwhere(self.to_mask))
 
+        return TileCoordinate(TileTuple(([int(x)], [int(y)])), self.parent_map_size)
+
+    def _align_corners(self) -> None:
+        if not hasattr(self, "_center"):
+            raise AttributeError("Center coordinate must be set before aligning corners.")
+        
+        half_width = self._width // 2
+        half_height = self._height // 2
+
+        top_left_xy = TileTuple( ([self._center.x - half_width], [self._center.y - half_height]) )
+        bottom_right_xy = TileTuple( ([self._center.x + half_width], [self._center.y + half_height]) )
+
+        self._top_left = TileCoordinate(top_left_xy, self._center.parent_map_size)
+        self._bottom_right = TileCoordinate(bottom_right_xy, self._center.parent_map_size)
+
+    def _align_center(self) -> None: 
+        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
+            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before aligning center.")
+        if not hasattr(self, "_size"):
+            raise AttributeError("Attribute 'parent_map_size' must be set before aligning center.")
+        
+        center_x = (self.top_left.x + self.bottom_right.x) // 2
+        center_y = (self.top_left.y + self.bottom_right.y) // 2
+        self._center = TileCoordinate(TileTuple(([center_x], [center_y])), self.parent_map_size)
+
+    def _calculated_width(self) -> int:
+        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
+            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before calculating width.")
+        return self.bottom_right.x - self.top_left.x + 1
+    
+    def _calculated_height(self) -> int:
+        if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
+            raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before calculating height.")
+        return self.bottom_right.y - self.top_left.y + 1
 
