@@ -111,8 +111,6 @@ class BaseTileGrid(TileCoordinateSystem):
     
     def __init__(self, dtype: np.dtype, size: TileTuple | None = None) -> None:
 
-        warn("BaseTileGrid is an abstract class and should not be instantiated directly.", UserWarning)
-
         self._dtype = dtype
         if self._dtype.names:
             for prop in self._dtype.names:

@@ -4,7 +4,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
 from core_components.tiles.base import TileCoordinate, TileArea, TileTuple, BaseTileGrid
-from core_components.maps.base import new_tile_dtype
+from core_components.maps.base import grid_tile_dtype
 from core_components.maps.base import ascii_graphic
 
 PARENT_MAP_SIZE = TileTuple( ([10], [10]) )
@@ -650,7 +650,7 @@ def test_base_new_tile_location_dtype():
     # Arrange & Act
     tile_type_dtype = np.dtype([("type_name", "U10")])
     graphic_dtype = ascii_graphic
-    tile_location_dtype = new_tile_dtype(tile_type_dtype, graphic_dtype)
+    tile_location_dtype = grid_tile_dtype(tile_type_dtype, graphic_dtype)
 
     # Act & Assert
     try:
