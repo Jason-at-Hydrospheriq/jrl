@@ -3,9 +3,59 @@ from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
-from core_components.maps.base import StateTuple, grid_tile_dtype, ascii_graphic, GraphicTileMap, MapGraphics, DEFAULT_MANIFEST
+from core_components.maps.base import ascii_graphic, GraphicTileMap, DEFAULT_MANIFEST
 from core_components.tiles.base import BaseTileGrid, TileTuple
 
+
+# Test Cases for ascii_graphic dtype
+def test_graphic_tile_map_ascii_graphic_dtype():
+    # Arrange & Act
+    graphic = np.array((ord("A"), (0, 0, 0), (0, 0, 0)), dtype=ascii_graphic)
+
+    # Act & Assert
+    try:
+        assert graphic['ch'] == ord("A"), "Expected 'ch' field to be ord('A')"
+        assert graphic['ch'].dtype == np.int32, "Expected 'ch' field to be of type int32"
+        assert np.array_equal(graphic['fg'], (0, 0, 0)), "Expected 'fg' field to be (0, 0, 0)"
+        assert graphic['fg'].dtype == np.uint8, "Expected 'fg' field to be of type 3 unsigned bytes"
+        assert np.array_equal(graphic['bg'], (0, 0, 0)), "Expected 'bg' field to be (0, 0, 0)"
+        assert graphic['bg'].dtype == np.uint8, "Expected 'bg' field to be of type 3 unsigned bytes"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+# Test Cases for new_tile_location_dtype function
+def test_graphic_tile_map_dtype_generator():
+    # Arrange & Act
+    tile_type_dtype = np.dtype([("type_name", "U10")])
+    graphic_dtype = ascii_graphic
+    tile_location_dtype = grid_tile_dtype(tile_type_dtype, graphic_dtype)
+
+    # Act & Assert
+    try:
+        expected_fields = ['graphic_type', 'traversable', 'transparent', 'visible', 'explored', 'graphic_state']
+        actual_fields = tile_location_dtype.names
+
+        assert actual_fields == tuple(expected_fields), f"Expected fields {expected_fields}, got {actual_fields}"
+        assert tile_location_dtype['graphic_type'] == tile_type_dtype, "Expected 'graphic_type' field to match provided tile_type_dtype"
+        assert tile_location_dtype['traversable'] == np.dtype(np.bool_), "Expected 'traversable' field to be of type bool"
+        assert tile_location_dtype['transparent'] == np.dtype(np.bool_), "Expected 'transparent' field to be of type bool"
+        assert tile_location_dtype['visible'] == np.dtype(np.bool_), "Expected 'visible' field to be of type bool"
+        assert tile_location_dtype['explored'] == np.dtype(np.bool_), "Expected 'explored' field to be of type bool"
+        assert tile_location_dtype['graphic_state'] == graphic_dtype, "Expected 'graphic_state' field to match provided graphic_dtype"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+# Test Cases for GraphicTileMap class
 def test_graphic_tile_map_empty_init():
     # Arrange & Act
     tile_map = GraphicTileMap()

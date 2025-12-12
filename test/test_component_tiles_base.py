@@ -4,8 +4,6 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
 from core_components.tiles.base import TileCoordinate, TileArea, TileTuple, BaseTileGrid
-from core_components.maps.base import grid_tile_dtype
-from core_components.maps.base import ascii_graphic
 
 PARENT_MAP_SIZE = TileTuple( ([10], [10]) )
 TOP_LEFT = TileCoordinate(TileTuple(([1], [2])), PARENT_MAP_SIZE)
@@ -616,54 +614,6 @@ def test_base_tiles_grid_get_area():
         assert area.center == CENTER, "Expected get_area returns TileArea with correct center"
         assert area.width == WIDTH, "Expected get_area returns TileArea with correct width"
         assert area.height == HEIGHT, "Expected get_area returns TileArea with correct height"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-# Test Cases for ascii_graphic dtype
-def test_base_ascii_graphic_dtype():
-    # Arrange & Act
-    graphic = np.array((ord("A"), (0, 0, 0), (0, 0, 0)), dtype=ascii_graphic)
-
-    # Act & Assert
-    try:
-        assert graphic['ch'] == ord("A"), "Expected 'ch' field to be ord('A')"
-        assert graphic['ch'].dtype == np.int32, "Expected 'ch' field to be of type int32"
-        assert np.array_equal(graphic['fg'], (0, 0, 0)), "Expected 'fg' field to be (0, 0, 0)"
-        assert graphic['fg'].dtype == np.uint8, "Expected 'fg' field to be of type 3 unsigned bytes"
-        assert np.array_equal(graphic['bg'], (0, 0, 0)), "Expected 'bg' field to be (0, 0, 0)"
-        assert graphic['bg'].dtype == np.uint8, "Expected 'bg' field to be of type 3 unsigned bytes"
-
-    except AssertionError as e:
-        pytest.fail(str(e))
-    
-    # Atavise
-    finally:
-        pass
-
-# Test Cases for new_tile_location_dtype function
-def test_base_new_tile_location_dtype():
-    # Arrange & Act
-    tile_type_dtype = np.dtype([("type_name", "U10")])
-    graphic_dtype = ascii_graphic
-    tile_location_dtype = grid_tile_dtype(tile_type_dtype, graphic_dtype)
-
-    # Act & Assert
-    try:
-        expected_fields = ['type', 'traversable', 'transparent', 'visible', 'explored', 'graphic']
-        actual_fields = tile_location_dtype.names
-
-        assert actual_fields == tuple(expected_fields), f"Expected fields {expected_fields}, got {actual_fields}"
-        assert tile_location_dtype['type'] == tile_type_dtype, "Expected 'type' field to match provided tile_type_dtype"
-        assert tile_location_dtype['traversable'] == np.dtype(np.bool_), "Expected 'traversable' field to be of type bool"
-        assert tile_location_dtype['transparent'] == np.dtype(np.bool_), "Expected 'transparent' field to be of type bool"
-        assert tile_location_dtype['visible'] == np.dtype(np.bool_), "Expected 'visible' field to be of type bool"
-        assert tile_location_dtype['explored'] == np.dtype(np.bool_), "Expected 'explored' field to be of type bool"
-        assert tile_location_dtype['graphic'] == graphic_dtype, "Expected 'graphic' field to match provided graphic_dtype"
 
     except AssertionError as e:
         pytest.fail(str(e))
