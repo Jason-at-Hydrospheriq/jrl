@@ -23,7 +23,7 @@ ascii_graphic = np.dtype(
 # A typed dictionary for map graphics
 class GraphicsManifestDict(TypedDict):
     dimensions: Dict[str,TileTuple]
-    state: Dict[str, Tuple[str, ...] | Dict[str, Dict[str, int | None]]]
+    statespace: Dict[str, Tuple[str, ...] | Tuple[tuple, ...] | Dict[str, Any]] | None
     colors: Dict[str, Tuple[int, Tuple[int, int, int], Tuple[int, int, int]]]
     dtypes: Dict[str, np.dtype | None ]
     graphics: Dict[str, Any]
@@ -107,13 +107,13 @@ class GraphicTileMap(Protocol):
     Implementations of this protocol are responsible for managing the state and graphics of the tiles on the map
     bases on the specific definitions in the graphics manifest. Each new map should have its own associated graphics 
     manifest standard.
-    
+
     For a full implementation, see the `core_components.maps.library` module.
     """
     _graphics_manifest: GraphicsManifestDict
     _graphics_resources: Dict[str, Any | None]
     _grid: BaseTileGrid
-    state: Dict[str, Any] # Dict[str, Tuple[str, ...] | Dict[str, Dict[str, int | None]]]
+    statespace: Dict[str, Any] | None
     colors: Dict[str, np.ndarray | None]
     dtypes: Dict[str, np.dtype | None ]
     graphics: Dict[str, np.ndarray | None]
@@ -132,17 +132,21 @@ class GraphicTileMap(Protocol):
                     setattr(self, key, self._graphics_resources[key])
             
             # Copy information from the graphics manifest into the resources dictionary
-            self.state = deepcopy(self._graphics_manifest['state'])
+            self.statespace = deepcopy(self._graphics_manifest['statespace'])
             self.colors = {}
+            self.dtypes = deepcopy(self._graphics_manifest['dtypes'])
+            self.graphics = {}
 
             # Initialize the datatypes, colors, and graphics
-            self._initialize_dtypes()
             self._initialize_colors()
+            self._initialize_dtypes()
             self._initialize_graphics()
+            self._initialize_state_vectors()
+            self._initialize_state_map()
             
             # Initialize the grid
-            if "grid_tile_dtype" in self.dtypes:
-                dtype = self.dtypes["grid_tile_dtype"]
+            if "tile_grid" in self.dtypes:
+                dtype = self.dtypes["tile_grid"]
                 if dtype is not None:
                     self._grid = BaseTileGrid(dtype)
 
@@ -152,77 +156,78 @@ class GraphicTileMap(Protocol):
                     self.tiles['graphic_type'][:] = self.graphics['default']
 
                     self.reset_state()
-    
-    def _initialize_dtypes(self) -> None:
-
-        """Generates the tile and tile location dtypes based on the graphic definitions"""
-        
-        # Generate the tile graphic dtype based on the provided color palette
-        color_dtypes = [(label, ascii_graphic) for label in self.colors]
-        graphic_dtype =  np.dtype([("name", "U16")] + color_dtypes, metadata={"__name__": "tile_graphics"})
-        self.dtypes["tile_graphics"] = graphic_dtype
-
-        # Generate the tile grid dtype based on the provided tile graphic and state dtypes
-        graphic_dtypes = [('graphic_type', graphic_dtype), ('graphic', ascii_graphic)] 
-        state_dtypes = [(name, np.bool) for name in self.state['bits']]
-        self.dtypes["tile_grid"] = np.dtype( graphic_dtypes + state_dtypes, metadata={"__name__": "grid_tile_dtype"})
+                    self.update_state()
 
     def _initialize_colors(self) -> None:
-        """Generates the tile graphic definitions for the map"""
+        """Generates the color graphic definitions for the map"""
         color_dtype = ascii_graphic
         for color_name, color_def in self._graphics_manifest['colors'].items():
             self.colors[color_name] = np.array(color_def, dtype=color_dtype)
+ 
+    def _initialize_dtypes(self) -> None:
 
-    def _intialize_state_map(self) -> None:
-        state_label_map = []
-        statebits = self.state['bits']
-        dtype_label_bits = self.state['dtype_labels']['fixed_bits']
+        """Generates the tile and tile location dtypes based on the graphic definitions"""
+        # Generate the tile state vector dtype based on the provided state bits
+        if self.statespace is not None:
+            state_bit_dtypes = [(name, np.bool) for name in self.statespace['bits']]
+            self.dtypes['tile_state_vector'] = np.dtype(state_bit_dtypes, metadata={"__name__": "tile_state_vector"})
 
-        for dtype_label, state_def in dtype_label_bits.items():        
-            for idx, state in enumerate(self.state['tuples']):
-                    # Screen through each state and assign it to a graphic if it matches the fixed state bits
-                    label = None
+        # Generate the tile graphic dtype based on the provided state labels
+            state_labels = self.statespace['dtype_labels']
+            state_dtypes = [(state_label, ascii_graphic) for state_label in state_labels.get('names', [])]
+            self.dtypes['tile_graphic'] = np.dtype([('name', 'U16')] + state_dtypes, metadata={"__name__": "tile_graphic"})
 
-                    for idx, bit in enumerate(state):
-                        fixed_bit = state_def[statebits[idx]]
-                        if fixed_bit is None:
-                            pass
+        # Generate the tile grid dtype based on the provided tile graphic and state dtypes
+            graphic_dtypes = [('graphic_type', self.dtypes['tile_graphic']), ('graphic', ascii_graphic)]
+            self.dtypes["tile_grid"] = np.dtype( graphic_dtypes + state_bit_dtypes, metadata={"__name__": "tile_grid"})
 
-                        elif fixed_bit == int(bit):
-                            label = dtype_label
-
-                        else:
-                            add_state = False
-                            break
-
-                    state_label_map.append(label)
-
-        self.state['state_label_map'] = tuple(state_label_map)
-    
     def _initialize_graphics(self) -> None:
-        graphic_dtype = self.dtypes['tile_graphics']
-        for graphic_name, definition in self._graphics_manifest['graphics'].items():
-            name_value = (graphic_name,)
-            graphics_value = []
+        graphic_dtype = self.dtypes['tile_graphic']
+        for graphic_name, package in self._graphics_manifest['graphics'].items():
+            graphic = np.empty(1, dtype=graphic_dtype)
 
-            for label in definition['state_label'].values():
-                graphics_value.append(self.colors[label[1]])
+            graphic['name'] = graphic_name
+
+            for state, color in package['state_definitions'].items():
+                graphic[state] = self.colors[color]
             
-            values =  name_value + tuple(graphics_value)
-            
-            graphic = np.array(values, dtype=graphic_dtype)
             self.graphics[graphic_name] = graphic
 
+    def _initialize_state_vectors(self) -> None:
+        if self.statespace is not None and self.statespace['vector_tuples'] is not None:
+            state_vectors = []
+            for vector_tuple in self.statespace['vector_tuples']:
+                vector = np.array(list(vector_tuple), dtype=self.dtypes['tile_state_vector'])
+                state_vectors.append(vector)
+            self.statespace['vectors'] = state_vectors
+
+    def _initialize_state_map(self) -> None:
+        label_map = []
+        if self.statespace is not None and self.statespace['bits'] is not None and self.statespace['dtype_labels'] is not None:
+            for statespace_vector_tuple in self.statespace['vector_tuples']:
+                add_label = False
+                statespace_vector = np.array(list(statespace_vector_tuple))
+                fixed_bit_vector_tuples = self.statespace['dtype_labels']['fixed_bits']
+                for label, vector_tuple in fixed_bit_vector_tuples.items():
+                    fixed_bit_vector = np.array(list(vector_tuple))        
+                    add_label = np.array_equal(np.where(statespace_vector == fixed_bit_vector), np.where(fixed_bit_vector != None))
+                    if add_label:
+                        label_map.append(label)
+                        break
+
+            self.statespace['label_map'] = tuple(label_map)
+    
     @property
     def grid(self) -> BaseTileGrid:
         return self._grid
 
     @property
-    def state_space_array(self) -> np.ndarray:
-        return np.array(self.state['tuples']) # 1D State Vector + 1D State Bits = 2D State Space Array
+    def statespace_array(self) -> np.ndarray | None:
+        if self.statespace and self.statespace['vector_tuples'] is not None:
+            return np.array(self.statespace['vector_tuples']) # 1D State Vector + 1D State Bits = 2D State Space Array
 
     @property
-    def state_space_tensor(self) -> np.ndarray:
+    def statespace_tensor(self) -> np.ndarray | None:
         """Returns a tensor of all possible state labels for all tiles on the map.
         NDIMS: 4 
         SHAPE: (m: number of state bits, 
@@ -230,15 +235,28 @@ class GraphicTileMap(Protocol):
                 x: grid x shape, 
                 y: grid y shape)
         """
-
-        n_states = len(self.state['tuples'])
-        n_state_bits = len(self.state['bits'])
-        ss_array = self.state_space_array # 1D State Vector + 1D State Bits = 2D State Space Array
-        ss_3d_tensor = np.concatenate([ss_array] * self.tiles.shape[0]).reshape(self.tiles.shape[0], n_states, n_state_bits) # +1D Grid
-        return np.stack([ss_3d_tensor] * self.tiles.shape[1], axis = 1) # +1D Grid = 4D State Space Tensor
-    
+        if self.statespace is not None and self.statespace['vector_tuples'] is not None:
+            n_states = len(self.statespace['vector_tuples'])
+            n_state_bits = len(self.statespace['bits'])
+            ss_array = self.statespace_array # 1D State Vector + 1D State Bits = 2D State Space Array
+            ss_3d_tensor = np.concatenate([ss_array] * self.tiles.shape[0]).reshape(self.tiles.shape[0], n_states, n_state_bits) # +1D Grid
+            return np.stack([ss_3d_tensor] * self.tiles.shape[1], axis = 1) # +1D Grid = 4D State Space Tensor
+        
     @property
-    def state_tensor(self) -> np.ndarray:
+    def statespace_label_map(self) -> np.ndarray | None:
+        if self.statespace is not None:
+            return np.array(self.statespace['label_map'])
+
+    @property
+    def statespace_index_map(self) -> np.ndarray:
+        label_indices = np.where(np.all(self.state_tensor_aligned == self.statespace_tensor, axis=3))
+
+        index_map = np.full(self.tiles.shape, fill_value=-1, dtype=int)
+        index_map[label_indices[0], label_indices[1]] = label_indices[2]
+        return index_map
+        
+    @property
+    def state_tensor(self) -> np.ndarray | None:
         """Returns a tensor of state bits for all tiles on the map based on their current states.
         NDIMS: 4 
         SHAPE: (m: number of state bits, 
@@ -246,13 +264,14 @@ class GraphicTileMap(Protocol):
                 x: grid x shape, 
                 y: grid y shape)
         """
-        n_state_bits = len(self.state['bits'])
-        state_tensor_dimensions = [self.tiles[bit] for bit in self.state['bits']]
-        
-        return np.stack(state_tensor_dimensions, axis = 0).transpose(1,2,0).reshape(*self.tiles.shape, n_state_bits) # 1D State Vector + 1D State Bits + 2 Grid Dimensions = 4D State Tensor
+        if self.statespace is not None and self.statespace['vector_tuples'] is not None:
+            n_state_bits = len(self.statespace['bits'])
+            state_tensor_dimensions = [self.tiles[bit] for bit in self.statespace['bits']]
+            
+            return np.stack(state_tensor_dimensions, axis = 0).transpose(1,2,0).reshape(*self.tiles.shape, 1, n_state_bits) # 1D State Vector + 1D State Bits + 2 Grid Dimensions = 4D State Tensor
 
     @property
-    def state_tensor_aligned(self) -> np.ndarray:
+    def state_tensor_aligned(self) -> np.ndarray | None:
         """Returns a tensor of state bits for all tiles on the map based on their current state duplicated to align with state space tensor.
         NDIMS: 4 
         SHAPE: (m: number of state bits, 
@@ -260,55 +279,77 @@ class GraphicTileMap(Protocol):
                 x: grid x shape, 
                 y: grid y shape)
         """
+        if self.statespace is not None and self.statespace['vector_tuples'] is not None and self.statespace_tensor is not None:
+            n_state_bits = len(self.statespace['bits'])
+            n_states = len(self.statespace['vector_tuples'])
+            state_tensor_dimensions = [self.state_tensor] * n_states
+            
+            return np.stack(state_tensor_dimensions, axis=2).reshape(*self.tiles.shape, n_states, n_state_bits) # State Tensor x number of possible states = 4D State Tensor
+
+    def get_tiles(self) -> np.ndarray | None:
+        if self.graphics is not None:
+            return deepcopy(self.tiles['graphic_type'])
+
+    def get_tile_layout(self, graphic_name: str = 'default') -> np.ndarray | None:
+        if self.graphics is not None:
+            tiles = self.get_tiles()
+            if tiles is not None:
+                return tiles['name'] == graphic_name
         
-        n_states = len(self.state['tuples'])
-        state_tensor_dimensions = [self.state_tensor] * n_states
-        return np.stack(state_tensor_dimensions, axis=self.state_tensor.ndim - 2) # State Tensor x number of possible states = 4D State Tensor
+    def set_tiles(self, layout: np.ndarray | None = None, graphic_name: str = 'default', join: bool = False, join_type: str = 'merge') -> None:
+
+        if layout is None:
+            layout = np.full(self.tiles.shape, fill_value=True, dtype=bool)
+        
+        current_layout = self.get_tile_layout(graphic_name)
+        self.tiles['graphic_type'][current_layout]= self.graphics['default']
+
+        if self.graphics is not None:
+            if join and join_type == 'merge':
+                layout = current_layout | layout
+            elif join and join_type == 'outer':
+                layout = current_layout ^ layout
+            elif join and join_type == 'inner':
+                layout = current_layout & layout
+            else: # replace
+                self.tiles['graphic_type'][current_layout]= self.graphics['default']
+                
+            self.tiles['graphic_type'][layout] = self.graphics[graphic_name]
+            self.update_state()
+
+    def reset_tiles(self) -> None:
+        if self.graphics is not None:
+           self.tiles['graphic_type'][:] = self.graphics['default']
+
+    def get_statespace_vector(self, index: int) -> np.ndarray | None:
+        if self.statespace is not None:
+            return deepcopy(self.statespace['vectors'][index])
     
-    @property
-    def state_space_label_map(self) -> np.ndarray:
-        return self.state['state_label_map']
-
-    @property
-    def state_index_map(self) -> np.ndarray:
-        label_indices = np.where(np.all(self.state_tensor_aligned == self.state_space_tensor, axis=3))
-
-        index_map = np.full(self.tiles.shape, fill_value=-1, dtype=int)
-        index_map[label_indices[0], label_indices[1]] = label_indices[2]
-        return index_map
-
-    def draw_tile(self, location: TileCoordinate | TileArea | None, tile_type: str = "floor") -> None:
-        if location and tile_type in self.graphics and location.parent_map_size == self.grid.size:
-            if isinstance(location, TileCoordinate):
-                self.tiles['graphic_type'][location.to_xy_tuple] = self.graphics[tile_type]
-
-            elif isinstance(location, TileArea):
-                self.tiles['graphic_type'][location.to_slices] = self.graphics[tile_type]
-
-    def reset_tile(self, location: TileCoordinate | TileArea | None) -> None:
-        if location and location.parent_map_size == self.grid.size:
-            if isinstance(location, TileCoordinate):
-                self.tiles['graphic_type'][location.to_xy_tuple] = self.graphics['default']
-
-            elif isinstance(location, TileArea):
-                self.tiles['graphic_type'][location.to_slices] = self.graphics['default']
-
-    def update_state_bit(self, bit: str, mask: np.ndarray) -> None:
+    def get_state_bits(self, bit: str) -> np.ndarray:
+        return deepcopy(self.tiles[bit])
+    
+    def set_state_bits(self, bit: str, mask: np.ndarray) -> None:
         self.tiles[bit][:] = mask
     
-    def reset_state_bit(self, bit: str) -> None:
+    def reset_state_bits(self, bit: str) -> None:
         self.tiles[bit][:] = False
 
-    def update_map_state(self) -> None:
-
-        for index in np.unique(self.state_index_map):
-            mask = self.state_index_map == index
-            label = self.state['state_label_map'][index]
-            if label is not None and self.graphics is not None and self.graphics['graphic'] is not None and self.graphics['graphic_type'] is not None:
-                self.graphics['graphic'][mask] = self.graphics['graphic_type'][label][mask]
+    def get_state(self) -> np.ndarray | None:
+        if self.graphics is not None:
+            return deepcopy(self.tiles['graphic'][:])
+    
+    def update_state(self) -> None:
+        if self.statespace is not None:
+            for index in np.unique(self.statespace_index_map):
+                mask = self.statespace_index_map == index
+                state_label = self.statespace['label_map'][index]
+                color = self.tiles['graphic_type'][state_label][mask]
+                if color is not None:
+                    self.tiles['graphic'][mask] = color
 
     def reset_state(self) -> None:
-        for bit in self.state['bits']:
-            self.tiles[bit][:] = False
+        if self.statespace is not None:
+            for bit in self.statespace['bits']:
+                self.tiles[bit][:] = False
     
         
