@@ -58,16 +58,16 @@ class DefaultTileMap(GraphicTileMap):
     
     @property
     def traversable(self) -> np.ndarray:
-        return self.get_state_bit('blocks_movement') == False
+        return self.get_state_bits('blocks_movement') == False
     
     @property
     def transparent(self) -> np.ndarray:
-        return self.get_state_bit('blocks_vision') == False
+        return self.get_state_bits('blocks_vision') == False
     
     @property
     def seen(self) -> np.ndarray:
-        return self.get_state_bit('seen')
+        return self.get_state_bits('seen')
 
     @property
     def visible(self) -> np.ndarray:
-        return self.get_state_bit('visible')
+        return self.get_state_bits('visible')

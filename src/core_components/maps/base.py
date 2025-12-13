@@ -284,7 +284,7 @@ class GraphicTileMap(Protocol):
             n_states = len(self.statespace['vector_tuples'])
             state_tensor_dimensions = [self.state_tensor] * n_states
             
-            return np.stack(state_tensor_dimensions, axis=2).reshape(*self.tiles.shape, n_states, n_state_bits) # State Tensor x number of possible states = 4D State Tensor
+            return np.stack(state_tensor_dimensions, axis=2).reshape(*self.tiles.shape, n_states, n_state_bits) # type: ignore State Tensor x number of possible states = 4D State Tensor
 
     def get_tiles(self) -> np.ndarray | None:
         if self.graphics is not None:
