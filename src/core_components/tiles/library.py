@@ -62,35 +62,6 @@ class GenericCorridor(GenericMapArea):
 
         return mask
 
-    # @property
-    # def to_mask(self) -> np.ndarray:
-    #     """Return the inner area of this corridor as a 2D array index."""
-    #     grid_tuple = self._tiletuple_to_xy_tuple(self.parent_map_size)
-    #     mask = np.full(grid_tuple, fill_value=False, dtype=bool)
-        
-    #     if self.direction == "horizontal":
-    #         x_left_ = self.center.x - self.length // 2
-    #         x_right_ = self.center.x + self.length // 2 + 1
-    #         y_top_ = self.center.y
-    #         y_bottom_ = self.center.y + 1
-            
-    #         x_slice = slice(x_left_, x_right_)
-    #         y_slice = slice(y_top_, y_bottom_)
-    #     elif self.direction == "vertical":
-    #         x_left_ = self.center.x
-    #         x_right_ = self.center.x + 1
-    #         y_top_ = self.center.y - self.length // 2
-    #         y_bottom_ = self.center.y + self.length // 2 + 1
-            
-    #         x_slice = slice(x_left_, x_right_)
-    #         y_slice = slice(y_top_, y_bottom_)
-    #     else:
-    #         raise ValueError("Direction must be either 'horizontal' or 'vertical'.")
-
-    #     mask[x_slice, y_slice] = True
-
-    #     return mask
-
 
 class RectangularRoom(GenericMapArea):
 

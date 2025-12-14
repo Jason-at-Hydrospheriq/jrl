@@ -22,7 +22,6 @@ class BaseMapGenerator(Protocol):
 
     For a full implementation, see the `core_components.generators` module.
     """
-    map: GraphicTileMap
 
     def generate(self, *args, **kwargs) -> GraphicTileMap:
         raise NotImplementedError()

@@ -14,74 +14,78 @@ from core_components.maps.library import GraphicTileMap, DefaultTileMap, DEFAULT
 RECTANGULAR_ROOM_TEMPLATE = RectangularRoom()
 CIRCULAR_ROOM_TEMPLATE = CircularRoom()
 CORRIDOR_TEMPLATE = GenericCorridor()
-    
+DEFAULT_MAP_TEMPLATE = DefaultTileMap()
+
 class DefaultDungeonGenerator(BaseMapGenerator):
     """Generates dungeons using various algorithms."""
-    
-    def __init__(self) -> None:
-        self.rooms = []
-        self.corridors = []
-
-        self.map = DefaultTileMap()
+    width: int
+    height: int
 
     def generate(self, 
                  max_rooms: int=10, 
                  min_room_size: int=5, 
                  max_room_size: int=20) -> GraphicTileMap:
         #TODO Use LLM to generate more complex dungeons
-        self.clear()
-        self.map.set_tiles(graphic_name='wall')
-        self.map.update_state()
+        dungeon = deepcopy(DEFAULT_MAP_TEMPLATE)
+        self.width = dungeon.grid.width
+        self.height = dungeon.grid.height
+
+        dungeon.set_tiles(graphic_name='wall')
+        dungeon.update_state()
         
-        self.add_rooms(max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size)
-        self.add_corridors()
-        
-        return deepcopy(self.map)
+        self.add_rooms(dungeon=dungeon, max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size)
+        self.add_corridors(dungeon=dungeon)
+        for area in dungeon.areas.values():
+            dungeon.set_tiles(area.to_mask, "floor", join=True)
+        dungeon.update_state()
+
+        return dungeon
     
-    def add_rooms(self, max_rooms: int, min_room_size: int, max_room_size: int):
+    def add_rooms(self, dungeon: GraphicTileMap, max_rooms: int, min_room_size: int, max_room_size: int):
         """Add rooms to the tile map."""
-        rooms = self.room_generator(max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size)
+        rooms = self.room_generator(dungeon=dungeon, max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size)
+        map_rooms = []
         for idx, new_room in enumerate(rooms):
             if new_room is not None:
-                no_overlap = all(not new_room.intersects(existing_room) for existing_room in self.rooms)
+                no_overlap = all(not new_room.intersects(existing_room) for existing_room in map_rooms)
                 inbounds = new_room.is_inbounds
                 
                 if no_overlap and inbounds and new_room.to_mask.any():
-                    self.map.areas[str(idx)] = new_room
+                    map_rooms.append(new_room)
+                    dungeon.areas[str(idx)] = new_room
 
-    def add_corridors(self) -> None:
+    def add_corridors(self, dungeon: GraphicTileMap) -> None:
         """Carve out a corridor between two points in the tile map."""
-        area_idx = list(self.map.areas.keys())
-
+        area_idx = list(dungeon.areas.keys())
         for idx, area_name in enumerate(area_idx):
 
             prev_area_name = area_idx[idx-1]
-            prev_area = self.map.areas[prev_area_name]
+            prev_area = dungeon.areas[prev_area_name]
             prev_area_location = prev_area.center
             if idx == 0:
                 prev_area_location = prev_area.center
                 continue
-            current_area = self.map.areas[area_name]
+            current_area = dungeon.areas[area_name]
             current_area_location = current_area.center
 
             corridor = deepcopy(CORRIDOR_TEMPLATE)
-            corridor.center = self.map.center
-            corridor.width = self.map.grid.width
-            corridor.height = self.map.grid.height
+            corridor.center = dungeon.center
+            corridor.width = dungeon.grid.width
+            corridor.height = dungeon.grid.height
             corridor.start = prev_area_location
             corridor.end = current_area_location
 
-            self.map.areas[str(f'corridor_{idx}')] = corridor
+            dungeon.areas[str(f'corridor_{idx}')] = corridor
             
-    def room_generator(self, max_rooms: int, min_room_size: int, max_room_size: int) -> Generator[GenericMapArea | None]:
+    def room_generator(self, dungeon: GraphicTileMap, max_rooms: int, min_room_size: int, max_room_size: int) -> Generator[GenericMapArea | None]:
 
         for _ in range(max_rooms):
             room_type = random.choice(['rectangular', 'circular'])
 
-            x_loc = random.randint(0, self.map.grid.width - 1)
-            y_loc = random.randint(0, self.map.grid.height - 1)
+            x_loc = random.randint(0, dungeon.grid.width - 1)
+            y_loc = random.randint(0, dungeon.grid.height - 1)
             location = TileTuple( ([x_loc], [y_loc]) )
-            center = TileCoordinate(location, parent_map_size=self.map.grid.size)
+            center = TileCoordinate(location, parent_map_size=dungeon.grid.size)
 
             x_size = random.randint(min_room_size, max_room_size)
             y_size = random.randint(min_room_size, max_room_size)
@@ -117,9 +121,3 @@ class DefaultDungeonGenerator(BaseMapGenerator):
 
         return clone
     
-    def clear(self) -> None:
-        self.map.reset_tiles()
-        self.map.reset_state()
-        self.map.areas.clear()
-        self.map.paths.clear()
-

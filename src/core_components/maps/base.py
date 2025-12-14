@@ -301,13 +301,10 @@ class GraphicTileMap(Protocol):
                 return tiles['name'] == graphic_name
     
     def set_tiles(self, layout: np.ndarray | None = None, graphic_name: str = 'default', join: bool = False, join_type: str = 'merge') -> None:
-        
-        if layout is None:
-            layout = np.full(self.tiles.shape, fill_value=True, dtype=bool)
-        
+
         current_layout = self.get_tile_layout(graphic_name)
 
-        if self.graphics is not None:
+        if self.graphics and self.statespace and current_layout is not None:
             if join and join_type == 'merge':
                 layout = current_layout | layout
             elif join and join_type == 'outer':
@@ -319,7 +316,13 @@ class GraphicTileMap(Protocol):
 
             self.tiles['graphic_type'][current_layout]= self.graphics['default']
             self.tiles['graphic_type'][layout] = self.graphics[graphic_name]
-            # What about states?
+
+            fixed_bits = self._graphics_manifest['graphics'][graphic_name]['fixed_state_bits']
+            for idx, bit in enumerate(fixed_bits):
+                bit_name = self.statespace['bits'][idx]
+                if bit is not None:
+                    self.set_state_bits(bit_name, layout) #type: ignore
+
             current_layout = self.get_tile_layout(graphic_name)
             self.update_state()
 
