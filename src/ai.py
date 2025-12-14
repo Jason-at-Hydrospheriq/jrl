@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING, List, Set
 import tcod
 
-from components.events.library import BaseGameEvent, UIEvent, SystemEvent
-from components.actions.dispatchers import InputDispatcher, InterfaceDispatcher, SystemDispatcher
+from core_components.events.library import BaseGameEvent, UIEvent, SystemEvent
+from core_components.dispatchers.library import InputDispatcher, InterfaceDispatcher, SystemDispatcher
 
 if TYPE_CHECKING:
     from state import GameState

@@ -4,9 +4,7 @@
 from __future__ import annotations
 from typing import Protocol
 
-
-class BaseGameEvent(Protocol):
-    message: str
+from core_components.events.base import BaseGameEvent
 
 
 class SystemEvent(BaseGameEvent):

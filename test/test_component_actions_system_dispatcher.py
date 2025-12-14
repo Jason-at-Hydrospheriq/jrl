@@ -1,7 +1,7 @@
 import pytest
 import tcod.event
 
-from components.actions.dispatchers import SystemDispatcher
+from core_components.dispatchers.library import SystemDispatcher
 from state import GameState
 
 
@@ -9,7 +9,7 @@ def test_dispatcher_ev_gamestart():
     state = GameState()
     dispatcher = SystemDispatcher()
     
-    from src.components.events.library import GameStart
+    from core_components.events.library import GameStart
     event = GameStart(message='Game Started')
     
     actions = dispatcher.dispatch(event, state)
@@ -26,7 +26,7 @@ def test_dispatcher_ev_gameover():
     state = GameState()
     dispatcher = SystemDispatcher()
     
-    from src.components.events.library import GameOver
+    from core_components.events.library import GameOver
     event = GameOver(message='Game Over')
     
     actions = dispatcher.dispatch(event, state)

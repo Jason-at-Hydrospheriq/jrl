@@ -8,24 +8,16 @@ from tcod import libtcodpy
 import numpy as np
 
 if TYPE_CHECKING:
-    from components.roster import Roster
+    from core_components.roster import Roster
 
-from components.events.library import MapUpdate
+from core_components.events.library import MapUpdate
+from core_components.actions.base import BaseStateAction
 from state import GameState
-from components.entities.library import BaseEntity, CombatEntity, MobileEntity, MortalEntity, TargetableEntity, TargetingEntity
-from components.game_map import MapCoords
-from components.events.queues import GAME_OVER, GAME_START, MAP_UPDATE
-from components.maps.generators import *
-from components.display.maps import MainMapDisplay
-
-
-class BaseStateAction(Protocol):
-    state: GameState
-    """ A generic action that is dispatched by the AI to an action queue. Actions have a perform method that updates the game state when called."""
-
-    def perform(self) -> None:
-        ...
-
+from core_components.entities.library import BaseEntity, CombatEntity, MobileEntity, MortalEntity, TargetableEntity, TargetingEntity
+from core_components.game_map import MapCoords
+from core_components.event_queues.library import GAME_OVER, GAME_START, MAP_UPDATE
+from core_components.maps.generators import *
+from core_components.display.maps import MainMapDisplay
 
 class GeneralAction(BaseStateAction):
     def __init__(self, state: GameState | None = None) -> None:

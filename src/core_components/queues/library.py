@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from components.events.base import *
+from core_components.event_queues.base import *
 
 
 class MainEventQueue(BaseEventQueue):

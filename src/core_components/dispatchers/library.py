@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from core_components.events.library import GameStart, GameOver
     from state import GameState
     
-from components.actions.base import *
+from core_components.dispatchers.base import *
 
 
 class EntityDispatcher(BaseEventDispatcher):

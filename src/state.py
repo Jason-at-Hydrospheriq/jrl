@@ -4,8 +4,8 @@
 from __future__ import annotations
 from typing import Set
 
-from components import roster, game_map, ui
-from components.events.queues import MainEventQueue
+from core_components import roster, atlas, ui
+from core_components.queues.library import MainEventQueue
 
 class GameState:
     """
@@ -14,7 +14,7 @@ class GameState:
     """
     
     roster: roster.Roster
-    map: game_map.GameMap
+    map: atlas.Atlas
     ui: ui.UIDisplay
     game_events: MainEventQueue
     game_over: bool = False
@@ -22,6 +22,7 @@ class GameState:
     def __init__(self) -> None:
 
         self.roster = roster.Roster()
-        self.map = game_map.GameMap()
+        self.map = atlas.Atlas()
         self.ui = ui.UIDisplay()
+        
         self.game_events = MainEventQueue()
