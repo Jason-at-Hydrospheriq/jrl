@@ -10,23 +10,30 @@ import numpy as np
 
 # Defined as a global constant for graphic dtype
 from core_components.tiles.base import TileCoordinate, TileTuple
-from core_components.tilemaps.library import GenericTileMap
-from core_components.tiles.library import GenericRoom
+from core_components.maps.base import GraphicTileMap
+from core_components.tiles.library import GenericMapArea
 
 class BaseMapGenerator(Protocol):
-    """Base class for map generators."""
-    tilemap: GenericTileMap
+    """
+    The BaseMapGenerator Protocol defines the methods that all map generators must implement. This protocol ensures that all map generators can be used 
+    interchangeably in the game engine. The generator is a component of the Atlas object and is responsible for creating and populating the map with rooms, 
+    corridors, and other elements. The generator does NOT handle the placement of entities or items on the map. It only creates the map object and returns a copy
+    of it to the Atlas object.
 
-    def generate(self, *args, **kwargs) -> GenericTileMap:
+    For a full implementation, see the `core_components.generators` module.
+    """
+    map: GraphicTileMap
+
+    def generate(self, *args, **kwargs) -> GraphicTileMap:
         raise NotImplementedError()
     
-    def spawn_room(self,
-                   room: GenericRoom,
-                   center: TileCoordinate,
-                   size: Tuple[int, int]) -> GenericRoom | None:
+    def add(self,
+                area: GenericMapArea,
+                center: TileCoordinate,
+                size: TileTuple) -> GenericMapArea | None:
         
-        method_name = "_spawn_" + room.__class__.__name__.lower()
+        method_name = "_add_" + area.__class__.__name__.lower()
         method = getattr(self, method_name, None)
         if method:
-            return method(room, center, size)
+            return method(area, center, size)
         return None

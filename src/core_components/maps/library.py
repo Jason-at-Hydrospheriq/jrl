@@ -35,7 +35,7 @@ DEFAULT_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': TileTuple((
                                                         "tile_graphic": None,
                                                         "tile_grid": None
                                          }, 
-                                         'graphics': {  "default": {   "fixed_state_bits": {'blocks_movement': 0, 'blocks_vision': 0, 'visible': 0, 'seen': 0}, # Use for state updating
+                                         'graphics': {  "default": {   "fixed_state_bits": {'blocks_movement': 0, 'blocks_vision': 0, 'visible': 0, 'seen': 0}, 
                                                                         "state_definitions": {'shroud': 'fill_black'}},
                                                         "floor": {  "fixed_state_bits": {'blocks_movement': 1, 'blocks_vision': 0, 'visible': None, 'seen': None},
                                                                     "state_definitions": {'shroud': 'fill_black',

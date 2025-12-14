@@ -5,7 +5,7 @@ import numpy as np
 
 from core_components.tilemaps.base import MapCoords
 from core_components.tilemaps.library import GenericTileMap
-from core_components.generators.random import CIRCULAR_ROOM_TEMPLATE, RECTANGULAR_ROOM_TEMPLATE, GenericDungeonGenerator
+from core_components.generators.library import CIRCULAR_ROOM_TEMPLATE, RECTANGULAR_ROOM_TEMPLATE, GenericDungeonGenerator
 
 def test_generator_random_empty_init():
     # Arrange & Act

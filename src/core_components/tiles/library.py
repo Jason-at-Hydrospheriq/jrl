@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
+import random
 from warnings import warn
 from typing import Tuple
 import numpy as np
@@ -12,7 +13,7 @@ DEFAULT_GRID_SIZE = TileTuple( ([10], [10]) )
 DEFAULT_CENTER_LOCATION = TileTuple( ([5], [5]) )
 DEFAULT_CENTER_COORDINATE = TileCoordinate(DEFAULT_CENTER_LOCATION, DEFAULT_GRID_SIZE)
 
-class GenericRoom(TileArea):
+class GenericMapArea(TileArea):
     wall_thickness: int = 1
 
     def __init__(self, center: TileCoordinate = DEFAULT_CENTER_COORDINATE, 
@@ -28,7 +29,70 @@ class GenericRoom(TileArea):
         raise NotImplementedError("Subclasses must implement the to_mask property.")
 
 
-class RectangularRoom(GenericRoom):
+class GenericCorridor(GenericMapArea):
+    start: TileCoordinate
+    end: TileCoordinate
+
+    @property
+    def to_mask(self) -> np.ndarray:
+        """Return the inner area of this corridor as a 2D array index."""
+        
+        grid_tuple = self._tiletuple_to_xy_tuple(self.parent_map_size)
+        mask = np.full(grid_tuple, fill_value=False, dtype=bool)
+        x1, y1 = self.start.x, self.start.y
+        x2, y2 = self.end.x, self.end.y
+        width = random.randint(0, 2)
+
+        if random.random() < 0.5:
+            # Horizontal first, then vertical
+            for x in range(min(x1, x2), max(x1, x2) + 1):
+                mask[x, y1] = True
+                mask[x, max(0, y1 - width):min(self.height, y1 + width)] = True
+            for y in range(min(y1, y2), max(y1, y2) + 1):
+                mask[x2, y] = True
+                mask[max(0, x2 - width):min(self.width, x2 + width), y] = True
+        else:
+            # Vertical first, then horizontal
+            for y in range(min(y1, y2), max(y1, y2) + 1):
+                mask[x1, y] = True
+                mask[max(0, x1 - width):min(self.width, x1 + width), y] = True
+            for x in range(min(x1, x2), max(x1, x2) + 1):
+                mask[x, y2] = True
+                mask[x, max(0, y2 - width):min(self.height, y2 + width)] = True
+
+        return mask
+
+    # @property
+    # def to_mask(self) -> np.ndarray:
+    #     """Return the inner area of this corridor as a 2D array index."""
+    #     grid_tuple = self._tiletuple_to_xy_tuple(self.parent_map_size)
+    #     mask = np.full(grid_tuple, fill_value=False, dtype=bool)
+        
+    #     if self.direction == "horizontal":
+    #         x_left_ = self.center.x - self.length // 2
+    #         x_right_ = self.center.x + self.length // 2 + 1
+    #         y_top_ = self.center.y
+    #         y_bottom_ = self.center.y + 1
+            
+    #         x_slice = slice(x_left_, x_right_)
+    #         y_slice = slice(y_top_, y_bottom_)
+    #     elif self.direction == "vertical":
+    #         x_left_ = self.center.x
+    #         x_right_ = self.center.x + 1
+    #         y_top_ = self.center.y - self.length // 2
+    #         y_bottom_ = self.center.y + self.length // 2 + 1
+            
+    #         x_slice = slice(x_left_, x_right_)
+    #         y_slice = slice(y_top_, y_bottom_)
+    #     else:
+    #         raise ValueError("Direction must be either 'horizontal' or 'vertical'.")
+
+    #     mask[x_slice, y_slice] = True
+
+    #     return mask
+
+
+class RectangularRoom(GenericMapArea):
 
     @property
     def to_mask(self) -> np.ndarray:
@@ -51,7 +115,7 @@ class RectangularRoom(GenericRoom):
         return mask
 
 
-class CircularRoom(GenericRoom):
+class CircularRoom(GenericMapArea):
     _radius: int
 
     def __init__(self, center: TileCoordinate = DEFAULT_CENTER_COORDINATE, 
@@ -68,6 +132,7 @@ class CircularRoom(GenericRoom):
         self._radius = value
         self.width = value * 2
         self.height = value * 2
+        self._align_corners()
         
     @property
     def to_mask(self) -> np.ndarray:

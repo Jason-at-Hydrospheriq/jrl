@@ -5,7 +5,7 @@ from __future__ import annotations
 from warnings import warn
 import numpy as np
 import itertools
-from typing import Any, List, Protocol, Dict, Tuple, TypedDict
+from typing import Any, List, Protocol, Dict, Tuple, TypedDict, OrderedDict
 from copy import deepcopy
 import numpy as np
 
@@ -97,16 +97,14 @@ def graphics_state_assignment(manifest):
 
 
 class GraphicTileMap(Protocol):
-    """The GraphicTileMap defines the interface for graphic tile maps. A GraphicTileMap
-    holds the graphics, dtypes, and tile states for the map. It has a TileGrid that
-    manages the tile data and provides methods for initializing and manipulating the TileCoordinateSystem. 
-    It also has a graphics dictionary that holds the graphic definitions for the tiles. The graphics
-    dictionary can be stored as JSON and is loaded at runtime to set the GraphicTileMap attributes. The 
-    GraphicTileMap methods allow for reading, updating, and resetting the tile states and graphics on the map.
+    """The GraphicTileMap defines the interface for all TileMaps in the game. This ensures that all TileMaps conform to a standard interface. A GraphicTileMap
+    holds the graphics, dtypes, and tile states for the map. It has a TileGrid that manages the tile data and provides methods for initializing and manipulating 
+    the TileCoordinateSystem. It also has a graphics dictionary that holds the graphic definitions for the tiles. The graphics dictionary can be stored as JSON 
+    and is loaded at runtime to set the GraphicTileMap attributes. The GraphicTileMap methods allow for reading, updating, and resetting the tile states and 
+    graphics on the map.
 
-    Implementations of this protocol are responsible for managing the state and graphics of the tiles on the map
-    bases on the specific definitions in the graphics manifest. Each new map should have its own associated graphics 
-    manifest standard.
+    Implementations of this protocol are responsible for managing the state and graphics of the tiles on the map bases on the specific definitions in the graphics 
+    manifest. Each new map should have its own associated graphics manifest standard.
 
     For a full implementation, see the `core_components.maps.library` module.
     """
@@ -118,6 +116,8 @@ class GraphicTileMap(Protocol):
     dtypes: Dict[str, np.dtype | None ]
     graphics: Dict[str, np.ndarray | None]
     tiles: np.ndarray
+    areas: OrderedDict[str, TileArea] = OrderedDict()
+    paths: OrderedDict[str, TileArea] = OrderedDict()
 
     def __init__(self, graphics_manifest: GraphicsManifestDict | None) -> None:
 
@@ -222,6 +222,10 @@ class GraphicTileMap(Protocol):
         return self._grid
 
     @property
+    def center(self) -> TileCoordinate:
+        return self.grid.get_location(self.grid.center[0], self.grid.center[1]) 
+    
+    @property
     def statespace_array(self) -> np.ndarray | None:
         if self.statespace and self.statespace['vector_tuples'] is not None:
             return np.array(self.statespace['vector_tuples']) # 1D State Vector + 1D State Bits = 2D State Space Array
@@ -295,14 +299,13 @@ class GraphicTileMap(Protocol):
             tiles = self.get_tiles()
             if tiles is not None:
                 return tiles['name'] == graphic_name
-        
+    
     def set_tiles(self, layout: np.ndarray | None = None, graphic_name: str = 'default', join: bool = False, join_type: str = 'merge') -> None:
-
+        
         if layout is None:
             layout = np.full(self.tiles.shape, fill_value=True, dtype=bool)
         
         current_layout = self.get_tile_layout(graphic_name)
-        self.tiles['graphic_type'][current_layout]= self.graphics['default']
 
         if self.graphics is not None:
             if join and join_type == 'merge':
@@ -313,8 +316,11 @@ class GraphicTileMap(Protocol):
                 layout = current_layout & layout
             else: # replace
                 self.tiles['graphic_type'][current_layout]= self.graphics['default']
-                
+
+            self.tiles['graphic_type'][current_layout]= self.graphics['default']
             self.tiles['graphic_type'][layout] = self.graphics[graphic_name]
+            # What about states?
+            current_layout = self.get_tile_layout(graphic_name)
             self.update_state()
 
     def reset_tiles(self) -> None:
