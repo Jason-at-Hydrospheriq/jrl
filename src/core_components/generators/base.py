@@ -14,6 +14,8 @@ from core_components.maps.base import GraphicTileMap
 from core_components.tiles.library import GenericMapArea
 
 class BaseMapGenerator(Protocol):
+    map_template: GraphicTileMap
+
     """
     The BaseMapGenerator Protocol defines the methods that all map generators must implement. This protocol ensures that all map generators can be used 
     interchangeably in the game engine. The generator is a component of the Atlas object and is responsible for creating and populating the map with rooms, 
@@ -23,7 +25,7 @@ class BaseMapGenerator(Protocol):
     For a full implementation, see the `core_components.generators` module.
     """
 
-    def generate(self, *args, **kwargs) -> GraphicTileMap:
+    def generate(self) -> GraphicTileMap:
         raise NotImplementedError()
     
     def add(self,

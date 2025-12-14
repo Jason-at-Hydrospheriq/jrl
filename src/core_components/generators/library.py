@@ -16,17 +16,30 @@ CIRCULAR_ROOM_TEMPLATE = CircularRoom()
 CORRIDOR_TEMPLATE = GenericCorridor()
 DEFAULT_MAP_TEMPLATE = DefaultTileMap()
 
-class DefaultDungeonGenerator(BaseMapGenerator):
+class DungeonGenerator(BaseMapGenerator):
     """Generates dungeons using various algorithms."""
     width: int
     height: int
+    map_template: GraphicTileMap
+    rectangular_room_template: RectangularRoom
+    circular_room_template: CircularRoom
+    corridor_template: GenericCorridor
+
+    def __init__(self, template: GraphicTileMap=DEFAULT_MAP_TEMPLATE) -> None:
+            
+        self.map_template = template
+        self.width = template.grid.width
+        self.height = template.grid.height
+        self.rectangular_room_template = RectangularRoom(center=template.center, width=template.grid.width, height=template.grid.height)
+        self.circular_room_template = CircularRoom(center=template.center, radius=min(template.grid.width, template.grid.height) // 2)
+        self.corridor_template = GenericCorridor(center=template.center, width=template.grid.width, height=template.grid.height)
 
     def generate(self, 
                  max_rooms: int=10, 
                  min_room_size: int=5, 
                  max_room_size: int=20) -> GraphicTileMap:
         #TODO Use LLM to generate more complex dungeons
-        dungeon = deepcopy(DEFAULT_MAP_TEMPLATE)
+        dungeon = deepcopy(self.map_template)
         self.width = dungeon.grid.width
         self.height = dungeon.grid.height
 
@@ -41,7 +54,7 @@ class DefaultDungeonGenerator(BaseMapGenerator):
 
         return dungeon
     
-    def add_rooms(self, dungeon: GraphicTileMap, max_rooms: int, min_room_size: int, max_room_size: int):
+    def add_rooms(self, dungeon: GraphicTileMap, max_rooms: int, min_room_size: int, max_room_size: int) -> None:
         """Add rooms to the tile map."""
         rooms = self.room_generator(dungeon=dungeon, max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size)
         map_rooms = []
@@ -81,23 +94,24 @@ class DefaultDungeonGenerator(BaseMapGenerator):
 
         for _ in range(max_rooms):
             room_type = random.choice(['rectangular', 'circular'])
+            parent_map_size = dungeon.center.parent_map_size
 
             x_loc = random.randint(0, dungeon.grid.width - 1)
             y_loc = random.randint(0, dungeon.grid.height - 1)
             location = TileTuple( ([x_loc], [y_loc]) )
-            center = TileCoordinate(location, parent_map_size=dungeon.grid.size)
+            center = TileCoordinate(location, parent_map_size=parent_map_size)
 
             x_size = random.randint(min_room_size, max_room_size)
             y_size = random.randint(min_room_size, max_room_size)
             
             if room_type == 'rectangular':
                 size = TileTuple((  [x_size], [y_size]))
-                yield self.add(RECTANGULAR_ROOM_TEMPLATE, center=center, size=size)
+                yield self.add(self.rectangular_room_template, center=center, size=size)
                 
             elif room_type == 'circular':
                 size = TileTuple((  [x_size], [x_size]))
-                yield self.add(CIRCULAR_ROOM_TEMPLATE, center=center, size=size)
-
+                yield self.add(self.circular_room_template, center=center, size=size)
+                
     def _add_rectangularroom(self,
                                 room: RectangularRoom,
                                 center: TileCoordinate, 

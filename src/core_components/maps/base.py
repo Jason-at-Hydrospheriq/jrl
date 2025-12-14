@@ -360,5 +360,10 @@ class GraphicTileMap(Protocol):
         if self.statespace is not None:
             for bit in self.statespace['bits']:
                 self.tiles[bit][:] = False
-    
+            
+    def reset_all(self) -> None:
+        self.reset_tiles()
+        self.reset_state()
+        self.areas.clear()
+        self.paths.clear()
         

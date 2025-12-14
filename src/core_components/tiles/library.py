@@ -64,6 +64,8 @@ class GenericCorridor(GenericMapArea):
 
 
 class RectangularRoom(GenericMapArea):
+    height: int
+    width: int
 
     @property
     def to_mask(self) -> np.ndarray:
@@ -73,8 +75,11 @@ class RectangularRoom(GenericMapArea):
         area_indices = self.to_area_indicies_tuple
         x_left_ = area_indices[0][0] + self.wall_thickness
         x_right_ = area_indices[0][-1] - self.wall_thickness + 1
+        self.width = (x_right_ - x_left_)
+
         y_top_ = area_indices[1][0] + self.wall_thickness
         y_bottom_ = area_indices[1][-1] - self.wall_thickness + 1
+        self.height = y_bottom_ - y_top_
         
         x_slice = slice(x_left_, x_right_)
         y_slice = slice(y_top_, y_bottom_)
