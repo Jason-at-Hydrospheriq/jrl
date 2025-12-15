@@ -9,8 +9,8 @@ import numpy as np
 
 if TYPE_CHECKING:
     from core_components.entities.library import BaseEntity, BlockingEntity, Charactor, AICharactor
-    from core_components.maps.base import MapCoords, BaseMapGenerator
-    from core_components.game_map import GameMap
+    from core_components.maps.base import TileCoordinate
+
 
 from core_components.entities.library import *
 
@@ -28,7 +28,7 @@ class Roster:
         self.spawn = spawn
 
     @property
-    def entity_locations(self) -> List[MapCoords]:
+    def entity_locations(self) -> List[TileCoordinate]:
         return [entity.location for entity in self.entities if hasattr(entity, 'location')]
 
     @property
@@ -49,7 +49,7 @@ class Roster:
         return [entity for entity in potential_non_actors] #type: ignore
 
     @property
-    def entity_blocked_locations(self) -> List[MapCoords]:
+    def entity_blocked_locations(self) -> List[TileCoordinate]:
         potential_blockers = [obj for obj in self.entities if hasattr(obj, 'blocks_movement')]
         return [blocker.location for blocker in potential_blockers if blocker.blocks_movement] #type: ignore
     
@@ -72,7 +72,7 @@ class Roster:
 
         return None
     
-    def get_entity_at_location(self, location: MapCoords) -> List[BaseEntity]:
+    def get_entity_at_location(self, location: TileCoordinate) -> List[BaseEntity]:
         found_entity = []
         for entity in self.entities:
             if entity.location == location:
@@ -80,47 +80,47 @@ class Roster:
         
         return found_entity
     
-    def initialize_random_mobs(self, game_map: GameMap, max_total_mobs: int, max_mobs_per_room: int) -> None:
-        """Generate mobs """
-        n_total_mobs_spawned_in_this_map = 0
-        min_total_mobs_in_this_map = len(game_map.rooms) * max_mobs_per_room
-        max_total_mobs_in_this_map = random.randint(min_total_mobs_in_this_map, max_total_mobs)
+    # def initialize_random_mobs(self, game_map: GameMap, max_total_mobs: int, max_mobs_per_room: int) -> None:
+    #     """Generate mobs """
+    #     n_total_mobs_spawned_in_this_map = 0
+    #     min_total_mobs_in_this_map = len(game_map.rooms) * max_mobs_per_room
+    #     max_total_mobs_in_this_map = random.randint(min_total_mobs_in_this_map, max_total_mobs)
         
-        # Generate mobs in rooms
-        for room in game_map.rooms:
-            max_mobs_in_this_room = random.randint(1, max_mobs_per_room)
+    #     # Generate mobs in rooms
+    #     for room in game_map.rooms:
+    #         max_mobs_in_this_room = random.randint(1, max_mobs_per_room)
 
-            if room.contains(self.player.location):
-                continue  # Skip room if player is inside
+    #         if room.contains(self.player.location):
+    #             continue  # Skip room if player is inside
             
-            else:
-                n_mobs_spawned_in_this_room = 0
-                while n_mobs_spawned_in_this_room < max_mobs_in_this_room:
-                    current_mob_locations = [mob.location for mob in self.live_ai_actors]
-                    spawn_location = room.random_location()
-                    if not any(mob_location == spawn_location for mob_location in current_mob_locations):
-                        if random.random() < 0.8:
-                            spawn(ORC, spawn_location)
-                        else:
-                            spawn(TROLL, spawn_location)
+    #         else:
+    #             n_mobs_spawned_in_this_room = 0
+    #             while n_mobs_spawned_in_this_room < max_mobs_in_this_room:
+    #                 current_mob_locations = [mob.location for mob in self.live_ai_actors]
+    #                 spawn_location = room.random_location()
+    #                 if not any(mob_location == spawn_location for mob_location in current_mob_locations):
+    #                     if random.random() < 0.8:
+    #                         spawn(ORC, spawn_location)
+    #                     else:
+    #                         spawn(TROLL, spawn_location)
                                 
-                        n_total_mobs_spawned_in_this_map += 1
-                        n_mobs_spawned_in_this_room += 1
+    #                     n_total_mobs_spawned_in_this_map += 1
+    #                     n_mobs_spawned_in_this_room += 1
 
-        # Generate remainder of mobs in corridors
-        while n_total_mobs_spawned_in_this_map < max_total_mobs_in_this_map:
-            current_mob_locations = [mob.location for mob in self.live_ai_actors]
+    #     # Generate remainder of mobs in corridors
+    #     while n_total_mobs_spawned_in_this_map < max_total_mobs_in_this_map:
+    #         current_mob_locations = [mob.location for mob in self.live_ai_actors]
 
-            for corridor in game_map.corridors:
-                walkable = np.argwhere(corridor)
-                spawn_location = random.choice(walkable)
-                spawn_location = MapCoords(int(spawn_location[0]), int(spawn_location[1]))
+    #         for corridor in game_map.corridors:
+    #             walkable = np.argwhere(corridor)
+    #             spawn_location = random.choice(walkable)
+    #             spawn_location = TileCoordinate(int(spawn_location[0]), int(spawn_location[1]))
 
-                if not any(room.contains(spawn_location) for room in game_map.rooms):
-                    if not any(mob_location == spawn_location for mob_location in current_mob_locations):
-                        if random.random() < 0.8:
-                            spawn(ORC, spawn_location)
-                        else:
-                            spawn(TROLL, spawn_location)
+    #             if not any(room.contains(spawn_location) for room in game_map.rooms):
+    #                 if not any(mob_location == spawn_location for mob_location in current_mob_locations):
+    #                     if random.random() < 0.8:
+    #                         spawn(ORC, spawn_location)
+    #                     else:
+    #                         spawn(TROLL, spawn_location)
 
-                n_total_mobs_spawned_in_this_map += 1
+    #             n_total_mobs_spawned_in_this_map += 1
