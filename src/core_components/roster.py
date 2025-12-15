@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from core_components.entities.factory import *
 from typing import Set, List, Callable, TYPE_CHECKING
 import random
 import numpy as np
@@ -11,12 +10,12 @@ if TYPE_CHECKING:
     from core_components.entities.library import BaseEntity, BlockingEntity, Charactor, AICharactor
     from core_components.maps.base import TileCoordinate
 
-
 from core_components.entities.library import *
+from core_components.entities.factory import *
 
 
 class Roster:
-    """ The Roster component manages the collection of all entities in the game. """
+    """ The Roster component manages the state of all entities in the game. """
 
     __slots__ = ("entities", "spawn")
     

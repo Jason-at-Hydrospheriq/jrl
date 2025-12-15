@@ -1,4 +1,9 @@
 import pytest
+from sys import path
+path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
+import numpy as np
+
+
 from core_components.entities.attributes import *
 from core_components.entities.factory import *
 def test_physical_attributes():

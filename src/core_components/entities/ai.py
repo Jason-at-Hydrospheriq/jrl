@@ -9,7 +9,7 @@ import tcod
 # from components.events.library import AIEvent, AIEventPathToTarget, AIEventTargetInMeleeRange, AIEventNone
 
 if TYPE_CHECKING:
-    from src.components.entities.library import AICharactor, Charactor
+    from core_components.entities.library import AICharactor, Charactor
 #     from engine import Engine
 #     from src.components.game_map import MapCoords
 

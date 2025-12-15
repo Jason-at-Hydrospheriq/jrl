@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from core_components.entities.library import *
+    from core_components.entities.library import BaseEntity, Charactor, AICharactor
 
 
 class BaseStats:
