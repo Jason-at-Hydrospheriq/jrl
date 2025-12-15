@@ -2,12 +2,20 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Set
+import time
+from typing import List, Set
+import queue
 from queue import Queue
+import tcod
+import threading
 
 # from core_components import roster, atlas, ui
+from core_components.events.library import BaseGameEvent, SystemEvent
 from core_components.actions.base import BaseGameAction
+from core_components.dispatchers.base import BaseEventDispatcher
+from core_components.dispatchers.library import SystemDispatcher, InputDispatcher
 from core_components.events.library import *
+
 
 class GameState:
     """
@@ -21,8 +29,10 @@ class GameState:
     # roster: roster.Roster
     # map: atlas.Atlas
     # ui: ui.UIDisplay
-    events: Queue[BaseGameEvent]
-    game_over: bool 
+    events: Queue[BaseGameEvent | tcod.event.Event]
+    actions: Queue[BaseGameAction]
+    dispatchers: List[BaseEventDispatcher]
+    game_over: threading.Event
 
     def __init__(self) -> None:
 
@@ -30,21 +40,34 @@ class GameState:
         # self.map = atlas.Atlas()
         # self.ui = ui.UIDisplay()
         self.events = Queue()
-        self.events.put(self.GAMESTART)
-        self.game_over = True
+        self.actions = Queue()
+        self.game_over = threading.Event()
+        self.dispatchers = [SystemDispatcher(), InputDispatcher()]   
+
+
+    def dispatch(self) -> None:
+
+        while True:
+            try:
+                event = self.events.get_nowait()
+
+                for dispatcher in self.dispatchers:
+                    dispatcher.dispatch(event, self.actions, self)
+
+            except queue.Empty:
+                time.sleep(0.05)
     
-    def update_state(self, actions_q: Queue[BaseGameAction]) -> None:
+    def update(self) -> None:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
         while True:
             try:
-                action = actions_q.get()
-                action.perform()
+                action = self.actions.get_nowait()
+                action.perform()    # Perform the action            
                 print(f"Action performed: {action}")
-                actions_q.task_done()
-                
-            except:
-                break
-            
-        self.events.queue.clear()
+
+            except queue.Empty:
+                time.sleep(0.05)
+
+    

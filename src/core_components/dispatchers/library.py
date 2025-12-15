@@ -4,7 +4,7 @@
 from __future__ import annotations
     
 from core_components.dispatchers.base import *
-from core_components.events.library import GameStartEvent, GameOverEvent
+from core_components.events.library import GameStartEvent, GameOverEvent, InputEvent, SystemEvent
 from core_components.actions.library import GameStartAction, GameOverAction
 
 
@@ -21,26 +21,37 @@ class EntityDispatcher(BaseEventDispatcher):
 
 
 class InputDispatcher(BaseEventDispatcher):
-    pass
+
+    MOVEMENT_KEYS = {
+        tcod.event.KeySym.LEFT: (-1, 0),
+        tcod.event.KeySym.RIGHT: (1, 0),
+        tcod.event.KeySym.UP: (0, -1),
+        tcod.event.KeySym.DOWN: (0, 1),
+    }
+
     # def __init__(self, state: GameState | None = None) -> None:
-    #     super().__init__(state)
-        # self.mob_actions: List[BaseGameAction] = []
+    #     self.mob_actions: List[BaseGameAction] = []
 
     # @property
     # def mobs(self) -> Generator[AICharactor]:
     #     yield from (mob for mob in self.engine.roster.live_ai_actors if isinstance(mob.ai, HostileAI))
-    
-    # def _ev_keydown(self, event: tcod.event.KeyDown) -> Sequence[BaseAction]:
-    #     actions = [NoAction()]
+            
+    def _ev_keydown(self, event: tcod.event.KeyDown, state: GameState) -> BaseGameAction:
+        state_action = self.create_state_action(self.NOACTION, state)
 
-    #     if event.sym == tcod.event.KeySym.ESCAPE:
-    #         actions += [SystemExitAction()]
+        match event.sym:
+            case tcod.event.KeySym.ESCAPE:
+                print("Exiting game.")
+                state_action = self.create_state_action(self.SYSTEMEXIT, state)
         
-    #     if event.sym in MOVEMENT_KEYS:
-    #         dx, dy = MOVEMENT_KEYS[event.sym]
-    #         destination = self.engine.game_map.get_map_coords(self.engine.roster.player.location.x + dx, self.engine.roster.player.location.y + dy)
-    #         actions += [EntityMoveAction(self.engine, self.engine.roster.player, destination)]
+            case tcod.event.KeySym.LEFT | tcod.event.KeySym.RIGHT | tcod.event.KeySym.UP | tcod.event.KeySym.DOWN:
+            # dx, dy = MOVEMENT_KEYS[event.sym]
+            # destination = self.engine.game_map.get_map_coords(self.engine.roster.player.location.x + dx, self.engine.roster.player.location.y + dy)
+            # actions += [EntityMoveAction(self.engine, self.engine.roster.player, destination)]
+                state_action = self.create_state_action(self.NOACTION, state)
         
+        return state_action
+    
         # if self.mob_actions:
         #     while self.mob_actions:
         #         action = self.mob_actions.pop(0)
@@ -65,31 +76,22 @@ class InterfaceDispatcher(BaseEventDispatcher):
 class SystemDispatcher(BaseEventDispatcher):
     GAMESTART = GameStartAction()
     GAMEOVER = GameOverAction()
-    NOACTION = NoAction()
-    SYSTEMEXIT = SystemExitAction()
-
+            
     def _ev_gamestartevent(self, 
                       event: GameStartEvent, 
                       state: GameState) -> BaseGameAction:
         message = event.message
         # TODO: Message log
+        state_action = self.create_state_action(self.GAMESTART, state)
 
-        return self.create_state_action(self.GAMESTART, state)
-    
+        return state_action
+
     def _ev_gameoverevent(self, 
                      event: GameOverEvent, 
                      state: GameState) -> BaseGameAction:
         message = event.message
         # TODO: Message log
-
-        return self.create_state_action(self.GAMEOVER, state) 
-    
-    def _ev_keydownevent(self, 
-                    event: tcod.event.KeyDown, 
-                    state: GameState) -> BaseGameAction:
-        state_action = self.create_state_action(self.NOACTION, state)
-
-        if event.sym == tcod.event.KeySym.ESCAPE:
-            state_action = self.create_state_action(self.SYSTEMEXIT, state)
+        state_action = self.create_state_action(self.GAMEOVER, state)
 
         return state_action
+    

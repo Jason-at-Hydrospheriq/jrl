@@ -8,11 +8,7 @@ from core_components.events.library import BaseGameEvent, UIEvent, SystemEvent
 from core_components.dispatchers.library import InputDispatcher, InterfaceDispatcher, SystemDispatcher
 from core_components.actions.library import BaseGameAction, NoAction
 from core_components.state import GameState
-    
-def is_subclass(instance, cls: type) -> bool:
-    instance_mro = set([x.__name__ for x in instance.__class__.mro()])
-    cls_mro = set([x.__name__ for x in cls.mro()])
-    return instance_mro.issuperset(cls_mro)
+
 
 class GameAI:
     """ The Game AI is responsible for processing the game state and determining the actions of non-player characters (NPCs) in the game. In this implementation,
@@ -22,19 +18,4 @@ class GameAI:
     algorithms for processing game states, events, and actions.
     """
     state: GameState
-    dispatchers: List[BaseEventDispatcher]
-    actions: Queue[BaseGameAction]
     
-    def __init__(self, state: GameState) -> None:
-        self.state = state
-        self.dispatchers = [SystemDispatcher()]
-        self.actions = Queue()    
-
-    def update_actions(self) -> None:
-        for dispatcher in self.dispatchers:
-            threading.Thread(target=dispatcher.dispatch, args=(self.state.events, self.actions, self.state), daemon=True).start()
-        
-        threading.Thread(target=self.state.update_state, args=(self.actions,), daemon=True).start()
-
-        self.state.events.join()
-        self.actions.join()

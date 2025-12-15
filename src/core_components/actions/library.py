@@ -7,7 +7,9 @@ from tcod.map import compute_fov
 from tcod import libtcodpy
 import numpy as np
 
-from core_components.state import GameState
+if TYPE_CHECKING:
+    from core_components.state import GameState
+
 from core_components.actions.base import BaseGameAction
 
 
@@ -30,7 +32,7 @@ class NoAction(GeneralAction):
 class SystemExitAction(GeneralAction):
 
     def perform(self) -> None:
-        raise SystemExit()
+        self.state.game_over.set()
 
 
 # class EngineBaseAction(BaseAction):
@@ -45,13 +47,15 @@ class SystemExitAction(GeneralAction):
 class GameStartAction(GeneralAction):
 
     def perform(self) -> None:
-        self.state.game_over = False
+        print("Game On")
+        self.state.game_over.clear()
 
 
 class GameOverAction(GeneralAction):
 
     def perform(self) -> None:
-        self.state.game_over = True
+        print("Game Over")
+        self.state.game_over.set()
 
 
 # class UIUpdateMapColorsAction(EngineBaseAction):

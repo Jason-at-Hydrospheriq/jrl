@@ -2,27 +2,40 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from collections import deque
+import threading
+from typing import List
 
-from ai import GameAI, GameState
+from core_components.state import GameState
+
 class Engine:
     """
     The Engine updates the game state in the main loop. It is has States that it passes to the Game AI. 
     The GameAI converts states to a sequence of actions that the Engine performs in the main game loop.  
     """
-    
-    ai: GameAI
-    state: GameState
 
+    state: GameState
+    threads: List[threading.Thread | None]
+    
     def __init__(self) -> None:
         self.state = GameState()
-        self.ai = GameAI(self.state)  
+        self.threads = []
 
     # def render(self) -> None:
     #     """ Render all UI components """
     #     pass
         # for element in self.state.ui.elements:
         #     element.render()
+    
 
     def start(self) -> None:
-        self.ai.update_actions()
+        self.threads.append(threading.Thread(target=self.state.dispatch).start())
+        self.threads.append(threading.Thread(target=self.state.update).start())
+            
+    def stop(self) -> None:
+        self.state.game_over.set()
+    
+    def threaded_exception_handler(self, args):
+        print(f"Thread failed: {args.thread.name}")
+        print(f"Exception type: {args.exc_type}")
+        print(f"Exception value: {args.exc_value}")
+        print(f"Exception traceback: {args.exc_traceback}")

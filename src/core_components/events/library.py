@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
+import tcod.event
 
 from core_components.events.base import BaseGameEvent
 
@@ -19,6 +20,14 @@ class GameStartEvent(SystemEvent):
 
 class GameOverEvent(SystemEvent):
     pass
+
+
+class InputEvent(BaseGameEvent):
+    event: tcod.event.Event
+
+    def __init__(self, event: tcod.event.Event, message: str = "TCOD Event", ) -> None:
+        self.message = message
+        self.event = event
 
 
 # class EntityEvent(BaseGameEvent):
