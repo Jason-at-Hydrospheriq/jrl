@@ -2,7 +2,7 @@ import pytest
 import tcod.event
 
 from core_components.dispatchers.library import SystemDispatcher
-from state import GameState
+from core_components.state import GameState
 
 
 def test_dispatcher_ev_gamestart():

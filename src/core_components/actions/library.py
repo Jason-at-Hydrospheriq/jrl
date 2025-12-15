@@ -7,19 +7,11 @@ from tcod.map import compute_fov
 from tcod import libtcodpy
 import numpy as np
 
-if TYPE_CHECKING:
-    from core_components.roster import Roster
+from core_components.state import GameState
+from core_components.actions.base import BaseGameAction
 
-from core_components.events.library import MapUpdate
-from core_components.actions.base import BaseStateAction
-from state import GameState
-from core_components.entities.library import BaseEntity, CombatEntity, MobileEntity, MortalEntity, TargetableEntity, TargetingEntity
-from core_components.game_map import MapCoords
-from core_components.event_queues.library import GAME_OVER, GAME_START, MAP_UPDATE
-from core_components.maps.generators import *
-from core_components.display.maps import MainMapDisplay
 
-class GeneralAction(BaseStateAction):
+class GeneralAction(BaseGameAction):
     def __init__(self, state: GameState | None = None) -> None:
         
         if state:
@@ -49,11 +41,10 @@ class SystemExitAction(GeneralAction):
 #         self.roster = state.roster
 #     
 
+
 class GameStartAction(GeneralAction):
 
     def perform(self) -> None:
-        self.state.game_events.add(MAP_UPDATE)
-        self.state.game_events.add(GAME_START)
         self.state.game_over = False
 
 

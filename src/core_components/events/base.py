@@ -8,4 +8,4 @@ from typing import Protocol
 
 class BaseGameEvent(Protocol):
     message: str
-
+    

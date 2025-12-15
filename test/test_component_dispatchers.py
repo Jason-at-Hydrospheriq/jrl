@@ -1,27 +1,35 @@
 import pytest
+from sys import path
+path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
+
+from core_components.dispatchers.library import SystemDispatcher
 
 def test_dispatcher_initialization():
     pass
-#     # Arrange & Act
-#     dispatchers = [EntityDispatcher(), InputDispatcher(), InterfaceDispatcher(),SystemDispatcher()]
-    
-#     # Assert
-#     try:
-#         for dispatcher in dispatchers:
-#              assert dispatcher is not None, f"{dispatcher.__class__.__name__} failed to initialize."
+
+    # Arrange & Act
+    # dispatchers = [SystemDispatcher()] #EntityDispatcher(), InputDispatcher(), InterfaceDispatcher(),
+    dispatcher = SystemDispatcher()
+
+
+    # Assert
+    try:
+        assert dispatcher is not None, "SystemDispatcher failed to initialize."
+        # for dispatcher in dispatchers:
+        #      assert dispatcher is not None, f"{dispatcher.__class__.__name__} failed to initialize."
         
-#         for dispatcher in dispatchers:
-#             # '_ev_quit' exists in BaseEventDispatcher, so checking for at least one method starting with '_ev_' 
-#             methods = dir(dispatcher)
-#             assert '_ev_quit' in methods, "'_ev_quit' not found."
+        # for dispatcher in dispatchers:
+        #     # '_ev_quit' exists in BaseEventDispatcher, so checking for at least one method starting with '_ev_' 
+        #     methods = dir(dispatcher)
+        #     assert '_ev_quit' in methods, "'_ev_quit' not found."
         
-#             for method in methods:
-#             # Check if method names starting with '_ev_' are callable
-#                 if method.startswith("_ev_"):
-#                     assert callable(getattr(dispatcher, method)), f"{method} should be callable."
+        #     for method in methods:
+        #     # Check if method names starting with '_ev_' are callable
+        #         if method.startswith("_ev_"):
+        #             assert callable(getattr(dispatcher, method)), f"{method} should be callable."
             
-#     except Exception as e:
-#         pytest.fail(str(e))
+    except Exception as e:
+        pytest.fail(str(e))
 
 # def test_dispatcher_ev_quit():
 #     # Arrange

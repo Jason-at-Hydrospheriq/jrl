@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Protocol
 
 from core_components.events.base import BaseGameEvent
 
@@ -13,12 +12,12 @@ class SystemEvent(BaseGameEvent):
         self.message = message
 
 
-class GameStart(SystemEvent):
+class GameStartEvent(SystemEvent):
     def __init__(self, message: str = "Game Start") -> None:
         super().__init__(message)
 
 
-class GameOver(SystemEvent):
+class GameOverEvent(SystemEvent):
     pass
 
 
@@ -65,7 +64,7 @@ class UIEvent(BaseGameEvent):
         self.message = message
 
 
-class MapUpdate(UIEvent):
+class MapUpdateEvent(UIEvent):
     def __init__(self, element_name: str, message: str) -> None:
         super().__init__(element_name, message)
 

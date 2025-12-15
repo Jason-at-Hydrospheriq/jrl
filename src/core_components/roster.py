@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from src.components.entities.factory import *
+from core_components.entities.factory import *
 from typing import Set, List, Callable, TYPE_CHECKING
 import random
 import numpy as np
 
 if TYPE_CHECKING:
-    from src.components.entities.library import BaseEntity, BlockingEntity, Charactor, AICharactor
-    from components.maps.base import MapCoords, BaseMapGenerator
-    from components.game_map import GameMap
+    from core_components.entities.library import BaseEntity, BlockingEntity, Charactor, AICharactor
+    from core_components.maps.base import MapCoords, BaseMapGenerator
+    from core_components.game_map import GameMap
 
-from src.components.entities.library import *
+from core_components.entities.library import *
 
 
 class Roster:
