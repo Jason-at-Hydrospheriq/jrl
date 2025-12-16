@@ -20,7 +20,6 @@ TROLL = AICharactor(name="Troll", symbol="T", color=(0, 127, 0),
                     physical=attributes.PhysicalStats(max_hp=16, constitution=12),
                     combat=attributes.CombatStats(defense=1, attack_power=4))
 
-
 def spawn(original: BaseEntity, location: TileCoordinate) -> BaseEntity:
     """Spawn a copy of this entity at the given location."""
     clone = deepcopy(original)

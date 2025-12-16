@@ -15,7 +15,8 @@ from core_components.actions.base import BaseGameAction
 from core_components.dispatchers.base import BaseEventDispatcher
 from core_components.dispatchers.library import SystemDispatcher, InputDispatcher
 from core_components.events.library import *
-
+from core_components.roster import Roster
+from core_components.atlas import Atlas
 
 class GameState:
     """
@@ -36,8 +37,8 @@ class GameState:
 
     def __init__(self) -> None:
 
-        # self.roster = roster.Roster()
-        # self.map = atlas.Atlas()
+        self.roster = Roster()
+        self.map = Atlas()
         # self.ui = ui.UIDisplay()
         self.events = Queue()
         self.actions = Queue()
@@ -53,9 +54,14 @@ class GameState:
 
                 for dispatcher in self.dispatchers:
                     dispatcher.dispatch(event, self.actions, self)
-
+            
             except queue.Empty:
                 time.sleep(0.05)
+                
+            except BaseException as e:
+                print(f"Error dispatching event: {e}")
+                break
+
     
     def update(self) -> None:
         """

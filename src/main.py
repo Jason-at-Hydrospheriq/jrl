@@ -9,8 +9,9 @@ from tcod.tileset import load_tilesheet, CHARMAP_TCOD
 
 from engine import Engine
 # from dungeon_factory import random_dungeon
-# from entities import Charactor
+from core_components.entities.library import PlayerCharactor
 # from components.stats import CombatStats, PhysicalStats
+from core_components.tiles.library import TileCoordinate, TileTuple
 
 TITLE = "JRL - Jay's Roguelike"
 WIDTH, HEIGHT = 720, 480  # Window pixel resolution (when not maximized.)
@@ -25,14 +26,20 @@ def main() -> None:
     )
     
     game = Engine()
+    player = PlayerCharactor(color=(0,0,0), name="player", location=TileCoordinate(TileTuple(([10],[10]))))
+    game.state.roster.player = player
     game.start()
-    context = tcod.context.new_terminal( screen_width, screen_height, tileset=tileset,
+    game.state.map.active.tiles['blocks_vision'] = False
+    game.state.map.active.tiles['blocks_movement'] = False
+
+    context = tcod.context.new(x = screen_width, y =screen_height, tileset=tileset,
                                          title="Yet Another Roguelike Tutorial", vsync=True)
     
     while True:
         # Update Console
         console = context.new_console(screen_width, screen_height, order="F")
-        console.print(x=1, y=1, string="@")
+        console.rgb[0:screen_width, 0:screen_height] = game.state.map.active.tiles['graphic']
+        console.print(player.location.x, player.location.y, player.symbol, fg=player.color)
         context.present(console)
 
         # Update Game State

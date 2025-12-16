@@ -5,7 +5,7 @@ from __future__ import annotations
 import tcod.event
 
 from core_components.events.base import BaseGameEvent
-
+from core_components.entities.library import BaseEntity
 
 class SystemEvent(BaseGameEvent):
 
@@ -30,38 +30,38 @@ class InputEvent(BaseGameEvent):
         self.event = event
 
 
-# class EntityEvent(BaseGameEvent):
-#     entity: BaseEntity
-#     message: str
+class EntityEvent(BaseGameEvent):
+    entity: BaseEntity
+    message: str
 
-#     def __init__(self, entity: BaseEntity, message: str) -> None:
-#         self.entity = entity
-#         self.message = message
-
-
-# class NoCollision(EntityEvent):
-#     def __init__(self, entity: BaseEntity, message: str) -> None:
-#         super().__init__(entity, message)
+    def __init__(self, entity: BaseEntity, message: str) -> None:
+        self.entity = entity
+        self.message = message
 
 
-# class WallCollision(EntityEvent):
-#     def __init__(self, entity: BaseEntity, message: str) -> None:
-#         super().__init__(entity, message)
+class NoCollision(EntityEvent):
+    def __init__(self, entity: BaseEntity, message: str) -> None:
+        super().__init__(entity, message)
 
 
-# class MapBoundaryCollision(EntityEvent):
-#     def __init__(self, entity: BaseEntity, message: str) -> None:
-#         super().__init__(entity, message)
+class WallCollision(EntityEvent):
+    def __init__(self, entity: BaseEntity, message: str) -> None:
+        super().__init__(entity, message)
 
 
-# class TargetCollision(EntityEvent):
-#     def __init__(self, entity: BaseEntity, message: str) -> None:
-#         super().__init__(entity, message)
+class MapBoundaryCollision(EntityEvent):
+    def __init__(self, entity: BaseEntity, message: str) -> None:
+        super().__init__(entity, message)
+
+
+class TargetCollision(EntityEvent):
+    def __init__(self, entity: BaseEntity, message: str) -> None:
+        super().__init__(entity, message)
     
 
-# class MeleeCollision(EntityEvent):
-#     def __init__(self, entity: BaseEntity, message: str) -> None:
-#         super().__init__(entity, message)
+class MeleeCollision(EntityEvent):
+    def __init__(self, entity: BaseEntity, message: str) -> None:
+        super().__init__(entity, message)
 
 
 class UIEvent(BaseGameEvent):

@@ -31,12 +31,18 @@ class Roster:
         return [entity.location for entity in self.entities if hasattr(entity, 'location')]
 
     @property
-    def player(self) -> Charactor:
+    def player(self) -> Charactor | None:
         for entity in self.entities:
-            if isinstance(entity, Charactor) and entity.name == "Player":
+            if isinstance(entity, PlayerCharactor):
                 return entity
-        raise ValueError("Player entity not found in roster.")
+      
+    @player.setter
+    def player(self, new_player: Charactor) -> None:
+        if self.player is not None:
+            self.entities.remove(self.player)
     
+        self.entities.add(new_player)
+
     @property
     def all_actors(self) -> List[BaseEntity]:
         potential_actors = [entity for entity in self.entities if hasattr(entity, 'is_alive')]

@@ -7,13 +7,16 @@ from tcod.map import compute_fov
 from tcod import libtcodpy
 import numpy as np
 
+from core_components.tiles.base import TileCoordinate
+
 if TYPE_CHECKING:
-    from core_components.state import GameState
+    from state import GameState
 
 from core_components.actions.base import BaseGameAction
-
+from core_components.entities.library import MobileEntity
 
 class GeneralAction(BaseGameAction):
+
     def __init__(self, state: GameState | None = None) -> None:
         
         if state:
@@ -35,14 +38,13 @@ class SystemExitAction(GeneralAction):
         self.state.game_over.set()
 
 
-# class EngineBaseAction(BaseAction):
-#     state: GameState
+class EngineBaseAction(GeneralAction):
+    state: GameState
     
-#     def __init__(self, state: GameState) -> None:
-#         self.state = state
-#         self.roster = state.roster
-#     
-
+    def __init__(self, state: GameState) -> None:
+        self.state = state
+        self.roster = state.roster
+    
 
 class GameStartAction(GeneralAction):
 
@@ -93,13 +95,21 @@ class GameOverAction(GeneralAction):
 #         self.target = target
 
 
-# class EntityActionOnDestination(EngineBaseAction):
-#     def __init__(self, states: Engine, entity: MobileEntity, destination: MapCoords) -> None:
-#         super().__init__(states)
-#         self.entity = entity
-
-#         if hasattr(entity, 'destination'): 
-#             self.entity.destination = destination #type: ignore
+class EntityActionOnDestination(EngineBaseAction):
+    def __init__(self, 
+                 state: GameState | None = None,  
+                 entity: MobileEntity | None = None, 
+                 destination: TileCoordinate | None = None) -> None:
+    
+        if state:
+            super().__init__(state)
+        if entity:
+            self.entity = entity
+        if destination:
+            self.destination = destination
+            
+        if hasattr(entity, 'destination'): 
+            self.entity.destination = destination #type: ignore
 
 
 # class EntityAcquireTargetAction(EntityActionOnTarget):
@@ -123,12 +133,14 @@ class GameOverAction(GeneralAction):
 #             return EntityMoveAction(self.states, self.entity, self.target).perform()
 
 
-# class EntityMoveAction(EntityActionOnDestination):
+class EntityMoveAction(EntityActionOnDestination):
 
-#     def perform(self) -> None:
+    def perform(self) -> None:
 
-#         self.entity.move()
-#         self.states.game_events.add(MapUpdate("main_map", f"{self.entity.name} moved to {self.entity.location}"))
+        if self.entity and self.entity.destination:
+            self.entity.move()
+
+        # self.states.game_events.add(MapUpdate("main_map", f"{self.entity.name} moved to {self.entity.location}"))
 
 
 # class EntityMeleeAction(EntityActionOnTarget):

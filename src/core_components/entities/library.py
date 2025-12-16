@@ -222,6 +222,22 @@ class Charactor(MobileEntity, TargetableEntity, MortalEntity, CombatEntity, Sigh
        self.color = (191, 0, 0)
 
 
+class PlayerCharactor(Charactor):
+    def __init__(   self,
+                *,
+                location: TileCoordinate | None = None,
+                symbol: str = "@",
+                color: Tuple[int, int, int],
+                name: str = "<Unnamed>",
+                fov_radius: int = 4,
+                physical: PhysicalStats | None = None,
+                combat: CombatStats | None = None,
+                targetable: bool = True,
+                ) -> None:
+    
+        super().__init__(location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat, targetable=targetable)
+
+
 class AICharactor(Charactor, AIEntity):
     def __init__(   self,
                     *,
@@ -242,4 +258,11 @@ class AICharactor(Charactor, AIEntity):
     def die(self) -> None:
         super().die()
         self._ai = None
-        
+
+
+class NonPlayerCharactor(AICharactor):
+    pass
+
+
+class MobCharactor(AICharactor):
+    pass

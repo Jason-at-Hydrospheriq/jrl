@@ -4,17 +4,18 @@
 from __future__ import annotations
 from copy import deepcopy
 import queue
-from typing import List, Protocol, TYPE_CHECKING
+from typing import List, Protocol, TYPE_CHECKING, TypeVar
 from queue import Queue
 import tcod
 import tcod.event
 
 if TYPE_CHECKING:
-    from core_components.state import GameState
+    from state import GameState
 
 from core_components.events.library import BaseGameEvent
 from core_components.actions.library import BaseGameAction, NoAction, SystemExitAction
 
+T = TypeVar('T', bound=BaseGameAction)
 
 class BaseEventDispatcher(Protocol):
     # List of all possible actions that can be dispatched.
@@ -22,20 +23,6 @@ class BaseEventDispatcher(Protocol):
 
     SYSTEMEXIT = SystemExitAction()
     NOACTION = NoAction()
-
-    def test(self,  
-                 event_queue: Queue[BaseGameEvent],
-                 action_queue: Queue[BaseGameAction]) -> None:
-        
-        while True:
-            try:
-                event = event_queue.get()
-                print(f"Processing event: {event.__class__.__name__.lower()}")
-                action_queue.put(NoAction())  # If no method is found, return a list with a NoAction.
-                event_queue.task_done()
-
-            except:
-                break
 
     def dispatch(self, 
                  event: BaseGameEvent | tcod.event.Event,
@@ -55,10 +42,13 @@ class BaseEventDispatcher(Protocol):
             
         except Exception as e:
             raise e
-            
-    @staticmethod
-    def create_state_action(action: BaseGameAction, 
-                      state: GameState) -> BaseGameAction:
+        
+    @classmethod
+    def create_state_action(cls, action: T, state: GameState) -> T:
+        
+        """ This method creates a copy of the action and adds the state to it. If the action is not a subclass of BaseGameAction, it will raise an error. 
+        Subclasses of BaseEventDispatcher can override this method to add additional state information to the action. """
+
         clone = deepcopy(action)
         clone.state = state
         return clone

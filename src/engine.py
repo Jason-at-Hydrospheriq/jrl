@@ -5,7 +5,7 @@ from __future__ import annotations
 import threading
 from typing import List
 
-from core_components.state import GameState
+from state import GameState
 
 class Engine:
     """

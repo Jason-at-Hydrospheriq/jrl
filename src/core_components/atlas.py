@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 
 from core_components.generators.base import BaseMapGenerator
-from core_components.generators.library import DefaultDungeonGenerator
+from core_components.generators.library import DungeonGenerator
 from core_components.maps.base import GraphicTileMap, TileCoordinate
         
 class Atlas:
@@ -16,15 +16,15 @@ class Atlas:
 
     """
     
-    __slots__ = ("generator", "library", "active_map")
+    __slots__ = ("generator", "library", "active")
     
     generators: OrderedDict[str, BaseMapGenerator]
     library: OrderedDict[str, GraphicTileMap]
     
     def __init__(self, width: int = 0, height: int = 0) -> None:
 
-        self.generator = OrderedDict({'dungeons': DefaultDungeonGenerator()})
+        self.generator = OrderedDict({'dungeons': DungeonGenerator()})
         self.library = OrderedDict({'initial': self.generator['dungeons'].generate()})
-        self.active_map = self.library['initial']
+        self.active = self.library['initial']
 
     
