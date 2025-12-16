@@ -5,7 +5,7 @@ from __future__ import annotations
     
 from core_components.dispatchers.base import *
 from core_components.events.library import GameStartEvent, GameOverEvent, InputEvent, SystemEvent
-from core_components.actions.library import EngineBaseAction, GameStartAction, GameOverAction, EntityMoveAction
+from core_components.actions.library import EngineBaseAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
 from core_components.tiles.base import TileTuple, TileCoordinate
 
 
@@ -46,8 +46,9 @@ class InputDispatcher(BaseEventDispatcher):
         clone.destination = destination
         return clone
 
-    def _ev_keydown(self, event: tcod.event.KeyDown, state: GameState) -> BaseGameAction:
+    def _ev_keydown(self, event: tcod.event.KeyDown, state: GameState) -> EntityMoveAction | GeneralAction:
 
+        player = state.roster.player
         state_action = self.create_state_action(self.NOACTION, state)
 
         match event.sym:
@@ -56,18 +57,24 @@ class InputDispatcher(BaseEventDispatcher):
                 state_action = self.create_state_action(self.SYSTEMEXIT, state)
         
             case tcod.event.KeySym.LEFT | tcod.event.KeySym.RIGHT | tcod.event.KeySym.UP | tcod.event.KeySym.DOWN:
-                if state.roster.player is not None:
-                    dx, dy = self.MOVEMENT_KEYS[event.sym]
-                    x = state.roster.player.location.x + dx
-                    y = state.roster.player.location.y + dy
-                    destination_tuple = TileTuple(([x], [y]))
-                    state.roster.player.destination = TileCoordinate(destination_tuple)
+                if player is not None:
+
+                    player.destination = self.get_destination(event, player)
+                    
                     #TODO: Check for collisions and obstacles.
                     #TODO: Update fov
                     #TODO: Trigger mob actions
-                    state_action = self.create_movement_action(state, state.roster.player, state.roster.player.destination)
+                    state_action = self.create_movement_action(state, player, player.destination)
         
         return state_action
+
+    def get_destination(self, event, entity) -> TileCoordinate:
+        dx, dy = self.MOVEMENT_KEYS[event.sym]
+        x = entity.location.x + dx
+        y = entity.location.y + dy
+        destination_tuple = TileTuple(([x], [y]))
+
+        return TileCoordinate(destination_tuple, entity.location.parent_map_size)
     
         # if self.mob_actions:
         #     while self.mob_actions:

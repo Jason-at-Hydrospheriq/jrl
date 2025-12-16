@@ -1,48 +1,157 @@
 import pytest
 from sys import path
+
+import tcod
+
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from core_components.dispatchers.library import SystemDispatcher
+from core_components.dispatchers.base import BaseEventDispatcher
+from core_components.dispatchers.library import SystemDispatcher, InputDispatcher
+from core_components.entities.library import MobileEntity, PlayerCharactor
+from core_components.entities.factory import spawn, PLAYER
+from core_components.actions.library import EntityMoveAction, GeneralAction
+from core_components.tiles.base import TileCoordinate, TileTuple
+from state import GameState
 
-def test_dispatcher_initialization():
+def test_input_dispatcher_initialization():
     pass
 
     # Arrange & Act
-    # dispatchers = [SystemDispatcher()] #EntityDispatcher(), InputDispatcher(), InterfaceDispatcher(),
-    dispatcher = SystemDispatcher()
+    dispatcher = InputDispatcher()
 
+    from_base = False
+    
+    while not from_base and dispatcher is not None:
+        for cls in dispatcher.__class__.mro():
+            from_base = "BaseEventDispatcher" in cls.__name__
+            
+            if from_base:
+                break
 
     # Assert
     try:
-        assert dispatcher is not None, "SystemDispatcher failed to initialize."
-        # for dispatcher in dispatchers:
-        #      assert dispatcher is not None, f"{dispatcher.__class__.__name__} failed to initialize."
-        
-        # for dispatcher in dispatchers:
-        #     # '_ev_quit' exists in BaseEventDispatcher, so checking for at least one method starting with '_ev_' 
-        #     methods = dir(dispatcher)
-        #     assert '_ev_quit' in methods, "'_ev_quit' not found."
-        
-        #     for method in methods:
-        #     # Check if method names starting with '_ev_' are callable
-        #         if method.startswith("_ev_"):
-        #             assert callable(getattr(dispatcher, method)), f"{method} should be callable."
+        assert dispatcher is not None, "InputDispatcher failed to initialize."
+        assert from_base, "InputDispatcher does inherits from BaseEventDispatcher Protocol."
+        assert hasattr(dispatcher, "MOVEMENT_ACTION"), "InputDispatcher missing MOVEMENT_ACTION template."
+        assert hasattr(dispatcher, "MOVEMENT_KEYS"), "InputDispatcher missing MOVEMENT_KEYS constant."
+        assert hasattr(dispatcher, "_ev_keydown"), "InputDispatcher missing _ev_keydown method."
+        assert hasattr(dispatcher, "get_destination"), "InputDispatcher missing get_destination method."
+        assert hasattr(dispatcher, "create_state_action"), "InputDispatcher missing create_state_action method."
+        assert hasattr(dispatcher, "create_movement_action"), "InputDispatcher missing create_movement_action method."
+        assert hasattr(dispatcher, "NOACTION"), "InputDispatcher missing NOACTION constant."
+        assert hasattr(dispatcher, "SYSTEMEXIT"), "InputDispatcher missing SYSTEMEXIT constant."
             
     except Exception as e:
         pytest.fail(str(e))
 
-# def test_dispatcher_ev_quit():
-#     # Arrange
-#     dispatchers = [EntityDispatcher(), InputDispatcher(), InterfaceDispatcher(),SystemDispatcher()]
-#     dummy_state = GameState()  # Assuming GameState can be instantiated without parameters
+def test_input_dispatcher_create_movement_action():
+    # Arrange
+    dispatcher = InputDispatcher()
+    dummy_state = GameState()
+    dummy_entity = MobileEntity()  # Replace with an actual entity mock or instance
+    dummy_destination = (5, 5)
 
-#     # Act & Assert
-#     try:
-#         quit_event = tcod.event.Quit()
-#         for dispatcher in dispatchers:
-#             actions = dispatcher._ev_quit(quit_event, dummy_state)
-#             assert isinstance(actions, list), f"{dispatcher.__class__.__name__}._ev_quit should return a list of actions."
-#             assert all(hasattr(action, 'state') for action in actions), f"All actions returned by {dispatcher.__class__.__name__}._ev_quit should have a 'state' attribute."
+    # Act
+    action = dispatcher.create_movement_action(dummy_state, dummy_entity, dummy_destination)
+
+    # Assert
+    try:
+        assert action is not None, "create_movement_action returned None."
+        assert hasattr(action, "entity"), "Movement action missing 'entity' attribute."
+        assert hasattr(action, "destination"), "Movement action missing 'destination' attribute."
+        assert action.entity == dummy_entity, "Movement action 'entity' attribute not set correctly."
+        assert action.destination == dummy_destination, "Movement action 'destination' attribute not set correctly."
+        assert hasattr(action, "state"), "Movement action missing 'state' attribute."
+        assert action.state == dummy_state, "Movement action 'state' attribute not set correctly."
+        
+    except Exception as e:
+        pytest.fail(str(e))
+
+def test_input_dispatcher_get_destination():
+    # Arrange
+    dispatcher = InputDispatcher()
+    location_tuple = TileTuple(([10], [10]))
+    location_coord = TileCoordinate(location_tuple, TileTuple(([80], [50])))
+    dummy_entity = MobileEntity()
+    dummy_entity.location = location_coord
+
+    class DummyEvent:
+        def __init__(self, sym):
+            self.sym = sym
+
+    event = DummyEvent(tcod.event.KeySym.UP)
+
+    expected_x = dummy_entity.location.x + dispatcher.MOVEMENT_KEYS[event.sym][0]
+    expected_y = dummy_entity.location.y + dispatcher.MOVEMENT_KEYS[event.sym][1]
+    expected_destination_tuple = TileTuple(([expected_x], [expected_y]))
+    expected_destination = TileCoordinate(expected_destination_tuple, dummy_entity.location.parent_map_size)
+
+    # Act
+    destination = dispatcher.get_destination(event, dummy_entity)
+
+    # Assert
+    try:
+        assert destination is not None, "get_destination returned None."
+        assert isinstance(destination, TileCoordinate), "get_destination did not return a TileCoordinate."
+        assert destination.x == expected_destination.x, "get_destination returned incorrect x coordinate."
+        assert destination.y == expected_destination.y, "get_destination returned incorrect y coordinate."
+        
+    except Exception as e:
+        pytest.fail(str(e))
+
+def test_input_dispatcher_ev_keydown_escape():
+    # Arrange
+    dispatcher = InputDispatcher()
+    dummy_state = GameState()
+    event = tcod.event.KeyDown(sym=tcod.event.KeySym.ESCAPE, 
+                                        scancode=0x01, 
+                                        mod=0)  # Simulate ESCAPE key press
+
+    # Act
+    action = dispatcher._ev_keydown(event, dummy_state)
+    from_base = False
+    while not from_base and action is not None:
+        for cls in action.__class__.mro():
+            from_base = "GeneralAction" in cls.__name__
+            
+            if from_base:
+                break
+
+    # Assert
+    try:
+        assert action is not None, "_ev_keydown returned None for ESCAPE key."
+        assert isinstance(action, GeneralAction), "Returned action is not of expected type."
+        assert from_base, "Returned action is not a GeneralAction."
+        
+    except Exception as e:
+        pytest.fail(str(e))
+
+def test_input_dispatcher_ev_keydown_movement():
+    # Arrange
+    dispatcher = InputDispatcher()
+    dummy_state = GameState()
+    location_tuple = TileTuple(([10], [10]))
+    location_coord = TileCoordinate(location_tuple, TileTuple(([80], [50])))
+    dummy_entity = dummy_state.roster.spawn(PLAYER, location_coord)
+    dummy_state.roster.player = dummy_entity  # The player entity
     
-#     except Exception as e:
-#         pytest.fail(str(e))
+    event = tcod.event.KeyDown(sym=tcod.event.KeySym.UP, 
+                                        scancode=0x48, 
+                                        mod=0)  # Simulate UP key press
+
+    expected_destination = dispatcher.get_destination(event, dummy_entity)
+    
+    # Act
+    action = dispatcher._ev_keydown(event, dummy_state)
+
+    # Assert
+    try:
+        assert action is not None, "_ev_keydown returned None for movement key."
+        assert hasattr(action, "entity"), "Movement action missing 'entity' attribute."
+        assert hasattr(action, "destination"), "Movement action missing 'destination' attribute."
+        assert isinstance(action, EntityMoveAction), "Returned action is not of expected type."
+        assert action.entity == dummy_entity, "Movement action 'entity' attribute not set correctly."
+        assert action.destination == expected_destination, "Movement action 'destination' attribute not set correctly."
+        
+    except Exception as e:
+        pytest.fail(str(e))
