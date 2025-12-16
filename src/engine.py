@@ -20,6 +20,10 @@ class Engine:
         self.state = GameState()
         self.threads = []
 
+        # Convenience links to the game state
+        self.atlas = self.state.map
+        self.roster = self.state.roster
+
     # def render(self) -> None:
     #     """ Render all UI components """
     #     pass
@@ -30,7 +34,14 @@ class Engine:
     def start(self) -> None:
         self.threads.append(threading.Thread(target=self.state.dispatch).start())
         self.threads.append(threading.Thread(target=self.state.update).start())
-            
+
+        self.atlas.create_map()
+        self.map = self.atlas.active
+
+        if self.map is not None:
+            self.state.roster.spawn_player(self.map)
+            self.player = self.roster.player
+    
     def stop(self) -> None:
         self.state.game_over.set()
     

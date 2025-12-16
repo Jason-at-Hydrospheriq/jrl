@@ -23,11 +23,11 @@ DEFAULT_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': TileTuple((
                                                                             },
                                                             'label_map': (),
                                                                 },
-                                         'colors': {"fill_bluebell": (ord(" "), (255, 255, 255), (50, 50, 150)),
-                                                    "fill_light_yellow": (ord(" "), (255, 255, 255), (200, 180, 50)),
+                                         'colors': {"fill_bluebell": (43, (255, 255, 255), (50, 50, 150)),
+                                                    "fill_light_yellow": (43, (255, 255, 255), (200, 180, 50)),
                                                     "fill_black": (ord(" "), (255, 255, 255), (0, 0, 0)),
-                                                    "fill_dark_blue": (ord(" "), (255, 255, 255), (0, 0, 100)),
-                                                    "fill_golden_yellow": (ord(" "), (255, 255, 255), (130, 110, 50))       
+                                                    "fill_dark_blue": (74, (255, 255, 255), (0, 0, 100)),
+                                                    "fill_golden_yellow": (74, (255, 255, 255), (130, 110, 50))       
                                                         }, 
                                          'dtypes': {
                                                         "tile_state_vector": None,

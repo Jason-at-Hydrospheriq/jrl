@@ -88,7 +88,7 @@ class DungeonGenerator(BaseMapGenerator):
             corridor.start = prev_area_location
             corridor.end = current_area_location
 
-            dungeon.areas[str(f'corridor_{idx}')] = corridor
+            dungeon.areas[str(f'_corridor_{idx}')] = corridor
             
     def room_generator(self, dungeon: GraphicTileMap, max_rooms: int, min_room_size: int, max_room_size: int) -> Generator[GenericMapArea | None]:
 

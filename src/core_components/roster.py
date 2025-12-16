@@ -6,13 +6,10 @@ from typing import Set, List, Callable, TYPE_CHECKING
 import random
 import numpy as np
 
-if TYPE_CHECKING:
-    from core_components.entities.library import BaseEntity, BlockingEntity, Charactor, AICharactor
-    from core_components.maps.base import TileCoordinate
 
 from core_components.entities.library import *
 from core_components.entities.factory import *
-
+from core_components.maps.base import GraphicTileMap
 
 class Roster:
     """ The Roster component manages the state of all entities in the game. """
@@ -85,6 +82,14 @@ class Roster:
         
         return found_entity
     
+    def spawn_player(self, game_map: GraphicTileMap) -> None:
+        """Spawn the player in a random room."""
+        
+        start_rooms = [area for area in game_map.areas.keys() if not area.startswith('_')]
+        start_room = random.choice(start_rooms)
+        spawn_location = game_map.areas[start_room].get_random_location()
+        self.player = self.spawn(PLAYER, spawn_location)
+
     # def initialize_random_mobs(self, game_map: GameMap, max_total_mobs: int, max_mobs_per_room: int) -> None:
     #     """Generate mobs """
     #     n_total_mobs_spawned_in_this_map = 0
