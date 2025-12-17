@@ -19,7 +19,8 @@ class TileCoordinateSystem(Protocol):
 
     __slots__ = ("_size",)
     _size: TileTuple
-    
+    #TODO connect this with maps so that map size informatoin is consistent across components
+
     @property
     def _origin(self) -> TileTuple:
         return TileTuple( ([0], [0]) )
@@ -35,8 +36,27 @@ class TileCoordinateSystem(Protocol):
         return TileTuple(([x], [y]))
     
     def _tiletuple_to_area_tiletuple(self, top_left: TileTuple, lower_right: TileTuple) -> TileTuple:
-        return TileTuple( (list(range(top_left[0][0], lower_right[0][0] + 1)),
-                           list(range(top_left[1][0], lower_right[1][0] + 1)) ) )
+        if top_left is None or lower_right is None:
+            raise ValueError("Both top_left and lower_right TileTuple parameters must be provided.")
+
+        if top_left[0][0] > lower_right[0][0] or top_left[1][0] > lower_right[1][0]:
+            raise ValueError("Top-left coordinates must be less than or equal to bottom-right coordinates.")
+                
+        x_range = list(range(top_left[0][0], lower_right[0][0] + 1))
+        y_range = list(range(top_left[1][0], lower_right[1][0] + 1))
+        
+        if top_left[0][0] == lower_right[0][0] and top_left[1][0] == lower_right[1][0]:
+            warn("Top-left and bottom-right coordinates are the same; area will be a single point.", UserWarning)
+            x_range = [top_left[0][0]]
+            y_range = [top_left[1][0]]
+        if top_left[0][0] == lower_right[0][0]:
+            warn("The x coordinates are the same; area will be a line.", UserWarning)
+            x_range = [top_left[0][0]]
+        if top_left[1][0] == lower_right[1][0]:
+            warn("The y coordinates are the same; area will be a line.", UserWarning)
+            y_range = [top_left[1][0]]
+
+        return TileTuple( (x_range, y_range) )
     
     def _tiletuple_to_xy_tuple(self, x_y: TileTuple) -> Tuple[int, int]:
         return (x_y[0][0], x_y[1][0])
@@ -246,7 +266,7 @@ class TileCoordinate(TileCoordinateSystemElement):
         return hash((self.x, self.y, self.parent_map_size[0][0], self.parent_map_size[1][0]))
 
     @property
-    def to_xy_tuple(self) -> TileTuple:
+    def to_xy_tiletuple(self) -> TileTuple:
         if not hasattr(self, "x") or not hasattr(self, "y"):
             raise AttributeError("Both 'x' and 'y' attributes must be set before converting to tuple.")
         
@@ -257,7 +277,7 @@ class TileCoordinate(TileCoordinateSystemElement):
         if not hasattr(self, "x") or not hasattr(self, "y") or not hasattr(self, "_size"):
             raise AttributeError("Attributes 'x', 'y', and 'parent_map_size' must be set to check inbounds status.")
         
-        return self._overlap(self.parent_map_coords, self.to_xy_tuple)
+        return self._overlap(self.parent_map_coords, self.to_xy_tiletuple)
     
     @property
     def to_tuple(self) -> Tuple[int, int]:
@@ -395,8 +415,9 @@ class TileArea(TileCoordinateSystemElement):
     def to_area_indicies_tuple(self) -> TileTuple:
         if not hasattr(self, "top_left") or not hasattr(self, "bottom_right"):
             raise AttributeError("Both 'top_left' and 'bottom_right' attributes must be set before converting to area tuple.")
-        top_left_grid_indices = self.top_left.to_xy_tuple
-        bottom_right_grid_indices = self.bottom_right.to_xy_tuple
+        
+        top_left_grid_indices = self.top_left.to_xy_tiletuple
+        bottom_right_grid_indices = self.bottom_right.to_xy_tiletuple
 
         return self._tiletuple_to_area_tiletuple(top_left_grid_indices, bottom_right_grid_indices)
 
@@ -441,9 +462,13 @@ class TileArea(TileCoordinateSystemElement):
         
         half_width = self._width // 2
         half_height = self._height // 2
-
-        top_left_xy = TileTuple( ([self._center.x - half_width], [self._center.y - half_height]) )
-        bottom_right_xy = TileTuple( ([self._center.x + half_width], [self._center.y + half_height]) )
+        top_x = self._center.x - half_width
+        top_y = self._center.y - half_height
+        bottom_x = self._center.x + half_width
+        bottom_y = self._center.y + half_height
+        
+        top_left_xy = TileTuple( ([top_x], [top_y]) )
+        bottom_right_xy = TileTuple( ([bottom_x], [bottom_y]) )
 
         self._top_left = TileCoordinate(top_left_xy, self._center.parent_map_size)
         self._bottom_right = TileCoordinate(bottom_right_xy, self._center.parent_map_size)

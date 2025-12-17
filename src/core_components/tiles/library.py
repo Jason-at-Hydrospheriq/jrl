@@ -64,30 +64,52 @@ class GenericCorridor(GenericMapArea):
 
 
 class RectangularRoom(GenericMapArea):
-    height: int
-    width: int
+    _height: int
+    _width: int
+
+    @property
+    def height(self) -> int:
+        return self._height
+    
+    @height.setter
+    def height(self, value: int) -> None:
+        self._height = min(3, value)
+
+    @property
+    def width(self) -> int:
+        return self._width
+    
+    @width.setter
+    def width(self, value: int) -> None:
+        self._width = min(3, value)
 
     @property
     def to_mask(self) -> np.ndarray:
         """Return the inner area of this room as a 2D array index."""
         grid_tuple = self._tiletuple_to_xy_tuple(self.parent_map_size)
-
-        area_indices = self.to_area_indicies_tuple
-        x_left_ = area_indices[0][0] + self.wall_thickness
-        x_right_ = area_indices[0][-1] - self.wall_thickness + 1
-        self.width = (x_right_ - x_left_)
-
-        y_top_ = area_indices[1][0] + self.wall_thickness
-        y_bottom_ = area_indices[1][-1] - self.wall_thickness + 1
-        self.height = y_bottom_ - y_top_
+        area_indices = TileTuple(([],[]))
         
-        x_slice = slice(x_left_, x_right_)
-        y_slice = slice(y_top_, y_bottom_)
+        try:    
+            area_indices = self.to_area_indicies_tuple
+            x_left_ = area_indices[0][0] + self.wall_thickness
+            x_right_ = area_indices[0][-1] - self.wall_thickness + 1
+            self.width = (x_right_ - x_left_)
 
-        mask = np.full(grid_tuple, fill_value=False, dtype=bool)
+            y_top_ = area_indices[1][0] + self.wall_thickness
+            y_bottom_ = area_indices[1][-1] - self.wall_thickness + 1
+            self.height = y_bottom_ - y_top_
+            
+            x_slice = slice(x_left_, x_right_)
+            y_slice = slice(y_top_, y_bottom_)
 
-        mask[x_slice, y_slice] = True
+            mask = np.full(grid_tuple, fill_value=False, dtype=bool)
 
+            mask[x_slice, y_slice] = True
+
+        except Exception as e:
+            e.add_note(f"Area indices: {area_indices}")
+            raise e
+        
         return mask
 
 
@@ -115,7 +137,7 @@ class CircularRoom(GenericMapArea):
         """Return the inner area of this room as a 2D array index."""
         grid_tuple = self._tiletuple_to_xy_tuple(self.parent_map_size)
         inner_radius = self.radius - self.wall_thickness
-        center = self.center.to_xy_tuple
+        center = self.center.to_xy_tiletuple
         mask = np.fromfunction(lambda xx, yy: (xx - center[0]) ** 2 + (yy - center[1]) ** 2 + 2 <= inner_radius ** 2,
                                grid_tuple, dtype=int)
         return mask
