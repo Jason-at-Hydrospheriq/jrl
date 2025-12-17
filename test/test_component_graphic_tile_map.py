@@ -268,7 +268,35 @@ def test_default_tile_map_get_tile_layout():
         finally:
             pass
 
-def test_default_tile_map_set_tiles():
+def test_default_tile_map_set_tile_noargs():
+    # Arrange
+    tile_map = DefaultTileMap()
+    if tile_map.graphics and tile_map.graphics['default'] is not None:
+        expected_tile_names = np.array(['default'] * tile_map.tiles.size)
+        expected_blocks_movement = np.array([True] * tile_map.tiles.size)
+        expected_blocks_vision = np.array([True] * tile_map.tiles.size)
+
+        # Act
+        tile_map.set_tiles()
+        actual_tile_names = tile_map.tiles['graphic_type'].flatten()['name']
+        actual_blocks_movement = tile_map.tiles['blocks_movement'].flatten()
+        actual_blocks_vision = tile_map.tiles['blocks_vision'].flatten()
+
+        # Assert
+        try:
+            assert actual_tile_names is not None, "Expected set_tiles to return a non-None value"
+            assert np.array_equal(actual_tile_names, expected_tile_names), "Expected set_tiles to update the tiles correctly"
+            assert np.array_equal(actual_blocks_movement, expected_blocks_movement), "Expected set_tiles to update blocks_movement correctly"
+            assert np.array_equal(actual_blocks_vision, expected_blocks_vision), "Expected set_tiles to update blocks_vision correctly"
+
+        except AssertionError as e:
+            pytest.fail(str(e))
+        
+        # Atavise
+        finally:
+            pass
+
+def test_default_tile_map_set_tiles_args():
     # Arrange
     tile_map = DefaultTileMap()
     if tile_map.graphics and tile_map.graphics['default'] is not None:
@@ -310,7 +338,8 @@ def test_default_tile_map_merge_tile_merge():
         layout2 = np.full([*tile_map.tiles.shape], fill_value=False)
         layout2[2:4, 3:5] = True
 
-        expected_layout = ~(layout1 & layout2)
+        expected_layout = np.full([*tile_map.tiles.shape], fill_value=False)
+        expected_layout[2:4, 2:5] = True
         
         # Act
         actual_layout1 = tile_map.merge_tile_layout(layout2, graphic_name='floor', join_type='merge')
@@ -340,7 +369,8 @@ def test_default_tile_map_merge_tile_inner():
         layout2 = np.full([*tile_map.tiles.shape], fill_value=False)
         layout2[2:4, 3:5] = True
 
-        expected_layout = ~(layout1 | layout2)
+        expected_layout = np.full([*tile_map.tiles.shape], fill_value=False)
+        expected_layout[2:4, 3:4] = True
         
         # Act
         actual_layout1 = tile_map.merge_tile_layout(layout2, graphic_name='floor', join_type='inner')
@@ -370,7 +400,9 @@ def test_default_tile_map_merge_tile_outer():
         layout2 = np.full([*tile_map.tiles.shape], fill_value=False)
         layout2[2:4, 3:5] = True
 
-        expected_layout = layout1 ^ layout2
+        expected_layout = np.full([*tile_map.tiles.shape], fill_value=False)
+        expected_layout[2:4, 2:3] = True
+        expected_layout[2:4, 4:5] = True
         
         # Act
         actual_layout1 = tile_map.merge_tile_layout(layout2, graphic_name='floor', join_type='outer')

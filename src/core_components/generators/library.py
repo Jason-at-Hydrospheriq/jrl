@@ -39,12 +39,9 @@ class DungeonGenerator(BaseMapGenerator):
                  min_room_size: int=5, 
                  max_room_size: int=20) -> GraphicTileMap:
         #TODO Use LLM to generate more complex dungeons
-        dungeon = deepcopy(self.map_template)
-        self.width = dungeon.grid.width
-        self.height = dungeon.grid.height
+        dungeon = self.spawn_map()
 
-        dungeon.set_tiles(graphic_name='wall') # Initialize all tiles as walls
-        dungeon.update_state()
+
         
         self.add_rooms(dungeon=dungeon, max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size)
         self.add_corridors(dungeon=dungeon)
@@ -54,6 +51,16 @@ class DungeonGenerator(BaseMapGenerator):
 
         return dungeon
     
+    def spawn_map(self) -> GraphicTileMap:
+        """Spawn a new map instance based on the generator's template."""
+        dungeon = deepcopy(self.map_template)
+        self.width = dungeon.grid.width
+        self.height = dungeon.grid.height
+        dungeon.set_tiles(graphic_name='wall') # Initialize all tiles as walls
+        dungeon.update_state()
+        
+        return dungeon
+
     def add_rooms(self, dungeon: GraphicTileMap, max_rooms: int, min_room_size: int, max_room_size: int) -> None:
         """Add rooms to the tile map."""
         rooms = self.room_generator(dungeon=dungeon, max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size)
