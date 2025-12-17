@@ -2,12 +2,15 @@
 # # -*- coding: utf-8 -*-
 
 from __future__ import annotations
+from typing import Tuple
     
 from core_components.dispatchers.base import *
+from core_components.entities.library import BaseEntity, TargetableEntity, MobileEntity, TargetingEntity, CombatEntity
 from core_components.events.library import GameStartEvent, GameOverEvent, InputEvent, SystemEvent
-from core_components.actions.library import EngineBaseAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
+from core_components.actions.library import EngineBaseAction, EntityAcquireTargetAction, EntityActionOnDestination, EntityActionOnTarget, EntityCollisionAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
 from core_components.tiles.base import TileTuple, TileCoordinate
 
+A = TypeVar('A', EntityActionOnDestination, EntityActionOnTarget)
 
 class EntityDispatcher(BaseEventDispatcher):
     pass
@@ -31,6 +34,8 @@ class InputDispatcher(BaseEventDispatcher):
         }
     
     MOVEMENT_ACTION = EntityMoveAction()
+    COLLISION_ACTION = EntityCollisionAction()
+    TARGET_ACQUISITION_ACTION = EntityAcquireTargetAction()
 
     # def __init__(self, state: GameState | None = None) -> None:
     #     self.mob_actions: List[BaseGameAction] = []
@@ -40,13 +45,20 @@ class InputDispatcher(BaseEventDispatcher):
     #     yield from (mob for mob in self.engine.roster.live_ai_actors if isinstance(mob.ai, HostileAI))
 
     @classmethod
-    def create_movement_action(cls, state: GameState, entity, destination) -> EntityMoveAction:
-        clone = super().create_state_action(cls.MOVEMENT_ACTION, state)
-        clone.entity = entity
-        clone.destination = destination
+    def create_action_on_target(cls, action: A, state: GameState, entity: BaseEntity, target: BaseEntity | TileCoordinate) -> A:
+        clone = super().create_state_action(action, state)
+        if isinstance(entity, MobileEntity) and isinstance(clone, EntityActionOnDestination):
+            clone.entity = entity
+        elif isinstance(entity, (TargetingEntity, CombatEntity)) and isinstance(clone, EntityActionOnTarget):
+            clone.entity = entity
+        if isinstance(clone, EntityActionOnTarget) and isinstance(target, (TargetableEntity, CombatEntity)):
+            clone.target = target
+        elif isinstance(target, TileCoordinate) and isinstance(clone, EntityActionOnDestination):
+            clone.destination = target
         return clone
 
-    def _ev_keydown(self, event: tcod.event.KeyDown, state: GameState) -> EntityMoveAction | GeneralAction:
+    def _ev_keydown(self, event: tcod.event.KeyDown, state: GameState) -> SystemExitAction | EntityMoveAction | EntityCollisionAction | NoAction:
+        state_action: SystemExitAction | EntityMoveAction | EntityCollisionAction | NoAction
 
         player = state.roster.player
         state_action = self.create_state_action(self.NOACTION, state)
@@ -58,13 +70,25 @@ class InputDispatcher(BaseEventDispatcher):
         
             case tcod.event.KeySym.LEFT | tcod.event.KeySym.RIGHT | tcod.event.KeySym.UP | tcod.event.KeySym.DOWN:
                 if player is not None:
+                    state_action = self.create_state_action(self.NOACTION, state)
+                    destination = self.get_destination(event, player)
+                    player.destination = destination
+                    blocking_entity = state.roster.entity_collision(player)
+                    blocking_tile = state.map.active.object_collision(player.destination)
 
-                    player.destination = self.get_destination(event, player)
+                    if blocking_entity is not None and isinstance(blocking_entity, TargetableEntity):
+                        target_action = self.create_action_on_target(self.COLLISION_ACTION, state, player, blocking_entity)
+                        state.actions.put(target_action)
+
+                    #TODO: Update fov??
+                              
+                    if blocking_tile:
+                        # Collision with map object
+                        pass
+                    else:
+                        state_action = self.create_action_on_target(self.MOVEMENT_ACTION, state, player, player.destination) #type: ignore
                     
-                    #TODO: Check for collisions and obstacles.
-                    #TODO: Update fov
-                    #TODO: Trigger mob actions
-                    state_action = self.create_movement_action(state, player, player.destination)
+                    #TODO: Trigger mob actions on KeyUp??
         
         return state_action
 
@@ -89,7 +113,7 @@ class InputDispatcher(BaseEventDispatcher):
 
         # return actions
 
-
+    
 class InterfaceDispatcher(BaseEventDispatcher):
     pass
 

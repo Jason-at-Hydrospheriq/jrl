@@ -43,13 +43,13 @@ class DungeonGenerator(BaseMapGenerator):
         self.width = dungeon.grid.width
         self.height = dungeon.grid.height
 
-        dungeon.set_tiles(graphic_name='wall')
+        dungeon.set_tiles(graphic_name='wall') # Initialize all tiles as walls
         dungeon.update_state()
         
         self.add_rooms(dungeon=dungeon, max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size)
         self.add_corridors(dungeon=dungeon)
         for area in dungeon.areas.values():
-            dungeon.set_tiles(area.to_mask, "floor", join=True)
+            dungeon.set_tiles(area.to_mask, "floor")
         dungeon.update_state()
 
         return dungeon

@@ -70,9 +70,10 @@ class GameState:
         while True:
             try:
                 action = self.actions.get_nowait()
-                action.perform()    # Perform the action            
-                print(f"Action performed: {action}")
-
+                next_action = action.perform()
+                if next_action is not None:
+                    self.actions.put(next_action)
+                        
             except queue.Empty:
                 time.sleep(0.05)
 

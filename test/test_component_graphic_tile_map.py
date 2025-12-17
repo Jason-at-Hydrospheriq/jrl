@@ -6,7 +6,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
 from core_components.maps.library import DefaultTileMap, DEFAULT_MANIFEST, ascii_graphic
-from core_components.tiles.base import BaseTileGrid, TileTuple
+from core_components.tiles.base import BaseTileGrid, TileCoordinate, TileTuple
 
 
 # Test Cases for ascii_graphic dtype
@@ -271,53 +271,25 @@ def test_default_tile_map_get_tile_layout():
 def test_default_tile_map_set_tiles():
     # Arrange
     tile_map = DefaultTileMap()
-
     if tile_map.graphics and tile_map.graphics['default'] is not None:
         layout = np.full([*tile_map.tiles.shape], fill_value=False)
-        layout[5:10, 5:10] = True
+        layout[10:15, 10:15] = True
+        expected_tile_names = np.array(['floor'] * 25)
+        expected_blocks_movement = np.array([False] * 25)
+        expected_blocks_vision = np.array([False] * 25)
 
-        expected_tiles = np.full([*tile_map.tiles.shape], fill_value=tile_map.graphics['default'])
-        expected_tiles[5:10, 5:10] = tile_map.graphics['floor']
-        
         # Act
         tile_map.set_tiles(layout, 'floor')
-        actual_tiles = tile_map.get_tiles()
-
-        # Assert
-        try:
-            assert actual_tiles is not None, "Expected set_tiles to return a non-None value"
-            assert np.array_equal(actual_tiles, expected_tiles), "Expected set_tiles to update the tiles correctly"
-            
-        except AssertionError as e:
-            pytest.fail(str(e))
-        
-        # Atavise
-        finally:
-            pass
-
-def test_default_tile_map_set_tile_overlay():
-    # Arrange
-    tile_map = DefaultTileMap()
-
-    if tile_map.graphics and tile_map.graphics['default'] is not None:
-        layout1 = np.full([*tile_map.tiles.shape], fill_value=False)
-        layout1[5:10, 5:10] = True
-
-        layout2 = np.full([*tile_map.tiles.shape], fill_value=False)
-        layout2[8:13, 8:13] = True
-
-        expected_tile_names = ['default', 'floor', 'floor']
-        # Act
-        tile_map.set_tiles(layout1, 'floor')
-        tile_map.set_tiles(layout2, 'floor')
-        actual_tile_names = [str(tile_map.tiles[5,5]['graphic_type']['name']), 
-                        str(tile_map.tiles[9,9]['graphic_type']['name']), 
-                        str(tile_map.tiles[12,12]['graphic_type']['name'])]       
+        actual_tile_names = tile_map.tiles['graphic_type'][10:15, 10:15].flatten()['name']
+        actual_blocks_movement = tile_map.tiles['blocks_movement'][10:15, 10:15].flatten()
+        actual_blocks_vision = tile_map.tiles['blocks_vision'][10:15, 10:15].flatten()
 
         # Assert
         try:
             assert actual_tile_names is not None, "Expected set_tiles to return a non-None value"
-            assert actual_tile_names == expected_tile_names, "Expected set_tiles to update the tiles correctly"
+            assert np.array_equal(actual_tile_names, expected_tile_names), "Expected set_tiles to update the tiles correctly"
+            assert np.array_equal(actual_blocks_movement, expected_blocks_movement), "Expected set_tiles to update blocks_movement correctly"
+            assert np.array_equal(actual_blocks_vision, expected_blocks_vision), "Expected set_tiles to update blocks_vision correctly"
 
         except AssertionError as e:
             pytest.fail(str(e))
@@ -326,29 +298,28 @@ def test_default_tile_map_set_tile_overlay():
         finally:
             pass
 
-def test_default_tile_map_set_tile_merge():
+def test_default_tile_map_merge_tile_merge():
     # Arrange
     tile_map = DefaultTileMap()
+    tile_map.tiles['graphic_type'][2:4, 2:4] = tile_map.graphics['floor']
 
     if tile_map.graphics and tile_map.graphics['default'] is not None:
         layout1 = np.full([*tile_map.tiles.shape], fill_value=False)
-        layout1[5:10, 5:10] = True
+        layout1[2:4, 2:4] = True
 
         layout2 = np.full([*tile_map.tiles.shape], fill_value=False)
-        layout2[8:13, 8:13] = True
+        layout2[2:4, 3:5] = True
 
-        expected_tile_names = ['floor', 'floor', 'floor']
+        expected_layout = ~(layout1 & layout2)
+        
         # Act
-        tile_map.set_tiles(layout1, 'floor')
-        tile_map.set_tiles(layout2, 'floor', join=True)
-        actual_tile_names = [str(tile_map.tiles[5,5]['graphic_type']['name']), 
-                        str(tile_map.tiles[9,9]['graphic_type']['name']), 
-                        str(tile_map.tiles[12,12]['graphic_type']['name'])]       
+        actual_layout1 = tile_map.merge_tile_layout(layout2, graphic_name='floor', join_type='merge')
+
 
         # Assert
         try:
-            assert actual_tile_names is not None, "Expected set_tiles to return a non-None value"
-            assert actual_tile_names == expected_tile_names, "Expected set_tiles to update the tiles correctly"
+            assert actual_layout1 is not None, "Expected merge_tile_layout to return a non-None value"
+            assert np.array_equal(actual_layout1, expected_layout), "Expected merge_tile_layout to update the layout correctly"
 
         except AssertionError as e:
             pytest.fail(str(e))
@@ -357,29 +328,28 @@ def test_default_tile_map_set_tile_merge():
         finally:
             pass
 
-def test_default_tile_map_set_tile_inner():
+def test_default_tile_map_merge_tile_inner():
     # Arrange
     tile_map = DefaultTileMap()
+    tile_map.tiles['graphic_type'][2:4, 2:4] = tile_map.graphics['floor']
 
     if tile_map.graphics and tile_map.graphics['default'] is not None:
         layout1 = np.full([*tile_map.tiles.shape], fill_value=False)
-        layout1[5:10, 5:10] = True
+        layout1[2:4, 2:4] = True
 
         layout2 = np.full([*tile_map.tiles.shape], fill_value=False)
-        layout2[8:13, 8:13] = True
+        layout2[2:4, 3:5] = True
 
-        expected_tile_names = ['default', 'floor', 'default']
+        expected_layout = ~(layout1 | layout2)
+        
         # Act
-        tile_map.set_tiles(layout1, 'floor')
-        tile_map.set_tiles(layout2, 'floor', join=True, join_type='inner')
-        actual_tile_names = [str(tile_map.tiles[5,5]['graphic_type']['name']), 
-                        str(tile_map.tiles[9,9]['graphic_type']['name']), 
-                        str(tile_map.tiles[12,12]['graphic_type']['name'])]       
+        actual_layout1 = tile_map.merge_tile_layout(layout2, graphic_name='floor', join_type='inner')
+
 
         # Assert
         try:
-            assert actual_tile_names is not None, "Expected set_tiles to return a non-None value"
-            assert actual_tile_names == expected_tile_names, "Expected set_tiles to update the tiles correctly"
+            assert actual_layout1 is not None, "Expected merge_tile_layout to return a non-None value"
+            assert np.array_equal(actual_layout1, expected_layout), "Expected merge_tile_layout to update the layout correctly"
 
         except AssertionError as e:
             pytest.fail(str(e))
@@ -388,29 +358,28 @@ def test_default_tile_map_set_tile_inner():
         finally:
             pass
 
-def test_default_tile_map_set_tile_outer():
+def test_default_tile_map_merge_tile_outer():
     # Arrange
     tile_map = DefaultTileMap()
+    tile_map.tiles['graphic_type'][2:4, 2:4] = tile_map.graphics['floor']
 
     if tile_map.graphics and tile_map.graphics['default'] is not None:
         layout1 = np.full([*tile_map.tiles.shape], fill_value=False)
-        layout1[5:10, 5:10] = True
+        layout1[2:4, 2:4] = True
 
         layout2 = np.full([*tile_map.tiles.shape], fill_value=False)
-        layout2[8:13, 8:13] = True
+        layout2[2:4, 3:5] = True
 
-        expected_tile_names = ['floor', 'default', 'floor']
+        expected_layout = layout1 ^ layout2
+        
         # Act
-        tile_map.set_tiles(layout1, 'floor')
-        tile_map.set_tiles(layout2, 'floor', join=True, join_type='outer')
-        actual_tile_names = [str(tile_map.tiles[5,5]['graphic_type']['name']), 
-                        str(tile_map.tiles[9,9]['graphic_type']['name']), 
-                        str(tile_map.tiles[12,12]['graphic_type']['name'])]       
+        actual_layout1 = tile_map.merge_tile_layout(layout2, graphic_name='floor', join_type='outer')
+
 
         # Assert
         try:
-            assert actual_tile_names is not None, "Expected set_tiles to return a non-None value"
-            assert actual_tile_names == expected_tile_names, "Expected set_tiles to update the tiles correctly"
+            assert actual_layout1 is not None, "Expected merge_tile_layout to return a non-None value"
+            assert np.array_equal(actual_layout1, expected_layout), "Expected merge_tile_layout to update the layout correctly"
 
         except AssertionError as e:
             pytest.fail(str(e))
@@ -445,6 +414,52 @@ def test_default_tile_map_reset_tiles():
         finally:
             pass
 
+def test_graphic_tile_map_object_collision():
+    # Arrange
+    tile_map = DefaultTileMap()
+    collision_layout = np.full([*tile_map.tiles.shape], fill_value=False)
+    collision_layout[10:15, 10:15] = True
+    tile_map.set_state_bits('blocks_movement', collision_layout)
+    destination = TileCoordinate(TileTuple(([12], [12])), TileTuple(([80], [50])))
+
+    # Act
+    
+
+    # Assert
+    try:
+        assert tile_map.object_collision(destination), "Expected get_object_collision to return a non-None value"
+     
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_graphic_tile_map_get_tile_layout():
+    # Arrange
+    tile_map = DefaultTileMap()
+
+    mask = np.full([*tile_map.tiles.shape], fill_value=True)
+    mask[20:30, 20:30] = False
+    tile_map.tiles['graphic_type'][mask] = tile_map.graphics['floor']
+
+    if tile_map.graphics and tile_map.graphics['default'] is not None:
+        expected_layout_no_graphic_name = np.full([*tile_map.tiles.shape], fill_value=True)
+        expected_layout_graphic_name = ~mask
+
+        # Act
+        actual_layout_no_graphic_name = np.full([*tile_map.tiles.shape], fill_value=True)
+        actual_layout_graphic_name = tile_map.get_tile_layout('default')
+
+        # Assert
+        try:
+            assert actual_layout_graphic_name is not None, "Expected get_tile_layout to return a non-None value"
+            assert np.array_equal(actual_layout_no_graphic_name, expected_layout_no_graphic_name), "Expected get_tile_layout to match expected_layout"
+            assert np.array_equal(actual_layout_graphic_name, expected_layout_graphic_name), "Expected get_tile_layout to match expected_layout"
+
+        except AssertionError as e:
+            pytest.fail(str(e))
 
 # def test_graphic_tile_map_parameter_init():
 #     # Arrange & Act

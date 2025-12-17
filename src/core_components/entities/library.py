@@ -140,6 +140,7 @@ class MortalEntity(BaseEntity):
 
 class CombatEntity(TargetingEntity):
     combat: CombatStats | None
+    in_combat: bool = False
 
     def __init__(   self, 
                     *, 
@@ -152,6 +153,21 @@ class CombatEntity(TargetingEntity):
         
         super().__init__(location=location, symbol=symbol, color=color, name=name)
         self.combat = combat
+
+    def acquire_target(self, target: TargetableEntity) -> None:
+        if isinstance(target, CombatEntity):
+            combat_status = (self.in_combat, target.in_combat)
+            match combat_status:
+                case (True, True): # Both are in combat
+                    pass
+                case (True, False): # Entity is in combat, target is not
+                    self.in_combat = False
+                case (False, True): # Entity is not in combat, target is
+                    self.in_combat = True
+                case (False, False): # Neither are in combat, hostile mobs are ALWAYS in combat.
+                    pass
+                    
+        self.target = target
 
     def attack(self) -> int:
         return self.combat.attack_power - self.target.combat.defense  # type: ignore

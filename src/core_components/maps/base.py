@@ -294,37 +294,23 @@ class GraphicTileMap(Protocol):
         if self.graphics is not None:
             return deepcopy(self.tiles['graphic_type'])
 
-    def get_tile_layout(self, graphic_name: str = 'default') -> np.ndarray | None:
-        if self.graphics is not None:
-            tiles = self.get_tiles()
-            if tiles is not None:
-                return tiles['name'] == graphic_name
-    
-    def set_tiles(self, layout: np.ndarray | None = None, graphic_name: str = 'default', join: bool = False, join_type: str = 'merge') -> None:
+    def set_tiles(self, layout: np.ndarray | None = None, graphic_name: str = 'default', join_type: str = 'merge') -> None:
+        if layout is None and self.graphics is not None and self.statespace is not None:
+            # Reset all tiles to the default graphic
+            self.set_tile_layout() # Reset all tiles to default
+            self.set_tile_layout(graphic_name=graphic_name) # Set all tiles to the specified graphic
 
-        current_layout = self.get_tile_layout(graphic_name)
+            # Set the fixed state bits for all tiles based on the graphic
 
-        if self.graphics and self.statespace and current_layout is not None:
-            if join and join_type == 'merge':
-                layout = current_layout | layout
-            elif join and join_type == 'outer':
-                layout = current_layout ^ layout
-            elif join and join_type == 'inner':
-                layout = current_layout & layout
-            else: # replace
-                self.tiles['graphic_type'][current_layout]= self.graphics['default']
+        if layout is not None and self.graphics is not None and self.statespace is not None:
+            # Merge the new graphic onto the existing tile layout
+            merged_layout = self.merge_tile_layout(layout, graphic_name=graphic_name, join_type=join_type)
+            
+            # Reset and set the tile layout
+            self.set_tile_layout(merged_layout, graphic_name) # Set
 
-            self.tiles['graphic_type'][current_layout]= self.graphics['default']
-            self.tiles['graphic_type'][layout] = self.graphics[graphic_name]
-
-            fixed_bits = self._graphics_manifest['graphics'][graphic_name]['fixed_state_bits']
-            for idx, bit in enumerate(fixed_bits):
-                bit_name = self.statespace['bits'][idx]
-                if bit is not None:
-                    self.set_state_bits(bit_name, layout) #type: ignore
-
-            current_layout = self.get_tile_layout(graphic_name)
-            self.update_state()
+            # Set the fixed state bits for the tiles based on the graphic
+            self.set_fixed_state_bits(layout, graphic_name)
 
     def reset_tiles(self) -> None:
         if self.graphics is not None:
@@ -333,13 +319,78 @@ class GraphicTileMap(Protocol):
     def get_statespace_vector(self, index: int) -> np.ndarray | None:
         if self.statespace is not None:
             return deepcopy(self.statespace['vectors'][index])
-    
+
+    def get_tile_layout(self, graphic_name: str | None = None) -> np.ndarray | None:
+        if self.graphics is None:
+            return np.full(self.tiles.shape, fill_value=True, dtype=bool)
+
+        if self.graphics is not None and graphic_name is not None:
+            tiles = self.get_tiles()
+            if tiles is not None:
+                return tiles['name'] == graphic_name
+
+    def merge_tile_layout(self, layout: np.ndarray, graphic_name: str = 'default', join_type: str = 'merge', ) -> np.ndarray | None:
+        """Merge a new graphic layout onto the existing tile layout.
+
+        Args:
+            layout: A boolean mask representing the area to update.
+            graphic_name: The name of the graphic to apply to the specified layout.
+            join_type: The type of join operation to perform ('merge', 'outer', 'inner').
+        """
+        current_layout = None
+
+        if self.graphics is not None:
+            current_layout = self.get_tile_layout(graphic_name)
+
+        if self.graphics and self.statespace and current_layout is not None:
+            match join_type:
+            
+                case 'merge':
+                    return ~(current_layout & layout) # NAND: Keep all tiles labeled True in both layouts
+                case 'outer':
+                    return current_layout ^ layout # XOR: Keep only True tiles that are different between layouts
+                case 'inner':
+                    return ~(current_layout | layout) # NOR: Keep only True tiles that are the same between layouts
+
+    def set_fixed_state_bits(self, layout: np.ndarray, graphic_name: str) -> None:
+        """Set the fixed state bits for a given graphic on the specified layout.
+        
+        Args:
+            layout: A boolean mask representing the area to update.
+            graphic_name: The name of the graphic to apply to the specified layout.
+            join_type: The type of join operation to perform ('merge' or 'replace').
+        """
+        fixed_bits = self._graphics_manifest['graphics'][graphic_name]['fixed_state_bits']
+        if layout is not None:
+            layout = self.get_tile_layout() #type: ignore
+
+        if layout is not None and self.graphics is not None and self.statespace is not None:
+            for idx, bit in enumerate(fixed_bits):
+                bit_name = self.statespace['bits'][idx]
+                if bit is not None:
+                    layout = layout == bool(bit) # Make sure layout matches the fixed bit value, ie floor=True in the layout, but False for blocks_movement
+                    self.set_state_bits(bit_name, layout) #type: ignore
+
+    def set_tile_layout(self, layout: np.ndarray | None = None, graphic_name: str = 'default') -> None:
+        """Set a new graphic layout on the tile map.
+
+        Args:
+            layout: A boolean mask representing the area to update.
+            graphic_name: The name of the graphic to apply to the specified layout.
+        """
+        if layout is not None and self.graphics is not None:
+            self.tiles['graphic_type'][layout] = self.graphics[graphic_name]
+        elif self.graphics is not None and layout is None and graphic_name != 'default':
+            self.tiles['graphic_type'][:] = self.graphics[graphic_name]
+        elif self.graphics is not None and layout is None and graphic_name == 'default':
+            self.tiles['graphic_type'][:] = self.graphics['default']
+
     def get_state_bits(self, bit: str) -> np.ndarray:
         return deepcopy(self.tiles[bit])
     
     def set_state_bits(self, bit: str, mask: np.ndarray) -> None:
         self.tiles[bit][:] = mask
-    
+
     def reset_state_bits(self, bit: str) -> None:
         self.tiles[bit][:] = False
 
@@ -366,4 +417,8 @@ class GraphicTileMap(Protocol):
         self.reset_state()
         self.areas.clear()
         self.paths.clear()
-        
+
+    def object_collision(self, location: TileCoordinate) -> bool:
+        isblocked = False
+        isblocked = bool(self.tiles['blocks_movement'][location.x, location.y])
+        return isblocked

@@ -51,8 +51,9 @@ def test_generator_generate():
             assert expected_floor_count > 0, "Expected generated map to have floor tiles"
             assert wall_layout.sum() == (floor_layout.size - floor_layout.sum()), "Expected all tiles other than floors to be walls"
 
-            assert dungeon.blocks_movement.sum() == expected_floor_count, "Expected all visible tiles to be floors"
-            assert dungeon.tiles.size - dungeon.blocks_vision.sum() == expected_wall_count, "Expected all transparent tiles to be floors"    
+            assert dungeon.blocks_movement.sum() == expected_wall_count, "Expected all blocked tiles to be walls"
+            assert dungeon.blocks_vision.sum() == expected_wall_count, "Expected all vision-blocking tiles to be walls"
+            assert dungeon.tiles.size - dungeon.blocks_vision.sum() == expected_floor_count, "Expected all transparent tiles to be floors"    
         
         except AssertionError as e:
             pytest.fail(str(e))
