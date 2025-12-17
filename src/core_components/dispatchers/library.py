@@ -79,13 +79,14 @@ class InputDispatcher(BaseEventDispatcher):
                     if blocking_entity is not None and isinstance(blocking_entity, TargetableEntity):
                         target_action = self.create_action_on_target(self.COLLISION_ACTION, state, player, blocking_entity)
                         state.actions.put(target_action)
-
+                    
                     #TODO: Update fov??
                               
-                    if blocking_tile:
+                    elif blocking_tile:
                         # Collision with map object
                         pass
-                    else:
+                    
+                    elif not blocking_entity and not blocking_tile:
                         state_action = self.create_action_on_target(self.MOVEMENT_ACTION, state, player, player.destination) #type: ignore
                     
                     #TODO: Trigger mob actions on KeyUp??

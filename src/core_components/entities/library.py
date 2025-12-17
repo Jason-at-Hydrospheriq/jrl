@@ -211,7 +211,7 @@ class SightedEntity(BaseEntity):
         self.fov_radius = fov_radius
         
 
-class Charactor(MobileEntity, TargetableEntity, MortalEntity, CombatEntity, SightedEntity):
+class Charactor(BlockingEntity, MobileEntity, TargetableEntity, MortalEntity, CombatEntity, SightedEntity):
     def __init__(   self,
                     *,
                     location: TileCoordinate | None = None,
