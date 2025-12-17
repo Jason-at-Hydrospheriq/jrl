@@ -20,8 +20,8 @@ class Atlas:
     __slots__ = ("generators", "library", "active")
     
     generators: OrderedDict[str, BaseMapGenerator]
-    library: OrderedDict[str, GraphicTileMap]
-    active: GraphicTileMap
+    library: OrderedDict[str, DefaultTileMap]
+    active: DefaultTileMap
 
     def __init__(self) -> None:
 
@@ -37,7 +37,7 @@ class Atlas:
         else:
             raise ValueError(f"Map '{map_name}' does not exist in the library.")
     
-    def get_map(self, map_name: str) -> GraphicTileMap:
+    def get_map(self, map_name: str) -> DefaultTileMap:
         """Return the map specified by map_name."""
         if map_name in self.library:
             return self.library[map_name]
