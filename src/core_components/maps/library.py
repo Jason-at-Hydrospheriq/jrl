@@ -8,7 +8,7 @@ import numpy as np
 from core_components.maps.base import GraphicTileMap, ascii_graphic, GraphicsManifestDict
 from core_components.tiles.base import TileTuple
 
-DEFAULT_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': TileTuple(([80], [50]))},
+DEFAULT_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': TileTuple(([80], [80]))},
                                          'statespace': {    'bits': ('blocks_movement', 'blocks_vision', 'visible', 'seen'),
                                                             'vector_tuples': ( (0, 0, 0, 0), (0, 0, 0, 1), (0, 0, 1, 0), (0, 0, 1, 1),
                                                                         (0, 1, 0, 0), (0, 1, 0, 1), (0, 1, 1, 0), (0, 1, 1, 1),
