@@ -323,6 +323,7 @@ class TileArea(TileCoordinateSystemElement):
     _center: TileCoordinate
     _height: int
     _width: int
+    _min_dimension_size: int = 3
 
     def __init__(self, center: TileCoordinate | None = None, 
                  height: int | None = None, 
@@ -375,6 +376,10 @@ class TileArea(TileCoordinateSystemElement):
     
     @width.setter
     def width(self, value: int) -> None:
+        if value < self._min_dimension_size:
+            warn(f"Width {value} is less than minimum dimension size {self._min_dimension_size}. Setting width to minimum.", UserWarning)
+            value = self._min_dimension_size
+            
         self._width = value
         self._align_corners()
 
@@ -386,6 +391,10 @@ class TileArea(TileCoordinateSystemElement):
     
     @height.setter
     def height(self, value: int) -> None:
+        if value < self._min_dimension_size:
+            warn(f"Height {value} is less than minimum dimension size {self._min_dimension_size}. Setting height to minimum.", UserWarning)
+            value = self._min_dimension_size
+            
         self._height = value
         self._align_corners()
 

@@ -68,22 +68,6 @@ class RectangularRoom(GenericMapArea):
     _width: int
 
     @property
-    def height(self) -> int:
-        return self._height
-    
-    @height.setter
-    def height(self, value: int) -> None:
-        self._height = min(3, value)
-
-    @property
-    def width(self) -> int:
-        return self._width
-    
-    @width.setter
-    def width(self, value: int) -> None:
-        self._width = min(3, value)
-
-    @property
     def to_mask(self) -> np.ndarray:
         """Return the inner area of this room as a 2D array index."""
         grid_tuple = self._tiletuple_to_xy_tuple(self.parent_map_size)
