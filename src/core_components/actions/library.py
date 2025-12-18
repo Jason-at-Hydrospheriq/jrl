@@ -42,9 +42,10 @@ class SystemExitAction(GeneralAction):
 class EngineBaseAction(GeneralAction):
     state: GameState
     
-    def __init__(self, state: GameState) -> None:
-        self.state = state
-        self.roster = state.roster
+    def __init__(self, state: GameState | None = None) -> None:
+        if state:
+            self.state = state
+            self.roster = state.roster
     
 
 class GameStartAction(GeneralAction):
@@ -60,6 +61,22 @@ class GameOverAction(GeneralAction):
         print("Game Over")
         self.state.game_over.set()
 
+class FOVUpdateAction(EngineBaseAction):
+        
+        def perform(self) -> None:
+            """Recompute the visible area based on the players point of view."""
+            tile_blocks_vision = self.state.map.active.get_tile_layout('blocks_vision')
+            player = self.state.roster.player
+
+            if player and tile_blocks_vision is not None:
+                visible_tiles = compute_fov( tile_blocks_vision, (player.location.x, player.location.y), radius=player.fov_radius, algorithm=libtcodpy.FOV_SHADOW)
+                self.state.map.active.set_state_bits('visible', visible_tiles)
+
+                # If a tile is "visible" it should be added to "explored".
+                if visible_tiles is not None:
+                    prior_seen_tiles = self.state.map.active.get_state_bits('seen')
+                    newly_seen_tiles = np.logical_or(prior_seen_tiles, visible_tiles)
+                    self.state.map.active.set_state_bits('seen', newly_seen_tiles)
 
 # class UIUpdateMapColorsAction(EngineBaseAction):
 

@@ -70,9 +70,24 @@ class CombatEvent(EntityEvent):
 
 class MeleeAttack(CombatEvent):
     def __init__(self, entity: Charactor, target: Charactor, message: str) -> None:
-        #super().__init__(entity, target, message)
+        super().__init__(entity, target, message)
         self.entity = entity
         self.target = target
+
+
+class RangedAttack(CombatEvent):
+    pass
+
+
+class SpellCast(CombatEvent):
+    pass
+
+
+class FOVUpdateEvent(SystemEvent):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+    """Triggers the FOV update for all entities."""
+
 
 class UIEvent(BaseGameEvent):
     element_name: str

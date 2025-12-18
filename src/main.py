@@ -9,6 +9,7 @@ from tcod.tileset import load_tilesheet, CHARMAP_TCOD
 from PIL import Image
 import numpy as np
 
+from core_components.events.library import FOVUpdateEvent
 from engine import Engine
 # from dungeon_factory import random_dungeon
 from core_components.entities.library import PlayerCharactor
@@ -45,14 +46,16 @@ def main() -> None:
     game = Engine()    
     game.start()
 
-    expected_bits = np.full([50, 50], fill_value=True)
+    # expected_bits = np.full([50, 50], fill_value=True)
     # game.state.map.active.set_state_bits('visible', expected_bits)
-    game.map.set_state_bits('seen', expected_bits)
+    # game.map.set_state_bits('seen', expected_bits)
     
     game.ui.context = tcod.context.new(columns = screen_width, rows = screen_height, tileset=tileset, title="Jay's Roguelike", vsync=True, sdl_window_flags=FLAGS)
     
     while True:
         # Update Console
+        game.state.events.put(FOVUpdateEvent(""))
+        
         game.map.update_state()
 
         game.ui.render()

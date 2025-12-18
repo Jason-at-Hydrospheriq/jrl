@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 from typing import Tuple
-    
+from tcod.map import compute_fov
 from core_components.dispatchers.base import *
-from core_components.entities.library import BaseEntity, Charactor, TargetableEntity, MobileEntity, TargetingEntity, CombatEntity
-from core_components.events.library import GameStartEvent, GameOverEvent, InputEvent, MeleeAttack, SystemEvent
-from core_components.actions.library import EngineBaseAction, EntityAcquireTargetAction, EntityActionOnDestination, EntityActionOnTarget, EntityCollisionAction, EntityMeleeAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
+from core_components.entities.library import BaseEntity, TargetableEntity, MobileEntity, TargetingEntity, CombatEntity
+from core_components.events.library import FOVUpdateEvent, GameStartEvent, GameOverEvent, MeleeAttack, FOVUpdateEvent
+from core_components.actions.library import EntityAcquireTargetAction, EntityActionOnDestination, EntityActionOnTarget, EntityCollisionAction, EntityMeleeAction, FOVUpdateAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
 from core_components.tiles.base import TileTuple, TileCoordinate
 
 A = TypeVar('A', EntityActionOnDestination, EntityActionOnTarget)
@@ -95,6 +95,7 @@ class InputDispatcher(BaseEventDispatcher):
 
         player = state.roster.player
         state_action = self.create_state_action(self.NOACTION, state)
+        state.events.put(FOVUpdateEvent(""))
 
         match event.sym:
             case tcod.event.KeySym.ESCAPE:
@@ -125,6 +126,7 @@ class InputDispatcher(BaseEventDispatcher):
                     
                     #TODO: Trigger mob actions on KeyUp??
         
+
         return state_action
 
     def get_destination(self, event, entity) -> TileCoordinate:
@@ -159,7 +161,8 @@ class InterfaceDispatcher(BaseEventDispatcher):
 class SystemDispatcher(BaseEventDispatcher):
     GAMESTART = GameStartAction()
     GAMEOVER = GameOverAction()
-            
+    FOVUPDATE = FOVUpdateAction()
+
     def _ev_gamestartevent(self, 
                       event: GameStartEvent, 
                       state: GameState) -> BaseGameAction:
@@ -178,3 +181,13 @@ class SystemDispatcher(BaseEventDispatcher):
 
         return state_action
     
+    def _ev_fovupdateevent(self,
+                         event: FOVUpdateEvent,
+                         state: GameState) -> BaseGameAction:
+        message = event.message
+
+        state_action = self.create_state_action(self.FOVUPDATE, state)
+
+        return state_action
+
+

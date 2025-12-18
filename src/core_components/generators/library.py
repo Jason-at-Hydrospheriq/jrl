@@ -40,8 +40,6 @@ class DungeonGenerator(BaseMapGenerator):
                  max_room_size: int=20) -> DefaultTileMap:
         #TODO Use LLM to generate more complex dungeons
         dungeon = self.spawn_map()
-
-
         
         self.add_rooms(dungeon=dungeon, max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size)
         self.add_corridors(dungeon=dungeon)

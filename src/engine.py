@@ -43,6 +43,8 @@ class Engine:
             self.state.roster.spawn_player(self.map)
             self.state.roster.initialize_random_mobs(self.map, max_mobs_per_area=3)
             self.player = self.state.roster.player
+            if self.player is not None:
+                self.player.fov_radius = 4
             self.mobs = self.state.roster.live_ai_actors
 
     def stop(self) -> None:

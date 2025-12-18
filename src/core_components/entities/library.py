@@ -207,7 +207,7 @@ class SightedEntity(BaseEntity):
         
         super().__init__(location=location, symbol=symbol, color=color, name=name)
         self.fov_radius = fov_radius
-        
+    
 
 class Charactor(SightedEntity, CombatEntity, MortalEntity, TargetableEntity, TargetingEntity, MobileEntity, BlockingEntity):
     def __init__(   self,

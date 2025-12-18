@@ -84,7 +84,8 @@ class MainMapDisplay(BaseUIWidget):
 
         if len(state.roster.live_actors) > 0:
             for actor in state.roster.live_actors:
-                console.print(actor.location.x, actor.location.y, actor.symbol, fg=actor.color) 
+                if game_map.visible[actor.location.x, actor.location.y]:
+                    console.print(actor.location.x, actor.location.y, actor.symbol, fg=actor.color)
 
     # def print_entities(self, entities, key, tile_map: GraphicTileMap) -> None:
     #     for entity in sorted(entities, key=key, reverse=False):
