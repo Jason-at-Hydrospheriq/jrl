@@ -3,13 +3,14 @@ from tcod.context import Context
 import numpy as np
 
 from core_components.interfaces.base import BaseUI, BaseUIWidget, UIManifestDict
-from core_components.interfaces.library import HealthBarWidget, MainMapDisplay
+from core_components.interfaces.library import HealthBarWidget, MainMapDisplay, MessageLogWidget
 from copy import deepcopy
 from core_components.tiles.base import TileTuple
 from core_components.maps.library import DEFAULT_MANIFEST
 
 if TYPE_CHECKING:
     from state import GameState
+
 
 DEFAULT_UI_MANIFEST: UIManifestDict = {
     'widgets': {                
@@ -25,7 +26,14 @@ DEFAULT_UI_MANIFEST: UIManifestDict = {
                             'y': DEFAULT_MANIFEST['dimensions']['grid_size'][1][0] + 2,
                             'width': 20,
                             'height': 1
-                        },
+                                    },
+                        'message_log': {
+                            'cls': MessageLogWidget,
+                            'x': 30,
+                            'y': DEFAULT_MANIFEST['dimensions']['grid_size'][1][0] - 5,
+                            'width': 20,
+                            'height': 5
+                        }
 
     }}
 

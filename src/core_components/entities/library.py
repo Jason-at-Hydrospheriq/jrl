@@ -85,9 +85,14 @@ class TargetingEntity(BaseEntity):
         self.target = target
 
     def acquire_target(self, target: TargetableEntity) -> None:
+        self.clear_target()
+        self.target_color = target.color  # Store original color
         self.target = target
-    
+        self.target.color = (255, 0, 0)  # Change color to indicate targeting
+        
     def clear_target(self) -> None:
+        if self.target is not None and hasattr(self, 'target_color'):
+            self.target.color = self.target_color  # Restore original color
         self.target = None
 
 

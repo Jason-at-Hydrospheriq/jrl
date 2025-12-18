@@ -2,17 +2,18 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 from tcod.console import Console
 from tcod.context import Context
 import numpy as np
 from core_components.interfaces.base import BaseUI, BaseUIWidget
-from graphics import colors
+from core_components.graphics import colors
 
 if TYPE_CHECKING:
     from state import GameState
 
-from graphics.tile_types import SHROUD
+from core_components.graphics.tile_types import SHROUD
+
 
 class HealthBarWidget(BaseUIWidget):
     """ A simple health bar widget to display an entity's health. """
@@ -46,6 +47,7 @@ class HealthBarWidget(BaseUIWidget):
         console.print(
             x=self.upper_Left_x, y=self.upper_Left_y, text=f"Player HP: {current_value}/{maximum_value}", fg=colors.bar_text
         )
+
 
 class MainMapDisplay(BaseUIWidget):
     """ The main map display widget. """
@@ -105,3 +107,25 @@ class MainMapDisplay(BaseUIWidget):
         # # Render Non-Actors in order of their blocks_movement status
         # self.print_entities(engine.roster.all_non_actors, key=lambda e: hasattr(e, 'blocks_movement'), tile_map=tile_map)
 
+
+class MessageLogWidget(BaseUIWidget):
+    """ A simple message log widget to display game messages. """
+    def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=5) -> None:
+        self.name = name
+        self.upper_Left_x = upper_Left_x
+        self.upper_Left_y = upper_Left_y
+        self.lower_Right_x = upper_Left_x + width
+        self.lower_Right_y = upper_Left_y + height
+        self.width = width
+        self.height = height
+
+    def render(self, context: Context, console: Console, state: GameState) -> None:
+        y = self.upper_Left_y + self.height - 1
+        for message in reversed(state.log.messages[-self.height :]):
+            console.print(
+                x=self.upper_Left_x,
+                y=y,
+                text=message.plain_text,
+                fg=message.fg,
+            )
+            y -= 1

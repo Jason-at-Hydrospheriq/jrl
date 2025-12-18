@@ -3,14 +3,15 @@
 
 from __future__ import annotations
 import time
-from typing import List, Set
+from typing import List, Tuple
 import queue
 from queue import Queue
 import tcod
 import threading
 
 # from core_components import roster, atlas, ui
-from core_components.events.library import BaseGameEvent, SystemEvent
+from core_components.events.library import BaseGameEvent
+from core_components.graphics import colors
 from core_components.actions.base import BaseGameAction
 from core_components.dispatchers.base import BaseEventDispatcher
 from core_components.dispatchers.library import SystemDispatcher, InputDispatcher, EntityDispatcher
@@ -27,7 +28,7 @@ class GameState:
     GAMESTART = GameStartEvent(message="Game has started!")
     GAMEOVER = GameOverEvent(message="Game Over!")
 
-    __slots__ = ("roster", "map","ui", "events", "actions", "dispatchers", "game_over")
+    __slots__ = ("roster", "map","ui", "events", "actions", "dispatchers", "game_over", "log")
     
     ui: UIDisplay
     events: Queue[BaseGameEvent | tcod.event.Event]
@@ -36,6 +37,7 @@ class GameState:
     game_over: threading.Event
     roster: Roster
     map: Atlas  
+    log: MessageLog
 
     def __init__(self) -> None:
 
@@ -48,7 +50,8 @@ class GameState:
         self.actions = Queue()
         self.game_over = threading.Event()
         self.dispatchers = [SystemDispatcher(), InputDispatcher(), EntityDispatcher()]   
-
+        self.log = MessageLog()
+        
     def dispatch(self) -> None:
 
         while True:
@@ -79,4 +82,29 @@ class GameState:
             except queue.Empty:
                 time.sleep(0.05)
 
-    
+
+class Message:
+    """ A single message for the message log. """
+    def __init__(self, text: str, fg: Tuple[int, int, int] = colors.white) -> None:
+        self.plain_text = text
+        self.fg= fg
+        self.count = 1
+        if self.count > 1:
+            self.text = f"{self.plain_text} (x{self.count})"
+
+
+class MessageLog:
+    """ A simple message log widget to display game messages. """
+    def __init__(self) -> None:
+        self.messages: list[Message] = []
+        
+    def add(self, text: str, fg: Tuple[int, int, int] = colors.white, stack: bool = True) -> None:
+        """Add a message to this log.
+        `text` is the message text, `fg` is the text color.
+        If `stack` is True then the message can stack with a previous message
+        of the same text.
+        """
+        if stack and self.messages and text == self.messages[-1].plain_text:
+            self.messages[-1].count += 1
+        else:
+            self.messages.append(Message(text, fg))    

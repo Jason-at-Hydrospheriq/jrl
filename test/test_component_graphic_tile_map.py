@@ -3,7 +3,7 @@ import itertools
 import pytest
 from sys import path
 
-from graphics.tile_types import ascii_graphic
+from core_components.graphics.tile_types import ascii_graphic
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 

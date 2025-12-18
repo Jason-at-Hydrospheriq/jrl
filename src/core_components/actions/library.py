@@ -13,8 +13,9 @@ if TYPE_CHECKING:
     from state import GameState
 
 from core_components.actions.base import BaseGameAction
-from core_components.entities.library import BaseEntity, CombatEntity, MobCharactor, MobileEntity, PlayerCharactor, TargetableEntity, TargetingEntity, MortalEntity
-from core_components.events.library import TargetCollision, MeleeCollision, MeleeAttack
+from core_components.entities.library import CombatEntity, MobCharactor, MobileEntity, PlayerCharactor, TargetableEntity, TargetingEntity, MortalEntity
+from core_components.events.library import MeleeAttack
+
 
 class GeneralAction(BaseGameAction):
 
@@ -61,6 +62,7 @@ class GameOverAction(GeneralAction):
         print("Game Over")
         self.state.game_over.set()
 
+
 class FOVUpdateAction(EngineBaseAction):
         
         def perform(self) -> None:
@@ -77,33 +79,6 @@ class FOVUpdateAction(EngineBaseAction):
                     prior_seen_tiles = self.state.map.active.get_state_bits('seen')
                     newly_seen_tiles = np.logical_or(prior_seen_tiles, visible_tiles)
                     self.state.map.active.set_state_bits('seen', newly_seen_tiles)
-
-# class UIUpdateMapColorsAction(EngineBaseAction):
-
-#     def perform(self) -> None:
-#         tile_map = self.state.map
-#         player = self.state.roster.player
-
-#         if self.state and player and tile_map:
-#                 fov = compute_fov(tile_map.tiles["transparent"], (player.location.x, player.location.y), radius=player.fov_radius, algorithm=libtcodpy.FOV_SHADOW)
-#                 tile_map.set_visible(fov)
-#                 tile_map.update_explored(fov)
-
-#         colors = np.select(condlist=[~tile_map.explored, tile_map.visible, tile_map.explored], 
-#                            choicelist=[tile_map.tiles["type"]["shroud"], tile_map.tiles["type"]["light"], tile_map.tiles["type"]["dark"]], 
-#                            default=tile_types.SHROUD)
-
-#         tile_map.update_colors(colors)
-#         map_displays = self.state.ui.get_elements_by_type(MainMapDisplay)
-        
-#         for map_display in map_displays:
-#             map_display.render(self.state)
-
-
-# class EntityActionOnSelf(EngineBaseAction):
-#     def __init__(self, states: GameState, entity: BaseEntity) -> None:
-#         super().__init__(states)
-#         self.entity = entity
 
 
 class EntityActionOnTarget(EngineBaseAction):
@@ -139,6 +114,7 @@ class EntityAcquireTargetAction(EntityActionOnTarget):
         if self.entity is not None:
             if isinstance(self.target, TargetableEntity):
                 self.entity.acquire_target(self.target)
+                self.state.log.add(text=f"{self.entity.name} has spotted the {self.target.name}.")
 
 
 class EntityCollisionAction(EntityActionOnTarget):
@@ -194,7 +170,7 @@ class EntityMeleeAction(EntityActionOnTarget):
                     defense = 1  # Basic defense for non-combat entities
                     damage = max(0, attack_power - defense)
                     self.target.take_damage(damage)
-                    print(f"{self.entity.name} attacks {self.target.name} for {damage} damage!")
+                    self.state.log.add(text=f"{self.entity.name} attacks the {self.target.name} for {damage} damage!")
 
                 if isinstance(self.entity, PlayerCharactor) and isinstance(self.target, MobCharactor): # Launch counterattack if target was a mob
                     counterattack_event = MeleeAttack(entity=self.target, target=self.entity, message=f"{self.target.name} counterattacks {self.entity.name}!")
@@ -218,15 +194,15 @@ class EntityDeathAction(EntityActionOnTarget):
     def perform(self) -> None:
         
         if self.target == self.state.roster.player:
-            death_message = f"You have been slain by {self.entity.name}! Game Over."
-            print(death_message)
+            death_message = f"You have been slain by the {self.entity.name}! Game Over."
+            self.state.log.add(text=death_message)
             self.target.die()
 
             return GameOverAction(self.state).perform()
 
         else:
-            death_message = f"You have slain {self.target.name}!"
-            print(death_message)
+            death_message = f"You have slain the {self.target.name}!"
+            self.state.log.add(text=death_message)
             self.target.die()
 
             

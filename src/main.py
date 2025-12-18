@@ -3,55 +3,36 @@
 
 from __future__ import annotations
 import tcod
-from tcod.console import Console
-from tcod.context import new as new_window
-from tcod.tileset import load_tilesheet, CHARMAP_TCOD
 from PIL import Image
 import numpy as np
 
 from core_components.events.library import FOVUpdateEvent
 from engine import Engine
-# from dungeon_factory import random_dungeon
-from core_components.entities.library import PlayerCharactor
-# from components.stats import CombatStats, PhysicalStats
-from core_components.tiles.library import TileCoordinate, TileTuple
 
 TITLE = "JRL - Jay's Roguelike"
-WIDTH, HEIGHT = 720, 480  # Window pixel resolution (when not maximized.)
+WIDTH, HEIGHT = 200, 96  # Window pixel resolution (when not maximized.)
 FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
 
 def main() -> None:
-    screen_width = 100
-    screen_height = 100
 
-    # tileset = tcod.tileset.load_tilesheet(
-    #     "oryx_roguelike_160x40.png", columns=8 , rows=2, charmap=tcod.tileset.CHARMAP_CP437
-    # )
-    
-
-    
-    # tileset = tcod.tileset.load_tilesheet(
-    #     "graphics\\resources\\dejavu10x10_gs_tc.png", 32, 8, tcod.tileset.CHARMAP_TCOD
-    # )
-
-    tileset = tcod.tileset.load_truetype_font("graphics\\resources\\Iceland-Regular.ttf", 25, 25)
-    tileset = tcod.tileset.Tileset(20,20)
-    img = Image.open("graphics\\resources\\player\\test-5.png")
+    tileset = tcod.tileset.load_truetype_font("core_components\\graphics\\resources\\Doto_Rounded-SemiBold.ttf", 25, 25)
+    img = Image.open("core_components\\graphics\\resources\\player\\test-5.png")
     img = img.convert("RGBA")
     tileset.set_tile(64, np.array(img))
-    img = Image.open("graphics\\resources\\mob\\test-3.png")
+    img = Image.open("core_components\\graphics\\resources\\mob\\test-3.png")
     img = img.convert("RGBA")
     tileset.set_tile(65, np.array(img))
 
     game = Engine()    
     game.start()
     
-    game.ui.context = tcod.context.new(columns = screen_width, rows = screen_height, tileset=tileset, title="Jay's Roguelike", vsync=True, sdl_window_flags=FLAGS)
-    
+    game.ui.context = tcod.context.new(columns = WIDTH, rows = HEIGHT, tileset=tileset, title="Jay's Roguelike", vsync=True, sdl_window_flags=FLAGS)
+    game.state.log.add("Welcome to Jay's Roguelike!")
+
     while True:
         # Update Console
         game.state.events.put(FOVUpdateEvent(""))
-        
+    
         game.map.update_state()
 
         game.ui.render()
