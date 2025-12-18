@@ -13,6 +13,9 @@ from core_components.maps.base import GraphicTileMap
 from core_components.maps.library import DefaultTileMap
 from core_components.tiles.base import TileTuple
 
+if TYPE_CHECKING:
+    from state import GameState
+
 M = TypeVar('M', bound='BaseEntity')
 
 class Roster:
@@ -39,12 +42,16 @@ class Roster:
 
     """ The Roster component manages the state of all entities in the game. """
 
-    __slots__ = ("entities", "spawn")
+    __slots__ = ("state", "entities", "spawn")
     
+    state: GameState
     entities: Set[BaseEntity]
     spawn: Callable
 
-    def __init__(self) -> None:
+    def __init__(self, state: GameState | None = None) -> None:
+        if state is not None:
+            self.state = state
+    
         self.entities = set()    
 
     @property

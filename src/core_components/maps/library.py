@@ -5,10 +5,11 @@ from __future__ import annotations
 from typing import Tuple
 import numpy as np
 
-from core_components.maps.base import GraphicTileMap, ascii_graphic, GraphicsManifestDict
+from core_components.maps.base import GraphicTileMap, GraphicsManifestDict
 from core_components.tiles.base import TileTuple
+from graphics.tile_types import ascii_graphic
 
-DEFAULT_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': TileTuple(([80], [80]))},
+DEFAULT_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': TileTuple(([60], [60]))},
                                          'statespace': {    'bits': ('blocks_movement', 'blocks_vision', 'visible', 'seen'),
                                                             'vector_tuples': ( (0, 0, 0, 0), (0, 0, 0, 1), (0, 0, 1, 0), (0, 0, 1, 1),
                                                                         (0, 1, 0, 0), (0, 1, 0, 1), (0, 1, 1, 0), (0, 1, 1, 1),

@@ -6,6 +6,8 @@ import tcod
 from tcod.console import Console
 from tcod.context import new as new_window
 from tcod.tileset import load_tilesheet, CHARMAP_TCOD
+from PIL import Image
+import numpy as np
 
 from engine import Engine
 # from dungeon_factory import random_dungeon
@@ -18,29 +20,35 @@ WIDTH, HEIGHT = 720, 480  # Window pixel resolution (when not maximized.)
 FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
 
 def main() -> None:
-    screen_width = 80
-    screen_height = 50
-
-    tileset = tcod.tileset.load_tilesheet(
-        "dejavu10x10_gs_tc.png", 32, 8, tcod.tileset.CHARMAP_TCOD
-    )
+    screen_width = 60
+    screen_height = 60
     
-    game = Engine()
-    player = PlayerCharactor(color=(0,0,0), name="player", location=TileCoordinate(TileTuple(([10],[10]))))
-    game.state.roster.player = player
-    game.start()
-    game.state.map.active.tiles['blocks_vision'] = False
-    game.state.map.active.tiles['blocks_movement'] = False
+    # tileset = tcod.tileset.load_tilesheet(
+    #     "oryx_roguelike_160x40.png", columns=8 , rows=2, charmap=tcod.tileset.CHARMAP_CP437
+    # )
+    
+    tileset = tcod.tileset.Tileset(20,20)
+    img = Image.open("graphics\\resources\\player.png")
+    img = img.convert("RGBA")
+    tileset.set_tile(64, np.array(img))
+    img = Image.open("graphics\\resources\\monster_20x20.png")
+    img = img.convert("RGBA")
+    tileset.set_tile(65, np.array(img))
 
-    context = tcod.context.new(x = screen_width, y =screen_height, tileset=tileset,
-                                         title="Yet Another Roguelike Tutorial", vsync=True)
+    game = Engine()    
+    game.start()
+
+    expected_bits = np.full([screen_width, screen_height], fill_value=True)
+    # game.state.map.active.set_state_bits('visible', expected_bits)
+    game.map.set_state_bits('seen', expected_bits)
+    
+    game.ui.context = tcod.context.new(columns = screen_width, rows = screen_height, tileset=tileset, title="Jay's Roguelike", vsync=True, sdl_window_flags=tcod.context.SDL_WINDOW_RESIZABLE)
     
     while True:
         # Update Console
-        console = context.new_console(screen_width, screen_height, order="F")
-        console.rgb[0:screen_width, 0:screen_height] = game.state.map.active.tiles['graphic']
-        console.print(player.location.x, player.location.y, player.symbol, fg=player.color)
-        context.present(console)
+        game.map.update_state()
+
+        game.ui.render()
 
         # Update Game State
         for game_event in tcod.event.wait():
@@ -48,9 +56,9 @@ def main() -> None:
                 game.state.events.put(game_event)
 
         if game.state.game_over.is_set():
-            context.close()   
+            game.ui.context.close()   
             break
-        
+
 if __name__ == "__main__":
     main()
 

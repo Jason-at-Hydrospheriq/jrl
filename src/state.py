@@ -17,6 +17,7 @@ from core_components.dispatchers.library import SystemDispatcher, InputDispatche
 from core_components.events.library import *
 from core_components.roster import Roster
 from core_components.atlas import Atlas
+from core_components.ui import UIDisplay
 
 class GameState:
     """
@@ -26,25 +27,27 @@ class GameState:
     GAMESTART = GameStartEvent(message="Game has started!")
     GAMEOVER = GameOverEvent(message="Game Over!")
 
-    # MAPUPDATE = MapUpdateEvent()
-    # roster: roster.Roster
-    # map: atlas.Atlas
-    # ui: ui.UIDisplay
+    __slots__ = ("roster", "map","ui", "events", "actions", "dispatchers", "game_over")
+    
+    ui: UIDisplay
     events: Queue[BaseGameEvent | tcod.event.Event]
     actions: Queue[BaseGameAction]
     dispatchers: List[BaseEventDispatcher]
     game_over: threading.Event
+    roster: Roster
+    map: Atlas  
 
     def __init__(self) -> None:
 
-        self.roster = Roster()
-        self.map = Atlas()
-        # self.ui = ui.UIDisplay()
+        self.roster = Roster(state=self)
+        self.map = Atlas(state=self)
+        self.ui = UIDisplay()
+        self.ui.state = self
+        
         self.events = Queue()
         self.actions = Queue()
         self.game_over = threading.Event()
         self.dispatchers = [SystemDispatcher(), InputDispatcher(), EntityDispatcher()]   
-
 
     def dispatch(self) -> None:
 
@@ -61,7 +64,6 @@ class GameState:
             except BaseException as e:
                 print(f"Error dispatching event: {e}")
                 break
-
     
     def update(self) -> None:
         """

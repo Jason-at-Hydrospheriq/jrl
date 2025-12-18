@@ -1,57 +1,28 @@
 from typing import Dict, Set, TYPE_CHECKING
-from tcod.console import Console
+from tcod.context import Context
 import numpy as np
 
-from core_components.ui.base import BaseUIWidget
-from core_components.ui.library import MainMapDisplay
+from core_components.interfaces.base import BaseUI, BaseUIWidget, UIManifestDict
+from core_components.interfaces.library import HealthBarWidget, MainMapDisplay
 from copy import deepcopy
 
-MAP = MainMapDisplay("main_map", 5, 5, 80, 45)
+if TYPE_CHECKING:
+    from state import GameState
 
-class UIDisplay:
+DEFAULT_UI_MANIFEST: UIManifestDict = {
+    'widgets': {'main_map': {
+        'cls': MainMapDisplay,
+        'x': 1,
+        'y': 1,
+        'width': 60,
+        'height': 60
+    }}
+}
 
-    __slots__ = ("console", "widgets")
-    
-    console: Console
-    widgets: Set[BaseUIWidget]
-    states: Dict[str, np.ndarray]
+
+class UIDisplay(BaseUI):
     
     """ The UI Manager handles the various UI components and their interactions. """
-    
-    def __init__(self, console: Console | None = None) -> None:
 
-        if console:
-            self.console = console
-        
-        self.widgets = set()
-        self.add_element(MAP)
-
-    def add_element(self, element: BaseUIWidget, x: int = -1, y: int = -1) -> None:
-        """Spawn a copy of this entity at the given location."""
-        clone = deepcopy(element)
-        if x == -1:
-            x = element.upper_Left_x
-        if y == -1:
-            y = element.upper_Left_y
-        clone.upper_Left_x = x
-        clone.upper_Left_y = y
-        clone.lower_Right_x = x + element.width
-        clone.lower_Right_y = y + element.height
-        self.elements.add(clone)
-    
-    def get_element_by_name(self, name: str) -> BaseUIWidget | None:
-        """Retrieve a UI element by its name."""
-        for element in self.elements:
-            if element.name == name:
-                return element
-        return None
-    
-    def get_elements_by_type(self, element_type: type) -> Set[BaseUIWidget]:
-        """Retrieve all UI elements of a specific type."""
-        return {element for element in self.elements if isinstance(element, element_type)}
-
-    def render(self) -> None:
-        for widget in self.widgets:
-            state_name = "state_" + widget.__class__.__name__.lower()
-            state = self.states[state_name]
-            widget.render(self.console, state)
+    def __init__(self, context: Context | None = None, ui_manifest: UIManifestDict | None = DEFAULT_UI_MANIFEST) -> None:
+        super().__init__(context=context, ui_manifest=ui_manifest)  

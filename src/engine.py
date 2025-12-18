@@ -23,6 +23,7 @@ class Engine:
         # Convenience links to the game state
         self.atlas = self.state.map
         self.roster = self.state.roster
+        self.ui = self.state.ui
 
     # def render(self) -> None:
     #     """ Render all UI components """

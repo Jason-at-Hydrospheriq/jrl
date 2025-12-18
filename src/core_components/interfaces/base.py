@@ -3,59 +3,80 @@
 
 from __future__ import annotations
 from copy import deepcopy
-from typing import Protocol, Set, Dict
+from typing import Any, Protocol, Set, Dict, TypedDict, TYPE_CHECKING
+from tcod.context import Context
 from tcod.console import Console
 import numpy as np
 
+if TYPE_CHECKING:
+    from state import GameState
+
+class UIManifestDict(TypedDict):
+    widgets: Dict[str, Dict[str, Any]]
+
 
 class BaseUI(Protocol):
-    __slots__ = ("console", "widgets")
-    
+    __slots__ = ("context", "widgets", "state", "console", "window_width", "window_height")
+
+    context: Context
     console: Console
+    state: GameState
     widgets: Set[BaseUIWidget]
-    states: Dict[str, np.ndarray]
-    
+    window_width: int
+    window_height: int
+
     """ The UI Manager handles the various UI components and their interactions. """
     
-    def __init__(self, console: Console | None = None) -> None:
+    def __init__(self, context: Context | None = None, state: GameState | None = None, ui_manifest: UIManifestDict | None = None, *, window_width: int = 80, window_height: int = 50) -> None:
 
-        if console:
-            self.console = console
-        
+        if context is not None:
+            self.context = context
+
+        if state is not None:
+            self.state = state
+
         self.widgets = set()
-        self.states = {}
+        self.window_width = window_width
+        self.window_height = window_height
 
-    def add_element(self, element: BaseUIWidget, x: int = -1, y: int = -1) -> None:
+        if ui_manifest is not None:
+            for widget_name, widget_info in ui_manifest['widgets'].items():
+                widget_cls = widget_info['cls']
+                x = widget_info.get('x', 0)
+                y = widget_info.get('y', 0)
+                width = widget_info.get('width', 10)
+                height = widget_info.get('height', 5)
+                widget = widget_cls(widget_name, upper_Left_x=x, upper_Left_y=y, width=width, height=height)
+                self.add_widget(widget=widget, x=x, y=y)
+
+    def add_widget(self, *, widget: BaseUIWidget, x: int = -1, y: int = -1) -> None:
         """Spawn a copy of this entity at the given location."""
-        clone = deepcopy(element)
-        if x == -1:
-            x = element.upper_Left_x
-        if y == -1:
-            y = element.upper_Left_y
-        clone.upper_Left_x = x
-        clone.upper_Left_y = y
-        clone.lower_Right_x = x + element.width
-        clone.lower_Right_y = y + element.height
-        self.widgets.add(clone)
+        widget.upper_Left_x = x
+        widget.upper_Left_y = y
+        widget.lower_Right_x = x + widget.width
+        widget.lower_Right_y = y + widget.height
+        self.widgets.add(widget)
     
-    def get_element_by_name(self, name: str) -> BaseUIWidget | None:
+    def get_widget_by_name(self, name: str) -> BaseUIWidget | None:
         """Retrieve a UI element by its name."""
-        for element in self.widgets:
-            if element.name == name:
-                return element
+        for widget in self.widgets:
+            if widget.name == name:
+                return widget
         return None
     
-    def get_elements_by_type(self, element_type: type) -> Set[BaseUIWidget]:
+    def get_widgets_by_type(self, widget_type: type) -> Set[BaseUIWidget]:
         """Retrieve all UI elements of a specific type."""
-        return {element for element in self.widgets if isinstance(element, element_type)}
+        return {widget for widget in self.widgets if isinstance(widget, widget_type)}
 
     def render(self) -> None:
-        for widget in self.widgets:
-            state_name = "state_" + widget.__class__.__name__.lower()
-            state = self.states[state_name]
-            widget.render(self.console, state)
-
-        
+        if self.context.sdl_window is not None:
+            console_width, console_height = self.context.sdl_window.size
+            self.console = self.context.new_console(console_width // 20, console_height // 20, order="F")
+            for widget in self.widgets:
+                widget.render(self.context, self.console, self.state)
+            self.context.present(self.console)
+            self.console.clear()  
+            
 class BaseUIWidget(Protocol):
     name: str
     upper_Left_x: int
@@ -65,7 +86,7 @@ class BaseUIWidget(Protocol):
     width: int
     height: int
 
-    def __init__(self, name: str, x: int, y: int, width: int, height: int, console: Console | None = None):
+    def __init__(self, name: str, x: int, y: int, width: int, height: int):
         self.name = name
         self.upper_Left_x = x
         self.upper_Left_y = y
@@ -75,6 +96,6 @@ class BaseUIWidget(Protocol):
         self.height = height
 
 
-    def render(self, console: Console, state: np.ndarray) -> None:
+    def render(self, context: Context, console: Console, state: GameState) -> None:
         """ Render the UI component """
         raise NotImplementedError()

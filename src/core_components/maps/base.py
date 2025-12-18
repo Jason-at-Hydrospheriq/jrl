@@ -10,15 +10,7 @@ from copy import deepcopy
 import numpy as np
 
 from core_components.tiles.base import BaseTileGrid, TileTuple, TileArea, TileCoordinate
-
-# Tile graphic dtype definition
-ascii_graphic = np.dtype(
-    [
-        ("ch", np.int32),  # Unicode codepoint.
-        ("fg", "3B"),  # 3 unsigned bytes, for RGB colors.
-        ("bg", "3B"),
-    ], metadata={"__name__": "ascii_graphic"}
-)
+from graphics.tile_types import ascii_graphic
 
 # A typed dictionary for map graphics
 class GraphicsManifestDict(TypedDict):

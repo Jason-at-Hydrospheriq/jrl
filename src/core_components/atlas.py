@@ -3,12 +3,16 @@
 
 from __future__ import annotations
 from collections import OrderedDict
-import numpy as np
+from typing import TYPE_CHECKING
 
-from core_components.generators.base import BaseMapGenerator
+
 from core_components.generators.library import DungeonGenerator
 from core_components.maps.base import GraphicTileMap, TileCoordinate
-from core_components.maps.library import DefaultTileMap        
+from core_components.maps.library import DefaultTileMap
+from core_components.generators.base import BaseMapGenerator
+
+if TYPE_CHECKING:
+    from state import GameState        
 
 class Atlas:
     """The Atlas component is a collection of map generators and a history of their generated maps. 
@@ -17,13 +21,16 @@ class Atlas:
 
     """
     
-    __slots__ = ("generators", "library", "active")
+    __slots__ = ("state","generators", "library", "active")
     
+    state: GameState
     generators: OrderedDict[str, BaseMapGenerator]
     library: OrderedDict[str, DefaultTileMap]
     active: DefaultTileMap
 
-    def __init__(self) -> None:
+    def __init__(self, state: GameState | None = None) -> None:
+        if state is not None:
+            self.state = state
 
         self.generators = OrderedDict({'dungeon': DungeonGenerator()})
         self.library = OrderedDict({})
