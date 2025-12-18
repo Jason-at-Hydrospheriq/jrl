@@ -3,7 +3,7 @@ from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
-from core_components.tiles.base import TileCoordinate, TileArea, TileTuple, BaseTileGrid
+from core_components.tiles.base import TileCoordinate, TileArea, TileCoordinateSystem, TileTuple, BaseTileGrid, TileCoordinateSystemElement
 
 PARENT_MAP_SIZE = TileTuple( ([10], [10]) )
 TOP_LEFT = TileCoordinate(TileTuple(([1], [2])), PARENT_MAP_SIZE)
@@ -11,6 +11,88 @@ BOTTOM_RIGHT = TileCoordinate(TileTuple(([5], [4])), PARENT_MAP_SIZE)
 CENTER = TileCoordinate(TileTuple(([3], [3])), PARENT_MAP_SIZE)
 WIDTH = 5
 HEIGHT = 3
+
+# Tests for TileCoordinateSystemElement
+def test_base_tiles_coordinate_system_element_empty_init():
+    # Arrange & Act
+    empty_cse = TileCoordinateSystemElement()
+    parent_class = TileCoordinateSystem
+    
+
+    # Act
+    try:
+        assert isinstance(empty_cse, TileCoordinateSystemElement), "Expected instance to be of type TileCoordinateSystemElement"
+        assert parent_class in empty_cse.__class__.__bases__, "Expected TileCoordinateSystem to be a parent class of TileCoordinateSystemElement"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_base_tiles_coordinate_system_element__tiletuple_to_area_tiletuple():
+    # Arrange & Act
+    cse = TileCoordinateSystemElement()
+    top_left = TOP_LEFT.to_xy_tiletuple
+    bottom_right = BOTTOM_RIGHT.to_xy_tiletuple
+    expected_area_tiletuple = TileTuple( ([1,2,3,4,5], [2,3,4]) )
+
+    # Act
+    try:
+        area_tiletuple = cse._tiletuple_to_area_tiletuple(top_left, bottom_right)
+
+        with pytest.raises(ValueError):
+            _ = area_tuple_corners_crossed = cse._tiletuple_to_area_tiletuple(bottom_right, top_left)
+
+    # Assert
+        assert area_tiletuple == expected_area_tiletuple, f"Expected converted TileTuple to be {expected_area_tiletuple}, got {area_tiletuple}"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
+def test_base_tiles_coordinate_system_element__tiletuple_to_area_tiletuple_null():
+    # Arrange & Act
+    # Case X coordinate is same
+    cse = TileCoordinateSystemElement()
+    top_left_x_same = TileTuple(([5], [2]))
+    bottom_right_x_same = BOTTOM_RIGHT.to_xy_tiletuple
+    expected_x_same = TileTuple( ([5], [2,3,4]) )
+
+    # Case Y coordinate is same
+    top_left_y_same = TileTuple(([1], [4]))
+    bottom_right_y_same = TileTuple(([5], [4]))
+    expected_y_same = TileTuple( ([1,2,3,4,5], [4]) )
+    
+    # Case both coordinates are same
+    top_left_xy_same = TileTuple(([3], [3]))
+    bottom_right_xy_same = TileTuple(([3], [3]))
+    expected_xy_same = TileTuple( ([3], [3]) )    
+    
+    # Act 
+    try:
+        with pytest.raises(ValueError):
+            _ = cse._tiletuple_to_area_tiletuple(None, None) # type: ignore
+
+        area_tiletuple_x_same = cse._tiletuple_to_area_tiletuple(top_left_x_same, bottom_right_x_same)
+        area_tiletuple_y_same = cse._tiletuple_to_area_tiletuple(top_left_y_same, bottom_right_y_same)
+        area_tile_tuple_xy_same = cse._tiletuple_to_area_tiletuple(top_left_xy_same, bottom_right_xy_same)
+        
+    # Assert
+        assert area_tiletuple_x_same == expected_x_same, f"Expected converted TileTuple to be {expected_x_same}, got {area_tiletuple_x_same}"
+        assert area_tiletuple_y_same == expected_y_same, f"Expected converted TileTuple to be {expected_y_same}, got {area_tiletuple_y_same}"
+        assert area_tile_tuple_xy_same == expected_xy_same, f"Expected converted TileTuple to be {expected_xy_same}, got {area_tile_tuple_xy_same}"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
 
 # Test Cases for TileCoordinate
 def test_base_empty_coords():

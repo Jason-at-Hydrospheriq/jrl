@@ -13,7 +13,8 @@ if TYPE_CHECKING:
     from state import GameState
 
 from core_components.actions.base import BaseGameAction
-from core_components.entities.library import MobileEntity
+from core_components.entities.library import BaseEntity, CombatEntity, MobCharactor, MobileEntity, PlayerCharactor, TargetableEntity, TargetingEntity, MortalEntity
+from core_components.events.library import TargetCollision, MeleeCollision, MeleeAttack
 
 class GeneralAction(BaseGameAction):
 
@@ -27,7 +28,7 @@ class GeneralAction(BaseGameAction):
 
 
 class NoAction(GeneralAction):
-
+    
     def perform(self) -> None:
         pass
 
@@ -83,20 +84,23 @@ class GameOverAction(GeneralAction):
 
 
 # class EntityActionOnSelf(EngineBaseAction):
-#     def __init__(self, states: Engine, entity: BaseEntity) -> None:
+#     def __init__(self, states: GameState, entity: BaseEntity) -> None:
 #         super().__init__(states)
 #         self.entity = entity
 
 
-# class EntityActionOnTarget(EngineBaseAction):
-#     def __init__(self, states: Engine, entity: TargetingEntity, target: TargetableEntity) -> None:
-#         super().__init__(states)
-#         self.entity = entity
-#         self.target = target
+class EntityActionOnTarget(EngineBaseAction):
+    def __init__(self, state: GameState | None = None, 
+                 entity: TargetingEntity | CombatEntity | None = None, 
+                 target: TargetableEntity | CombatEntity | None = None) -> None:
+        if state:
+            super().__init__(state)
+        self.entity = entity
+        self.target = target
 
 
 class EntityActionOnDestination(EngineBaseAction):
-    def __init__(self, 
+    def __init__(self, *,
                  state: GameState | None = None,  
                  entity: MobileEntity | None = None, 
                  destination: TileCoordinate | None = None) -> None:
@@ -112,25 +116,33 @@ class EntityActionOnDestination(EngineBaseAction):
             self.entity.destination = destination #type: ignore
 
 
-# class EntityAcquireTargetAction(EntityActionOnTarget):
+class EntityAcquireTargetAction(EntityActionOnTarget):
     
-#     def perform(self) -> None:
-#         self.entity.acquire_target(self.target)
+    def perform(self) -> None:
+        if self.entity is not None:
+            if isinstance(self.target, TargetableEntity):
+                self.entity.acquire_target(self.target)
 
 
-# class EntityCollisionAction(EntityActionOnTarget):
-#     def perform(self) -> None:
+class EntityCollisionAction(EntityActionOnTarget):
+    def perform(self) -> None:
+        entity_can_target = issubclass(self.entity.__class__, TargetingEntity) if self.entity else False
+        entity_can_melee = issubclass(self.entity.__class__, CombatEntity) if self.entity else False
+        target_can_be_targeted = issubclass(self.target.__class__, TargetableEntity) if self.target else False
+        target_can_melee = issubclass(self.target.__class__, CombatEntity) if self.target else False
 
-#         obstacle = self.roster.entity_collision(self.entity)
-#         if obstacle and not self.entity.target:
-#             if isinstance(obstacle, TargetableEntity):
-#                 self.states.game_events.add(TargetCollision(self.entity, f"{self.entity.name} collided with {obstacle.name}"))
+        entity_targets = entity_can_target and target_can_be_targeted
+        entity_melees = entity_can_melee and target_can_melee 
 
-#         if obstacle and self.entity.target == obstacle:
-#             self.states.game_events.add(MeleeCollision(self.entity, f"{self.entity.name} collided with its target {obstacle.name}"))    
-
-#         if not obstacle:
-#             return EntityMoveAction(self.states, self.entity, self.target).perform()
+        if self.entity is not None and self.target is not None: # Acquire target if none exists.
+            
+            entity_has_target = self.entity.target is not None if hasattr(self.entity, 'target') else False
+            
+            if entity_targets and not entity_has_target:
+                return EntityAcquireTargetAction(state=self.state, entity=self.entity, target=self.target).perform() # Acquire target.
+        
+            elif entity_melees and entity_has_target:
+                return EntityMeleeAction(state=self.state, entity=self.entity, target=self.target).perform() # Immediate melee attack.
 
 
 class EntityMoveAction(EntityActionOnDestination):
@@ -143,40 +155,61 @@ class EntityMoveAction(EntityActionOnDestination):
         # self.states.game_events.add(MapUpdate("main_map", f"{self.entity.name} moved to {self.entity.location}"))
 
 
-# class EntityMeleeAction(EntityActionOnTarget):
-
-#     def perform(self) -> None:
-#         damage = 0
-#         defense = 0
-#         attack_power = 0
-
-#         if isinstance(self.entity, CombatEntity) and self.entity.combat:
-#             attack_power = self.entity.combat.attack_power
-#             if isinstance(self.target, CombatEntity) and self.target.combat:
-#                 defense = self.target.combat.defense
-            
-#         if isinstance(self.target, MortalEntity):
-#             defense = 1  # Basic defense for non-combat entities
-#             damage = max(0, attack_power - defense)
-#             self.target.take_damage(damage)
-
-#             if self.target.physical.hp <= 0: #type: ignore
-#                 return DeathAction(self.states, self.target).perform()
+class EntityMeleeAction(EntityActionOnTarget):
+    """ Melee combat is between to combat entities."""
+    def perform(self) -> None:
+        damage = 0
+        defense = 0
+        attack_power = 0
 
 
-# class DeathAction(EntityActionOnSelf):
+        if self.entity is not None and self.target is not None and isinstance(self.entity, CombatEntity) and isinstance(self.target, CombatEntity):
+            engaged = self.entity.in_combat and self.target.in_combat
+            if not engaged:
+                 self.entity.in_combat = True
+                 self.target.in_combat = True
 
-#     def __init__(self, states: Engine, entity: MortalEntity) -> None:
-#         super().__init__(states, entity)
-#         self.entity = entity
+            if engaged:     
+                attack_power = self.entity.combat.attack_power # type: ignore
+                defense = self.target.combat.defense # type: ignore
+                
+                if isinstance(self.target, MortalEntity): # Attack only mortal entities
+                    defense = 1  # Basic defense for non-combat entities
+                    damage = max(0, attack_power - defense)
+                    self.target.take_damage(damage)
+                    print(f"{self.entity.name} attacks {self.target.name} for {damage} damage!")
 
-#     def perform(self) -> None:
+                if isinstance(self.entity, PlayerCharactor) and isinstance(self.target, MobCharactor): # Launch counterattack if target was a mob
+                    counterattack_event = MeleeAttack(entity=self.target, target=self.entity, message=f"{self.target.name} counterattacks {self.entity.name}!")
+                    self.state.events.put(counterattack_event)
+
+                if self.target.physical.hp <= 0 and isinstance(self.entity, CombatEntity): #type: ignore
+                    self.entity.clear_target()
+                    self.entity.in_combat = False
+                
+                if self.target.physical.hp <= 0 and isinstance(self.target, MortalEntity): #type: ignore
+                    return EntityDeathAction(self.state, self.entity, self.target).perform() # type: ignore
+
+
+class EntityDeathAction(EntityActionOnTarget):
+
+    def __init__(self, state: GameState, entity: CombatEntity, target: MortalEntity) -> None:
+        self.state = state
+        self.entity = entity
+        self.target = target
+
+    def perform(self) -> None:
         
-#         if self.entity == self.roster.player:
-#             death_message = "You have died! Game Over."
+        if self.target == self.state.roster.player:
+            death_message = f"You have been slain by {self.entity.name}! Game Over."
+            print(death_message)
+            self.target.die()
 
-#         else:
-#             death_message = f"{self.entity.name} is dead!"
+            return GameOverAction(self.state).perform()
 
-#         self.entity.die()
-#         print(death_message)
+        else:
+            death_message = f"You have slain {self.target.name}!"
+            print(death_message)
+            self.target.die()
+
+            

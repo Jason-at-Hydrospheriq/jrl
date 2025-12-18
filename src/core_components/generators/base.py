@@ -11,10 +11,11 @@ import numpy as np
 # Defined as a global constant for graphic dtype
 from core_components.tiles.base import TileCoordinate, TileTuple
 from core_components.maps.base import GraphicTileMap
+from core_components.maps.library import DefaultTileMap
 from core_components.tiles.library import GenericMapArea
 
 class BaseMapGenerator(Protocol):
-    map_template: GraphicTileMap
+    map_template: DefaultTileMap
 
     """
     The BaseMapGenerator Protocol defines the methods that all map generators must implement. This protocol ensures that all map generators can be used 
@@ -25,7 +26,7 @@ class BaseMapGenerator(Protocol):
     For a full implementation, see the `core_components.generators` module.
     """
 
-    def generate(self) -> GraphicTileMap:
+    def generate(self) -> DefaultTileMap:
         raise NotImplementedError()
     
     def add(self,

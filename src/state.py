@@ -13,7 +13,7 @@ import threading
 from core_components.events.library import BaseGameEvent, SystemEvent
 from core_components.actions.base import BaseGameAction
 from core_components.dispatchers.base import BaseEventDispatcher
-from core_components.dispatchers.library import SystemDispatcher, InputDispatcher
+from core_components.dispatchers.library import SystemDispatcher, InputDispatcher, EntityDispatcher
 from core_components.events.library import *
 from core_components.roster import Roster
 from core_components.atlas import Atlas
@@ -43,7 +43,7 @@ class GameState:
         self.events = Queue()
         self.actions = Queue()
         self.game_over = threading.Event()
-        self.dispatchers = [SystemDispatcher(), InputDispatcher()]   
+        self.dispatchers = [SystemDispatcher(), InputDispatcher(), EntityDispatcher()]   
 
 
     def dispatch(self) -> None:
@@ -70,9 +70,10 @@ class GameState:
         while True:
             try:
                 action = self.actions.get_nowait()
-                action.perform()    # Perform the action            
-                print(f"Action performed: {action}")
-
+                next_action = action.perform()
+                if next_action is not None:
+                    self.actions.put(next_action)
+                        
             except queue.Empty:
                 time.sleep(0.05)
 

@@ -2,16 +2,41 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Set, List, Callable, TYPE_CHECKING
+from typing import Set, List, Callable, TYPE_CHECKING, TypeVar
 import random
 import numpy as np
-
+from copy import deepcopy
 
 from core_components.entities.library import *
-from core_components.entities.factory import *
+from core_components.entities import attributes
 from core_components.maps.base import GraphicTileMap
+from core_components.maps.library import DefaultTileMap
+from core_components.tiles.base import TileTuple
+
+M = TypeVar('M', bound='BaseEntity')
 
 class Roster:
+
+    PLAYER = PlayerCharactor(   name="Player", 
+                            symbol=chr(64), 
+                            color=(130, 200, 255),
+                            physical=attributes.PhysicalStats(max_hp=30, constitution=14),
+                            combat=attributes.CombatStats(defense=2, attack_power=5))
+
+    ORC = MobCharactor( name="Orc", 
+                        symbol=chr(65), 
+                        color=(63, 127, 63),
+                        ai_cls=None, 
+                        physical=attributes.PhysicalStats(max_hp=10, constitution=12),
+                        combat=attributes.CombatStats(defense=0, attack_power=3))
+
+    TROLL = MobCharactor(   name="Troll", 
+                            symbol=chr(65), 
+                            color=(0, 127, 0), 
+                            ai_cls=None,
+                            physical=attributes.PhysicalStats(max_hp=16, constitution=12),
+                            combat=attributes.CombatStats(defense=1, attack_power=4))
+
     """ The Roster component manages the state of all entities in the game. """
 
     __slots__ = ("entities", "spawn")
@@ -21,7 +46,6 @@ class Roster:
 
     def __init__(self) -> None:
         self.entities = set()    
-        self.spawn = spawn
 
     @property
     def entity_locations(self) -> List[TileCoordinate]:
@@ -82,55 +106,75 @@ class Roster:
         
         return found_entity
     
-    def spawn_player(self, game_map: GraphicTileMap) -> None:
+    def spawn_player(self, game_map: DefaultTileMap) -> None:
         """Spawn the player in a random room."""
         
         start_rooms = [area for area in game_map.areas.keys() if not area.startswith('_')]
         start_room = random.choice(start_rooms)
         spawn_location = game_map.areas[start_room].get_random_location()
-        self.player = self.spawn(PLAYER, spawn_location)
+        self.player = self.spawn_at_location(entity=self.PLAYER, location=spawn_location)  # type: ignore
 
-    # def initialize_random_mobs(self, game_map: GameMap, max_total_mobs: int, max_mobs_per_room: int) -> None:
-    #     """Generate mobs """
-    #     n_total_mobs_spawned_in_this_map = 0
-    #     min_total_mobs_in_this_map = len(game_map.rooms) * max_mobs_per_room
-    #     max_total_mobs_in_this_map = random.randint(min_total_mobs_in_this_map, max_total_mobs)
+    def spawn_at_location(self, *, entity: M, location: TileCoordinate) -> M:
+        """Spawn a copy of this entity at the given location and return it."""
+        clone = deepcopy(entity)
+        clone.location = location
+        self.entities.add(clone)
+        return clone
+    
+    def initialize_random_mobs(self, game_map: DefaultTileMap, max_mobs_per_area: int) -> None:
+        """Generate mobs """
+        n_total_mobs_spawned_in_this_map = 0
+        max_total_mobs_in_this_map = len(game_map.areas) * max_mobs_per_area
         
-    #     # Generate mobs in rooms
-    #     for room in game_map.rooms:
-    #         max_mobs_in_this_room = random.randint(1, max_mobs_per_room)
+        rooms = [area for name, area in game_map.areas.items() if not name.startswith('_corridor')]
+        corridors = [area for name, area in game_map.areas.items() if name.startswith('_corridor')]
 
-    #         if room.contains(self.player.location):
-    #             continue  # Skip room if player is inside
+        # Generate mobs in rooms
+        for room in rooms:
+            max_mobs_in_this_room = random.randint(1, max_mobs_per_area)
+
+            if room.contains(self.player.location) if self.player is not None else False:
+                continue  # Skip room if player is inside
             
-    #         else:
-    #             n_mobs_spawned_in_this_room = 0
-    #             while n_mobs_spawned_in_this_room < max_mobs_in_this_room:
-    #                 current_mob_locations = [mob.location for mob in self.live_ai_actors]
-    #                 spawn_location = room.random_location()
-    #                 if not any(mob_location == spawn_location for mob_location in current_mob_locations):
-    #                     if random.random() < 0.8:
-    #                         spawn(ORC, spawn_location)
-    #                     else:
-    #                         spawn(TROLL, spawn_location)
+            else:
+                n_mobs_spawned_in_this_room = 0
+                attempts = 100  # Prevent infinite loops
+
+                while n_mobs_spawned_in_this_room < max_mobs_in_this_room and attempts > 0:
+                    current_mob_locations = [mob.location for mob in self.live_ai_actors]
+
+                    spawn_location = room.get_random_location()
+                    attempts -= 1
+                    
+                    if not any(mob_location == spawn_location for mob_location in current_mob_locations):
+                        if random.random() < 0.8:
+                            self.spawn_at_location(entity=self.ORC, location=spawn_location)
+                        else:
+                            self.spawn_at_location(entity=self.TROLL, location=spawn_location)
                                 
-    #                     n_total_mobs_spawned_in_this_map += 1
-    #                     n_mobs_spawned_in_this_room += 1
+                        n_total_mobs_spawned_in_this_map += 1
+                        n_mobs_spawned_in_this_room += 1
 
-    #     # Generate remainder of mobs in corridors
-    #     while n_total_mobs_spawned_in_this_map < max_total_mobs_in_this_map:
-    #         current_mob_locations = [mob.location for mob in self.live_ai_actors]
+        # Generate remainder of mobs in corridors
+        corridors = [area for name, area in game_map.areas.items() if name.startswith('_corridor')]
 
-    #         for corridor in game_map.corridors:
-    #             walkable = np.argwhere(corridor)
-    #             spawn_location = random.choice(walkable)
-    #             spawn_location = TileCoordinate(int(spawn_location[0]), int(spawn_location[1]))
+        while n_total_mobs_spawned_in_this_map < max_total_mobs_in_this_map:
+            current_mob_locations = [mob.location for mob in self.live_ai_actors]
 
-    #             if not any(room.contains(spawn_location) for room in game_map.rooms):
-    #                 if not any(mob_location == spawn_location for mob_location in current_mob_locations):
-    #                     if random.random() < 0.8:
-    #                         spawn(ORC, spawn_location)
-    #                     else:
-    #                         spawn(TROLL, spawn_location)
+            for corridor in corridors:
+                
+                open_terrain_layout = game_map.blocks_movement == False
+                open_terrain_in_corridor = open_terrain_layout & corridor.to_mask
+                open_terrain_coords = np.argwhere(open_terrain_in_corridor)
+                spawn_choice = random.choice(open_terrain_coords)
+                location_tuple = TileTuple(([int(spawn_choice[0])], [int(spawn_choice[1])]))
+                spawn_location = TileCoordinate(location_tuple, corridor.parent_map_size)
 
-    #             n_total_mobs_spawned_in_this_map += 1
+                if not any(room.contains(spawn_location) for room in game_map.areas.values()):
+                    if not any(mob_location == spawn_location for mob_location in current_mob_locations):
+                        if random.random() < 0.8:
+                            self.spawn_at_location(entity=self.ORC, location=spawn_location)
+                        else:
+                            self.spawn_at_location(entity=self.TROLL, location=spawn_location)
+
+                n_total_mobs_spawned_in_this_map += 1

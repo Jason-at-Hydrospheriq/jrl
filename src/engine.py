@@ -40,8 +40,10 @@ class Engine:
 
         if self.map is not None:
             self.state.roster.spawn_player(self.map)
-            self.player = self.roster.player
-    
+            self.state.roster.initialize_random_mobs(self.map, max_mobs_per_area=3)
+            self.player = self.state.roster.player
+            self.mobs = self.state.roster.live_ai_actors
+
     def stop(self) -> None:
         self.state.game_over.set()
     

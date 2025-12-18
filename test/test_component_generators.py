@@ -23,6 +23,30 @@ def test_generator_random_empty_init():
     finally:
         pass
 
+def test_generator_spawn_map():
+    # Arrange
+    dungeon_gen = DungeonGenerator()
+
+    # Act
+    dungeon = dungeon_gen.spawn_map()
+
+    # Assert
+    try:
+        assert isinstance(dungeon, DefaultTileMap), "Expected spawned map to be an instance of DefaultTileMap"
+        assert id(dungeon) != id(dungeon_gen.map_template), "Expected spawned map to be a new instance and not the same as the template"
+        assert dungeon.grid.width == dungeon_gen.width, "Expected spawned map width to match generator width"
+        assert dungeon.grid.height == dungeon_gen.height, "Expected spawned map height to match generator height"
+        assert (dungeon.tiles['graphic_type']['name'] == 'wall').all(), "Expected all tiles in spawned map to be initialized as walls"
+        assert dungeon.blocks_movement.sum() == dungeon.tiles.size, "Expected all tiles in spawned map to block movement"
+        assert dungeon.blocks_vision.sum() == dungeon.tiles.size, "Expected all tiles in spawned map to block vision"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    # Atavise
+    finally:
+        pass
+
 def test_generator_generate():
     # Arrange
     dungeon_gen = DungeonGenerator()
@@ -51,8 +75,9 @@ def test_generator_generate():
             assert expected_floor_count > 0, "Expected generated map to have floor tiles"
             assert wall_layout.sum() == (floor_layout.size - floor_layout.sum()), "Expected all tiles other than floors to be walls"
 
-            assert dungeon.blocks_movement.sum() == expected_floor_count, "Expected all visible tiles to be floors"
-            assert dungeon.tiles.size - dungeon.blocks_vision.sum() == expected_wall_count, "Expected all transparent tiles to be floors"    
+            assert dungeon.blocks_movement.sum() == expected_wall_count, "Expected all blocked tiles to be walls"
+            assert dungeon.blocks_vision.sum() == expected_wall_count, "Expected all vision-blocking tiles to be walls"
+            assert dungeon.tiles.size - dungeon.blocks_vision.sum() == expected_floor_count, "Expected all transparent tiles to be floors"    
         
         except AssertionError as e:
             pytest.fail(str(e))

@@ -20,12 +20,12 @@ class Atlas:
     __slots__ = ("generators", "library", "active")
     
     generators: OrderedDict[str, BaseMapGenerator]
-    library: OrderedDict[str, GraphicTileMap]
-    active: GraphicTileMap
+    library: OrderedDict[str, DefaultTileMap]
+    active: DefaultTileMap
 
     def __init__(self) -> None:
 
-        self.generators = OrderedDict({'dungeons': DungeonGenerator()})
+        self.generators = OrderedDict({'dungeon': DungeonGenerator()})
         self.library = OrderedDict({})
         self.library['_empty'] = DefaultTileMap()
         self.set_active_map('_empty')
@@ -37,7 +37,7 @@ class Atlas:
         else:
             raise ValueError(f"Map '{map_name}' does not exist in the library.")
     
-    def get_map(self, map_name: str) -> GraphicTileMap:
+    def get_map(self, map_name: str) -> DefaultTileMap:
         """Return the map specified by map_name."""
         if map_name in self.library:
             return self.library[map_name]
@@ -47,9 +47,9 @@ class Atlas:
     def create_map(self) -> None:
         """Create a new map using the specified generator and add it to the library."""
         if len(self.library.keys()) < 1:
-            self.library['level_0'] = self.generators['dungeons'].generate()
+            self.library['level_0'] = self.generators['dungeon'].generate()
             self.set_active_map('level_0')
         else:
             new_map_name = f"level_{len(self.library.keys())-1}"
-            self.library[new_map_name] = self.generators['dungeons'].generate()
+            self.library[new_map_name] = self.generators['dungeon'].generate()
             self.set_active_map(new_map_name)

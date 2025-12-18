@@ -131,8 +131,6 @@ class MortalEntity(BaseEntity):
     def take_damage(self, damage: int) -> None:
         if self.physical:
             self.physical.hp -= damage
-            if self.physical.hp <= 0:
-                self.die()
 
     def die(self) -> None:
         raise NotImplementedError()
@@ -140,6 +138,7 @@ class MortalEntity(BaseEntity):
 
 class CombatEntity(TargetingEntity):
     combat: CombatStats | None
+    in_combat: bool = False
 
     def __init__(   self, 
                     *, 
@@ -152,6 +151,21 @@ class CombatEntity(TargetingEntity):
         
         super().__init__(location=location, symbol=symbol, color=color, name=name)
         self.combat = combat
+
+    def acquire_target(self, target: TargetableEntity) -> None:
+        if isinstance(target, CombatEntity):
+            combat_status = (self.in_combat, target.in_combat)
+            match combat_status:
+                case (True, True): # Both are in combat
+                    pass
+                case (True, False): # Entity is in combat, target is not
+                    self.in_combat = False
+                case (False, True): # Entity is not in combat, target is
+                    self.in_combat = True
+                case (False, False): # Neither are in combat, hostile mobs are ALWAYS in combat.
+                    pass
+                    
+        self.target = target
 
     def attack(self) -> int:
         return self.combat.attack_power - self.target.combat.defense  # type: ignore
@@ -195,7 +209,7 @@ class SightedEntity(BaseEntity):
         self.fov_radius = fov_radius
         
 
-class Charactor(MobileEntity, TargetableEntity, MortalEntity, CombatEntity, SightedEntity):
+class Charactor(SightedEntity, CombatEntity, MortalEntity, TargetableEntity, TargetingEntity, MobileEntity, BlockingEntity):
     def __init__(   self,
                     *,
                     location: TileCoordinate | None = None,
@@ -208,18 +222,17 @@ class Charactor(MobileEntity, TargetableEntity, MortalEntity, CombatEntity, Sigh
                     targetable: bool = True,
                     ) -> None:
         
-        MobileEntity.__init__(self, location=location, symbol=symbol, color=color, name=name)
-        TargetableEntity.__init__(self, location=location, symbol=symbol, color=color, name=name, targetable=targetable)
-        MortalEntity.__init__(self, location=location, symbol=symbol, color=color, name=name, physical=physical)
-        CombatEntity.__init__(self, location=location, symbol=symbol, color=color, name=name, combat=combat)
-        SightedEntity.__init__(self, location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius)
-
+        super().__init__(location=location, symbol=symbol, color=color, name=name)
+        self.fov_radius = fov_radius
+        self.physical = physical
+        self.combat = combat
+        self.targetable = targetable
 
     def die(self) -> None:
-       self.blocks_movement = False
-       self.name = f"remains of {self.name}"
-       self.symbol = "%"
-       self.color = (191, 0, 0)
+        self.blocks_movement = False
+        self.name = f"remains of {self.name}"
+        self.symbol = "%"
+        self.color = (191, 0, 0)
 
 
 class PlayerCharactor(Charactor):
@@ -261,8 +274,34 @@ class AICharactor(Charactor, AIEntity):
 
 
 class NonPlayerCharactor(AICharactor):
-    pass
+    def __init__(   self,
+                *,
+                location: TileCoordinate | None = None,
+                symbol: str = "?",
+                color: Tuple[int, int, int],
+                name: str = "<Unnamed>",
+                fov_radius: int = 4,
+                physical: PhysicalStats | None = None,
+                combat: CombatStats | None = None,
+                targetable: bool = True,
+                ai_cls: Optional[Type[BaseAI]] = None,
+                ) -> None:
+        
+        super().__init__(location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat, targetable=targetable, ai_cls=ai_cls)
 
 
 class MobCharactor(AICharactor):
-    pass
+    def __init__(   self,
+                *,
+                location: TileCoordinate | None = None,
+                symbol: str = "?",
+                color: Tuple[int, int, int],
+                name: str = "<Unnamed>",
+                fov_radius: int = 4,
+                physical: PhysicalStats | None = None,
+                combat: CombatStats | None = None,
+                targetable: bool = True,
+                ai_cls: Optional[Type[BaseAI]] = None,
+                ) -> None:
+        
+        super().__init__(location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat, targetable=targetable, ai_cls=ai_cls)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import tcod.event
 
 from core_components.events.base import BaseGameEvent
-from core_components.entities.library import BaseEntity
+from core_components.entities.library import BaseEntity, Charactor
 
 class SystemEvent(BaseGameEvent):
 
@@ -63,6 +63,16 @@ class MeleeCollision(EntityEvent):
     def __init__(self, entity: BaseEntity, message: str) -> None:
         super().__init__(entity, message)
 
+class CombatEvent(EntityEvent):
+    def __init__(self, entity: BaseEntity, target: BaseEntity, message: str) -> None:
+        super().__init__(entity, message)
+        self.target: BaseEntity | None = target
+
+class MeleeAttack(CombatEvent):
+    def __init__(self, entity: Charactor, target: Charactor, message: str) -> None:
+        #super().__init__(entity, target, message)
+        self.entity = entity
+        self.target = target
 
 class UIEvent(BaseGameEvent):
     element_name: str
