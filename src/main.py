@@ -22,7 +22,7 @@ FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
 def main() -> None:
     screen_width = 60
     screen_height = 60
-    
+
     # tileset = tcod.tileset.load_tilesheet(
     #     "oryx_roguelike_160x40.png", columns=8 , rows=2, charmap=tcod.tileset.CHARMAP_CP437
     # )
@@ -42,7 +42,7 @@ def main() -> None:
     # game.state.map.active.set_state_bits('visible', expected_bits)
     game.map.set_state_bits('seen', expected_bits)
     
-    game.ui.context = tcod.context.new(columns = screen_width, rows = screen_height, tileset=tileset, title="Jay's Roguelike", vsync=True, sdl_window_flags=tcod.context.SDL_WINDOW_RESIZABLE)
+    game.ui.context = tcod.context.new(columns = screen_width, rows = screen_height, tileset=tileset, title="Jay's Roguelike", vsync=True, sdl_window_flags=FLAGS)
     
     while True:
         # Update Console

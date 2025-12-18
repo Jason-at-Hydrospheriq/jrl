@@ -67,16 +67,16 @@ class MainMapDisplay(BaseUIWidget):
         Otherwise, the default is "SHROUD".
         """
         game_map = state.map.active
-        console_width = self.width
-        console_height = self.height
+        # console_width = self.width
+        # console_height = self.height
 
-        if context.sdl_window is not None:
-            window_width = context.sdl_window.size[0] // 20
-            window_height = context.sdl_window.size[1] // 20
-            console_width = min(self.width, window_width)
-            console_height = min(self.height, window_height)
-            
-        console.rgb[0 : console_width, 0 : console_height] = np.select(
+        # if context.sdl_window is not None:
+        #     window_width = context.sdl_window.size[0] // 20
+        #     window_height = context.sdl_window.size[1] // 20
+        #     console_width = window_width - 5
+        #     console_height = window_height - 5
+
+        console.rgb[0 : self.width, 0 : self.height] = np.select(
             condlist=[game_map.visible, game_map.seen],
             choicelist=[game_map.tiles['graphic_type']['visible'], game_map.tiles['graphic_type']['explored']],
             default=SHROUD,

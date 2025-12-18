@@ -5,6 +5,8 @@ import numpy as np
 from core_components.interfaces.base import BaseUI, BaseUIWidget, UIManifestDict
 from core_components.interfaces.library import HealthBarWidget, MainMapDisplay
 from copy import deepcopy
+from core_components.tiles.base import TileTuple
+from core_components.maps.library import DEFAULT_MANIFEST
 
 if TYPE_CHECKING:
     from state import GameState
