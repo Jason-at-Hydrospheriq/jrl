@@ -5,15 +5,44 @@ from __future__ import annotations
 from typing import Tuple
     
 from core_components.dispatchers.base import *
-from core_components.entities.library import BaseEntity, TargetableEntity, MobileEntity, TargetingEntity, CombatEntity
-from core_components.events.library import GameStartEvent, GameOverEvent, InputEvent, SystemEvent
-from core_components.actions.library import EngineBaseAction, EntityAcquireTargetAction, EntityActionOnDestination, EntityActionOnTarget, EntityCollisionAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
+from core_components.entities.library import BaseEntity, Charactor, TargetableEntity, MobileEntity, TargetingEntity, CombatEntity
+from core_components.events.library import GameStartEvent, GameOverEvent, InputEvent, MeleeAttack, SystemEvent
+from core_components.actions.library import EngineBaseAction, EntityAcquireTargetAction, EntityActionOnDestination, EntityActionOnTarget, EntityCollisionAction, EntityMeleeAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
 from core_components.tiles.base import TileTuple, TileCoordinate
 
 A = TypeVar('A', EntityActionOnDestination, EntityActionOnTarget)
 
 class EntityDispatcher(BaseEventDispatcher):
-    pass
+    MOVEMENT_ACTION = EntityMoveAction()
+    COLLISION_ACTION = EntityCollisionAction()
+    MELEE_ATTACK = EntityMeleeAction()
+    TARGET_ACQUISITION_ACTION = EntityAcquireTargetAction()
+
+    @classmethod
+    def create_action_on_target(cls, action: A, state: GameState, entity: BaseEntity, target: BaseEntity | TileCoordinate) -> A:
+        clone = super().create_state_action(action, state)
+        if isinstance(entity, MobileEntity) and isinstance(clone, EntityActionOnDestination):
+            clone.entity = entity
+        elif isinstance(entity, (TargetingEntity, CombatEntity)) and isinstance(clone, EntityActionOnTarget):
+            clone.entity = entity
+        if isinstance(clone, EntityActionOnTarget) and isinstance(target, (TargetableEntity, CombatEntity)):
+            clone.target = target
+        elif isinstance(target, TileCoordinate) and isinstance(clone, EntityActionOnDestination):
+            clone.destination = target
+        return clone
+    
+    def _ev_meleeattack(self,  event: MeleeAttack, state: GameState) -> EntityActionOnTarget:
+        entity = event.entity
+        target = event.target
+
+        state_action = self.create_action_on_target(self.MELEE_ATTACK, state, entity, target) # type: ignore
+
+        if isinstance(entity, CombatEntity) and isinstance(target, CombatEntity):
+            state_action.entity = entity
+            state_action.target = target
+
+        return state_action
+    
     # def _ev_targetcollision(self) -> Sequence[BaseAction]:
             
     #         if isinstance(obstacle, TargetableEntity):

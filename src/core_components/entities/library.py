@@ -131,8 +131,6 @@ class MortalEntity(BaseEntity):
     def take_damage(self, damage: int) -> None:
         if self.physical:
             self.physical.hp -= damage
-            if self.physical.hp <= 0:
-                self.die()
 
     def die(self) -> None:
         raise NotImplementedError()

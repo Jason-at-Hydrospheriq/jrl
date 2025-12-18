@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from state import GameState
 
 from core_components.actions.base import BaseGameAction
-from core_components.entities.library import BaseEntity, CombatEntity, MobCharactor, MobileEntity, TargetableEntity, TargetingEntity, MortalEntity
+from core_components.entities.library import BaseEntity, CombatEntity, MobCharactor, MobileEntity, PlayerCharactor, TargetableEntity, TargetingEntity, MortalEntity
 from core_components.events.library import TargetCollision, MeleeCollision, MeleeAttack
 
 class GeneralAction(BaseGameAction):
@@ -144,7 +144,7 @@ class EntityCollisionAction(EntityActionOnTarget):
             elif entity_melees and entity_has_target:
                 return EntityMeleeAction(state=self.state, entity=self.entity, target=self.target).perform() # Immediate melee attack.
 
-             
+
 class EntityMoveAction(EntityActionOnDestination):
 
     def perform(self) -> None:
@@ -179,15 +179,16 @@ class EntityMeleeAction(EntityActionOnTarget):
                     self.target.take_damage(damage)
                     print(f"{self.entity.name} attacks {self.target.name} for {damage} damage!")
 
-                if isinstance(self.entity, MobCharactor): # Launch counterattack if entity is a mob
-                    counterattack_event = MeleeAttack(self.target, self.entity, f"{self.target.name} counterattacks {self.entity.name}!")
+                if isinstance(self.entity, PlayerCharactor) and isinstance(self.target, MobCharactor): # Launch counterattack if target was a mob
+                    counterattack_event = MeleeAttack(entity=self.target, target=self.entity, message=f"{self.target.name} counterattacks {self.entity.name}!")
                     self.state.events.put(counterattack_event)
 
-                    if self.target.physical.hp <= 0 and isinstance(self.entity, CombatEntity): #type: ignore
-                        self.entity.clear_target()
-                        self.entity.in_combat = False
-
-                        return EntityDeathAction(self.state, self.entity, self.target).perform() # type: ignore
+                if self.target.physical.hp <= 0 and isinstance(self.entity, CombatEntity): #type: ignore
+                    self.entity.clear_target()
+                    self.entity.in_combat = False
+                
+                if self.target.physical.hp <= 0 and isinstance(self.target, MortalEntity): #type: ignore
+                    return EntityDeathAction(self.state, self.entity, self.target).perform() # type: ignore
 
 
 class EntityDeathAction(EntityActionOnTarget):
@@ -201,12 +202,14 @@ class EntityDeathAction(EntityActionOnTarget):
         
         if self.target == self.state.roster.player:
             death_message = f"You have been slain by {self.entity.name}! Game Over."
+            print(death_message)
+            self.target.die()
+
             return GameOverAction(self.state).perform()
 
         else:
             death_message = f"You have slain {self.target.name}!"
-
-        self.target.die()
-        print(death_message)
+            print(death_message)
+            self.target.die()
 
             
