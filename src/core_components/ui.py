@@ -12,14 +12,22 @@ if TYPE_CHECKING:
     from state import GameState
 
 DEFAULT_UI_MANIFEST: UIManifestDict = {
-    'widgets': {'main_map': {
-        'cls': MainMapDisplay,
-        'x': 1,
-        'y': 1,
-        'width': 60,
-        'height': 60
+    'widgets': {                
+                        'main_map': {
+                            'cls': MainMapDisplay,
+                            'x': 1,
+                            'y': 1,
+                            'width': DEFAULT_MANIFEST['dimensions']['grid_size'][0][0],
+                            'height': DEFAULT_MANIFEST['dimensions']['grid_size'][1][0]},
+                        'player_health_bar': {
+                            'cls': HealthBarWidget,
+                            'x': 5,
+                            'y': DEFAULT_MANIFEST['dimensions']['grid_size'][1][0] + 2,
+                            'width': 20,
+                            'height': 1
+                        },
+
     }}
-}
 
 
 class UIDisplay(BaseUI):

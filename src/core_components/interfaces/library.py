@@ -7,7 +7,7 @@ from tcod.console import Console
 from tcod.context import Context
 import numpy as np
 from core_components.interfaces.base import BaseUI, BaseUIWidget
-from core_components.interfaces import colors
+from graphics import colors
 
 if TYPE_CHECKING:
     from state import GameState
@@ -44,7 +44,7 @@ class HealthBarWidget(BaseUIWidget):
             )
 
         console.print(
-            x=self.upper_Left_x, y=self.upper_Left_y, string=f"HP: {current_value}/{maximum_value}", fg=colors.bar_text
+            x=self.upper_Left_x, y=self.upper_Left_y, text=f"Player HP: {current_value}/{maximum_value}", fg=colors.bar_text
         )
 
 class MainMapDisplay(BaseUIWidget):
