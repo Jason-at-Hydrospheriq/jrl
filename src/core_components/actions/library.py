@@ -65,11 +65,11 @@ class FOVUpdateAction(EngineBaseAction):
         
         def perform(self) -> None:
             """Recompute the visible area based on the players point of view."""
-            tile_blocks_vision = self.state.map.active.get_tile_layout('blocks_vision')
+            tile_blocks_vision = self.state.map.active.blocks_vision if self.state.map and self.state.map.active else None
             player = self.state.roster.player
 
             if player and tile_blocks_vision is not None:
-                visible_tiles = compute_fov( tile_blocks_vision, (player.location.x, player.location.y), radius=player.fov_radius, algorithm=libtcodpy.FOV_SHADOW)
+                visible_tiles = compute_fov( ~tile_blocks_vision, (player.location.x, player.location.y), radius=player.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
                 self.state.map.active.set_state_bits('visible', visible_tiles)
 
                 # If a tile is "visible" it should be added to "explored".

@@ -45,10 +45,6 @@ def main() -> None:
 
     game = Engine()    
     game.start()
-
-    # expected_bits = np.full([50, 50], fill_value=True)
-    # game.state.map.active.set_state_bits('visible', expected_bits)
-    # game.map.set_state_bits('seen', expected_bits)
     
     game.ui.context = tcod.context.new(columns = screen_width, rows = screen_height, tileset=tileset, title="Jay's Roguelike", vsync=True, sdl_window_flags=FLAGS)
     

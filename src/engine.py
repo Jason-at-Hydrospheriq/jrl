@@ -23,14 +23,7 @@ class Engine:
         # Convenience links to the game state
         self.atlas = self.state.map
         self.roster = self.state.roster
-        self.ui = self.state.ui
-
-    # def render(self) -> None:
-    #     """ Render all UI components """
-    #     pass
-        # for element in self.state.ui.elements:
-        #     element.render()
-    
+        self.ui = self.state.ui    
 
     def start(self) -> None:
         self.threads.append(threading.Thread(target=self.state.dispatch).start())
@@ -44,7 +37,7 @@ class Engine:
             self.state.roster.initialize_random_mobs(self.map, max_mobs_per_area=3)
             self.player = self.state.roster.player
             if self.player is not None:
-                self.player.fov_radius = 4
+                self.player.fov_radius = 6
             self.mobs = self.state.roster.live_ai_actors
 
     def stop(self) -> None:
