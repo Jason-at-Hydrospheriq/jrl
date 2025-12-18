@@ -63,6 +63,14 @@ class MeleeCollision(EntityEvent):
     def __init__(self, entity: BaseEntity, message: str) -> None:
         super().__init__(entity, message)
 
+class CombatEvent(EntityEvent):
+    def __init__(self, entity: BaseEntity, target: BaseEntity, message: str) -> None:
+        super().__init__(entity, message)
+        self.target: BaseEntity | None = target
+
+class MeleeAttack(CombatEvent):
+    def __init__(self, entity: BaseEntity, target: BaseEntity, message: str) -> None:
+        super().__init__(entity, target, message)
 
 class UIEvent(BaseGameEvent):
     element_name: str

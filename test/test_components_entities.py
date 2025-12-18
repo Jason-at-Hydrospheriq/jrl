@@ -1,3 +1,4 @@
+from copy import deepcopy
 import pytest
 from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
@@ -5,7 +6,9 @@ import numpy as np
 
 
 from core_components.entities.attributes import *
-from core_components.entities.factory import *
+from core_components.entities.library import *
+
+
 def test_physical_attributes():
     physical = PhysicalStats(max_hp=20, constitution=15)
     
@@ -38,17 +41,21 @@ def test_combat_attributes():
     except AssertionError:
         pytest.fail("CombatStats attributes did not initialize correctly")
 
-# def test_spawn_entity():
-#     location = MapCoords(10, 15)
-#     spawned_orc = spawn(ORC, location)
+def test_entity_class_inheritance():
+    player = PlayerCharactor(
+        name="Hero",
+        symbol='@',
+        color=(255, 255, 255),
+        physical=PhysicalStats(max_hp=30, constitution=14),
+        combat=CombatStats(defense=3, attack_power=7)
+    )
     
-#     try:
-#         assert spawned_orc is not ORC  # Ensure it's a different instance
-#         assert spawned_orc.name == ORC.name
-#         assert spawned_orc.char == ORC.char
-#         assert spawned_orc.color == ORC.color
-#         assert spawned_orc.physical.max_hp == ORC.physical.max_hp
-#         assert spawned_orc.location == location
+    player2 = deepcopy(player)
 
-#     except AssertionError:
-#         pytest.fail("Entity spawning did not function as expected")
+    try:
+        for cls in [BaseEntity, BlockingEntity, MortalEntity, TargetableEntity, TargetingEntity, CombatEntity, Charactor, PlayerCharactor]:
+            assert isinstance(player, cls), f"PlayerCharactor should inherit from {cls.__name__}"
+            assert isinstance(player2, cls), f"Deepcopied PlayerCharactor should inherit from {cls.__name__}"
+            
+    except AssertionError:
+        pytest.fail("PlayerCharactor does not inherit correctly from BaseEntity and Charactor")

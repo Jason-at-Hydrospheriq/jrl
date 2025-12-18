@@ -138,9 +138,14 @@ class Roster:
             
             else:
                 n_mobs_spawned_in_this_room = 0
-                while n_mobs_spawned_in_this_room < max_mobs_in_this_room:
+                attempts = 100  # Prevent infinite loops
+
+                while n_mobs_spawned_in_this_room < max_mobs_in_this_room and attempts > 0:
                     current_mob_locations = [mob.location for mob in self.live_ai_actors]
+
                     spawn_location = room.get_random_location()
+                    attempts -= 1
+                    
                     if not any(mob_location == spawn_location for mob_location in current_mob_locations):
                         if random.random() < 0.8:
                             self.spawn_at_location(entity=self.ORC, location=spawn_location)

@@ -28,9 +28,13 @@ class InputDispatcher(BaseEventDispatcher):
 
     MOVEMENT_KEYS = {
         tcod.event.KeySym.LEFT: (-1, 0),
+        tcod.event.KeySym.A: (-1, 0),
         tcod.event.KeySym.RIGHT: (1, 0),
+        tcod.event.KeySym.D: (1, 0),
         tcod.event.KeySym.UP: (0, -1),
+        tcod.event.KeySym.W: (0, -1),
         tcod.event.KeySym.DOWN: (0, 1),
+        tcod.event.KeySym.S: (0, 1),
         }
     
     MOVEMENT_ACTION = EntityMoveAction()
@@ -68,8 +72,9 @@ class InputDispatcher(BaseEventDispatcher):
                 print("Exiting game.")
                 state_action = self.create_state_action(self.SYSTEMEXIT, state)
         
-            case tcod.event.KeySym.LEFT | tcod.event.KeySym.RIGHT | tcod.event.KeySym.UP | tcod.event.KeySym.DOWN:
+            case tcod.event.KeySym.LEFT | tcod.event.KeySym.RIGHT | tcod.event.KeySym.UP | tcod.event.KeySym.DOWN | tcod.event.KeySym.W | tcod.event.KeySym.A | tcod.event.KeySym.S | tcod.event.KeySym.D:
                 if player is not None:
+
                     state_action = self.create_state_action(self.NOACTION, state)
                     destination = self.get_destination(event, player)
                     player.destination = destination
