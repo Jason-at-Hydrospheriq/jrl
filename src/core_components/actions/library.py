@@ -150,6 +150,7 @@ class EntityAcquireTargetAction(EntityActionOnTarget):
                 self.target.targeter = self.entity
                 self.state.log.add(text=f"{self.entity.name} has engaged the {self.target.name}.")
  
+
 class EntityCollisionAction(EntityActionOnTarget):
     def perform(self) -> None:
         entity_can_target = issubclass(self.entity.__class__, TargetingEntity) if self.entity else False
@@ -186,7 +187,12 @@ class EntityMoveAction(EntityActionOnDestination):
 
 
 class EntityMeleeAction(EntityActionOnTarget):
-    """ Melee combat is between to combat entities."""
+    def __init__(self, state: GameState | None = None, 
+                 entity: TargetingEntity | CombatEntity | None = None, 
+                 target: TargetableEntity | CombatEntity | None = None) -> None:
+        if state and entity and target is not None:
+            super().__init__(state=state, entity=entity, target=target)
+
     def perform(self) -> None:
         damage = 0
         defense = 0
@@ -210,7 +216,7 @@ class EntityMeleeAction(EntityActionOnTarget):
                     self.state.log.add(text=f"{self.entity.name} attacks the {self.target.name} for {damage} damage!")
 
                 if isinstance(self.entity, PlayerCharactor) and isinstance(self.target, MobCharactor): # Launch counterattack if target was a mob
-                    counterattack_event = MeleeAttackEvent(entity=self.target, target=self.entity, message=f"{self.target.name} counterattacks {self.entity.name}!")
+                    counterattack_event = MeleeAttackEvent(entity=self.target, target=self.entity)
                     self.state.events.put(counterattack_event)
 
                 if self.target.physical.hp <= 0 and isinstance(self.entity, CombatEntity): #type: ignore
@@ -233,6 +239,7 @@ class EntityDeathAction(EntityActionOnTarget):
         if self.target == self.state.roster.player:
             death_message = f"You have been slain by the {self.entity.name}! Game Over."
             self.state.log.add(text=death_message)
+            self.target.clear_target() # type: ignore
             self.target.die()
 
             return GameOverAction(self.state).perform()
@@ -240,6 +247,7 @@ class EntityDeathAction(EntityActionOnTarget):
         else:
             death_message = f"You have slain the {self.target.name}!"
             self.state.log.add(text=death_message)
+            self.target.clear_target() # type: ignore
             self.target.die()
 
             

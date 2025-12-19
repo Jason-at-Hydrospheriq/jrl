@@ -10,10 +10,10 @@ if TYPE_CHECKING:
     from state import GameState
     from core_components.entities.library import AICharactor, TargetableEntity
 
-from core_components.events.library import EntityEvent, AIEvent
+from core_components.events.library import CharactorEvent, EntityEvent, AIEvent
 
 AE = TypeVar('AE', bound=AIEvent)
-EE = TypeVar('EE', bound=EntityEvent)
+EE = TypeVar('EE', bound=CharactorEvent)
 
 # A typed dictionary for AI bots
 class EntityStateTableDict(TypedDict):
@@ -51,7 +51,7 @@ class BaseHandler:
             self._set_state_mapping()
 
     def get_state_vector(self) -> np.ndarray:
-        state_vector = [0, 0, 0, 0]  # Default state vector  
+        state_vector = [0, 0, 0, 0, 0]  # Default state vector  
 
         try:
             for idx, bit in enumerate(self.state_table['bits']):
@@ -97,18 +97,22 @@ class BaseHandler:
             raise e
 
     def create_event(self, event: AE | EE, target: TargetableEntity, state: GameState ) -> AE | EE | None:
+        try:
+            if event is not None:
+                clone = deepcopy(event)
+                clone.entity = self.entity
 
-        if event is not None:
-            clone = deepcopy(event)
-            clone.entity = self.entity
-
-            if hasattr(clone, 'target'):
-                setattr(clone, 'target', target)
-            if hasattr(clone, 'state'):
-                setattr(clone, 'state', state)
+                if hasattr(clone, 'target'):
+                    setattr(clone, 'target', target)
+                if hasattr(clone, 'state'):
+                    setattr(clone, 'state', state)
+                
+                return clone
             
-            return clone
-    
+        except Exception as e:     
+            print(f"Error creating event: {e}")
+            raise e
+        
     def update_state(self, state: GameState) -> None:
         v = self.get_state_vector()
         event_type = self.get_event_from_state_vector(v)

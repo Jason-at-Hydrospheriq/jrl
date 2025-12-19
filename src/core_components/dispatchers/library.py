@@ -109,6 +109,20 @@ class AIDispatcher(BaseEventDispatcher):
     
             return state_action # type: ignore
     
+    def _ev_meleeattackevent(self,
+                         event: MeleeAttackEvent,
+                         state: GameState) -> EntityMeleeAction:
+            entity = event.entity
+            target = event.target
+    
+            state_action = self.create_action_on_target(self.MELEE_ATTACK, state, entity, target) # type: ignore
+    
+            if isinstance(entity, CombatEntity) and isinstance(target, CombatEntity):
+                state_action.entity = entity
+                state_action.target = target
+    
+            return state_action # type: ignore
+    
     # def _ev_targetcollision(self) -> Sequence[BaseAction]:
             
     #         if isinstance(obstacle, TargetableEntity):

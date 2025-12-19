@@ -29,7 +29,7 @@ class InputEvent(BaseGameEvent):
 
 
 class EntityEvent(BaseGameEvent):
-    entity: BaseEntity
+    entity: BaseEntity | None
     message: str
 
     def __init__(self, 
@@ -38,6 +38,26 @@ class EntityEvent(BaseGameEvent):
         if entity:
             self.entity = entity
         self.message = message
+
+
+class CharactorEvent(BaseGameEvent):
+    entity: Charactor | None
+    target: Charactor | None
+    state: GameState | None
+    message: str
+
+    def __init__(self, 
+                 entity: Charactor | None = None,
+                 target: Charactor | None = None,
+                 state: GameState | None = None, 
+                 message: str = "Charactor Event Triggered") -> None:
+        self.message=message
+        if entity:
+            self.entity = entity
+        if target:
+            self.target = target
+        if state:
+            self.state = state
 
 
 class AIEvent(BaseGameEvent):
@@ -104,15 +124,17 @@ class MeleeCollision(EntityEvent):
 
 
 """These Combat Events are generated during combat interactions between entities and require targeting information."""
-class EntityCombatEvent(EntityEvent):
-    def __init__(self, entity: BaseEntity, target: BaseEntity, message: str) -> None:
-        super().__init__(entity, message)
-        self.target: BaseEntity | None = target
+class EntityCombatEvent(CharactorEvent):
+    def __init__(self, entity: Charactor | None = None, target: Charactor | None = None) -> None:
+        super().__init__(entity=entity, target=target)
+        self.target: Charactor | None = target
 
 
 class MeleeAttackEvent(EntityCombatEvent):
-    def __init__(self, entity: Charactor, target: Charactor, message: str) -> None:
-        super().__init__(entity, target, message)
+    entity: Charactor | None
+    target: Charactor | None
+
+    def __init__(self, entity: Charactor | None = None, target: Charactor | None = None) -> None:
         self.entity = entity
         self.target = target
 
