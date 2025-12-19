@@ -93,10 +93,8 @@ class TargetingEntity(BaseEntity):
         self.clear_target()
         self.target_color = target.color  # Store original color
         self.target = target
-        self.target.targeter = self
         self.target.color = (255, 0, 0)  # Change color to indicate targeting
-        self.target.is_targeted = True
-        self.is_targeting = True
+
 
     def clear_target(self) -> None:
         if self.target is not None and hasattr(self, 'target_color'):

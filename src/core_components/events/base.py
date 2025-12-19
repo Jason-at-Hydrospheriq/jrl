@@ -3,9 +3,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Protocol, runtime_checkable
 
-@runtime_checkable
-class BaseGameEvent(Protocol):
+
+class BaseGameEvent:
     message: str
     

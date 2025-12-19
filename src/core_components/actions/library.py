@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from core_components.actions.base import BaseGameAction
 from core_components.entities.library import CombatEntity, MobCharactor, MobileEntity, PlayerCharactor, TargetableEntity, TargetingEntity, MortalEntity
-from core_components.events.library import MeleeAttackEvent
+from core_components.events.library import FOVUpdateEvent, MeleeAttackEvent, TargetAvailableAIEvent
 
 
 class GeneralAction(BaseGameAction):
@@ -69,22 +69,43 @@ class FOVUpdateAction(EngineBaseAction):
             """Recompute the visible area based on the players point of view."""
             tile_blocks_vision = self.state.map.active.blocks_vision if self.state.map and self.state.map.active else None
             player = self.state.roster.player
+            mobs = self.state.roster.live_ai_actors
+            player_visible_tiles = np.full((self.state.map.active.grid.width, self.state.map.active.grid.height), False, order="F")            
 
+            # UPDATE PLAYER FOV
             if player and tile_blocks_vision is not None:
-                visible_tiles = compute_fov( ~tile_blocks_vision, (player.location.x, player.location.y), radius=player.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
-                self.state.map.active.set_state_bits('visible', visible_tiles)
+                player_visible_tiles = compute_fov( ~tile_blocks_vision, (player.location.x, player.location.y), radius=player.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
+                self.state.map.active.set_state_bits('visible', player_visible_tiles)
 
                 # If a tile is "visible" it should be added to "explored".
-                if visible_tiles is not None:
+                if player_visible_tiles is not None:
                     prior_seen_tiles = self.state.map.active.get_state_bits('seen')
-                    newly_seen_tiles = np.logical_or(prior_seen_tiles, visible_tiles)
+                    newly_seen_tiles = np.logical_or(prior_seen_tiles, player_visible_tiles)
                     self.state.map.active.set_state_bits('seen', newly_seen_tiles)
+            
+            # UPDATE MOB FOV AND SPOTTING
+            if len(mobs) > 0 and player and tile_blocks_vision is not None:
+                for mob in mobs:
+                    mob_visible_tiles = compute_fov( ~tile_blocks_vision, (mob.location.x, mob.location.y), radius=mob.fov_radius, algorithm=libtcodpy.FOV_SHADOW)
+                    
+                    if player_visible_tiles[mob.location.x, mob.location.y]:
+                        mob.is_spotted = True
+                    
+                    elif not player_visible_tiles[mob.location.x, mob.location.y]:
+                        mob.is_spotted = False
 
-            if len(self.state.roster.live_actors) > 0:
-                for actor in self.state.roster.live_actors:
-                    if self.state.map.active.visible[actor.location.x, actor.location.y]:
-                        if actor is not self.state.roster.player:
-                            actor.is_spotted = True
+                    if mob_visible_tiles[player.location.x, player.location.y]:
+                        mob.is_spotting = True
+                        self.state.log.add(text=f"You have been spotted!")
+                        player.is_spotted = True
+
+                    elif not mob_visible_tiles[player.location.x, player.location.y]:
+                        mob.is_spotting = False
+                    
+                for mob in mobs:
+                    if mob.is_spotted:
+                        player.is_spotting = True
+
 
 class EntityActionOnTarget(EngineBaseAction):
     def __init__(self, state: GameState | None = None, 
@@ -124,9 +145,11 @@ class EntityAcquireTargetAction(EntityActionOnTarget):
         if self.entity is not None:
             if isinstance(self.target, TargetableEntity):
                 self.entity.acquire_target(self.target)
+                self.entity.is_targeting = True
+                self.target.is_targeted = True
+                self.target.targeter = self.entity
                 self.state.log.add(text=f"{self.entity.name} has engaged the {self.target.name}.")
-
-
+ 
 class EntityCollisionAction(EntityActionOnTarget):
     def perform(self) -> None:
         entity_can_target = issubclass(self.entity.__class__, TargetingEntity) if self.entity else False
@@ -155,7 +178,11 @@ class EntityMoveAction(EntityActionOnDestination):
         if self.entity and self.entity.destination:
             self.entity.move()
 
-        # self.states.game_events.add(MapUpdate("main_map", f"{self.entity.name} moved to {self.entity.location}"))
+            self.state.events.put(FOVUpdateEvent(""))
+
+            for entity in self.state.roster.live_ai_actors:
+                if entity:  
+                    entity.ai.update_state(self.state) # type: ignore
 
 
 class EntityMeleeAction(EntityActionOnTarget):

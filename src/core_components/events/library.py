@@ -41,9 +41,9 @@ class EntityEvent(BaseGameEvent):
 
 
 class AIEvent(BaseGameEvent):
-    entity: AICharactor
-    target: Charactor
-    state: GameState
+    entity: AICharactor | None
+    target: Charactor | None
+    state: GameState | None
     message: str
 
     def __init__(self, 
@@ -139,10 +139,11 @@ class AttackedAIEvent(AIEvent):
 
 
 class TargetAvailableAIEvent(AIEvent):
+    entity: AICharactor | None
+    target: Charactor | None
+    
     def __init__(self, entity: AICharactor | None = None, target: Charactor | None = None) -> None:
-        if entity:
             self.entity = entity
-        if target:
             self.target = target
 
 

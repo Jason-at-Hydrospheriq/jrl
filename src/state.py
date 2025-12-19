@@ -13,7 +13,6 @@ import threading
 from core_components.actions.library import GeneralAction
 from core_components.events.library import BaseGameEvent
 from core_components.graphics import colors
-from core_components.actions.base import BaseGameAction
 from core_components.dispatchers.base import BaseEventDispatcher
 from core_components.dispatchers.library import SystemDispatcher, InputDispatcher, AIDispatcher
 from core_components.events.library import *
@@ -79,12 +78,6 @@ class GameState:
                 next_action = action.perform()
                 if next_action is not None:
                     self.actions.put(next_action)
-
-                self.events.put(FOVUpdateEvent(""))
-
-                for entity in self.roster.live_ai_actors:
-                    if entity:  
-                        entity.ai.update_state() # type: ignore
                 
             except queue.Empty:
                 time.sleep(0.05)

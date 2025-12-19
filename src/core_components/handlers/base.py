@@ -37,16 +37,14 @@ manifest_example = EntityStateTableDict({   'bits': ('is_alive', 'is_spotted', '
 class BaseHandler:
     __slots__ = ("entity", "state", "state_table", "_state_matrix", "_state_mapping")
     entity: AICharactor
-    state: GameState
     state_table: EntityStateTableDict
     _state_matrix: np.ndarray
     _state_mapping: np.ndarray
 
-    def __init__(self, entity: AICharactor | None, state: GameState | None = None, state_table: EntityStateTableDict | None = manifest_example) -> None:
+    def __init__(self, entity: AICharactor | None, state_table: EntityStateTableDict | None = manifest_example) -> None:
         if entity:
             self.entity = entity
-        if state:
-            self.state = state
+
         if state_table:
             self.state_table = state_table
             self._set_state_matrix()
@@ -91,7 +89,7 @@ class BaseHandler:
             state_mappings = np.full((len(self.state_table['mapping']),1), 0, dtype=object)
             for idx, mapping in enumerate(self.state_table['mapping']):
                 if mapping:
-                    state_mappings[idx] = mapping
+                    state_mappings[idx] = mapping()
             
             self._state_mapping = state_mappings
 
@@ -111,10 +109,15 @@ class BaseHandler:
             
             return clone
     
-    def update_state(self) -> None:
+    def update_state(self, state: GameState) -> None:
         v = self.get_state_vector()
         event_type = self.get_event_from_state_vector(v)
-        if event_type is not None and self.entity.target is not None:
-            event = self.create_event(event_type, target=self.entity.target, state=self.state) # type: ignore
-            if event is not None:
-                self.state.events.put(event)
+        event = None
+
+        if event_type != 0 and self.entity.target is not None:
+            event = self.create_event(event_type, target=self.entity.target, state=state) # type: ignore
+        elif state.roster.player and event_type != 0 and self.entity.target is None:
+            if self.entity.is_spotting and state.roster.player.is_spotted:
+                event = self.create_event(event_type, target=state.roster.player, state=state) # type: ignore
+            if event is not None: # type: ignore
+                state.events.put(event) # type: ignore
