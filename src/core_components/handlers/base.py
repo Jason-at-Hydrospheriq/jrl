@@ -3,27 +3,26 @@
 
 from __future__ import annotations
 from copy import deepcopy
-from typing import Any, Dict, Tuple, TypeVar, TypedDict, TYPE_CHECKING
+from typing import Tuple, TypeVar, TypedDict, TYPE_CHECKING
 import numpy as np  
-import tcod
-
-from core_components.entities.library import AICharactor, AIEntity, BaseEntity, Charactor, MobCharactor, TargetableEntity
-from core_components.events.library import BaseGameEvent, EntityEvent, AIEvent
 
 if TYPE_CHECKING:
     from state import GameState
+    from core_components.entities.library import AICharactor, TargetableEntity
+
+from core_components.events.library import EntityEvent, AIEvent
 
 AE = TypeVar('AE', bound=AIEvent)
 EE = TypeVar('EE', bound=EntityEvent)
 
 # A typed dictionary for AI bots
-class AIStateTableDict(TypedDict):
+class EntityStateTableDict(TypedDict):
     bits: Tuple[str, ...]
     vector_tuples: Tuple[Tuple[int, ...], ...]
     mapping: Tuple[TypeVar('E', bound=[AIEvent, EntityEvent])| None, ...] # type: ignore
 
 
-manifest_example = AIStateTableDict({   'bits': ('is_alive', 'is_spotted', 'is_spotting', 'is_targeting'),
+manifest_example = EntityStateTableDict({   'bits': ('is_alive', 'is_spotted', 'is_spotting', 'is_targeting'),
                                         'vector_tuples': (  (0, 0, 0, 0), (0, 0, 0, 1), (0, 0, 1, 0), (0, 0, 1, 1),
                                                             (0, 1, 0, 0), (0, 1, 0, 1), (0, 1, 1, 0), (0, 1, 1, 1),
                                                             (1, 0, 0, 0), (1, 0, 0, 1), (1, 0, 1, 0), (1, 0, 1, 1),
@@ -33,15 +32,17 @@ manifest_example = AIStateTableDict({   'bits': ('is_alive', 'is_spotted', 'is_s
                                                         (None), (None), (AIEvent), (EntityEvent),
                                                         (None), (None), (AIEvent), (EntityEvent) ),
                     })
-class BaseAI:
+
+
+class BaseHandler:
     __slots__ = ("entity", "state", "state_table", "_state_matrix", "_state_mapping")
     entity: AICharactor
     state: GameState
-    state_table: AIStateTableDict
+    state_table: EntityStateTableDict
     _state_matrix: np.ndarray
     _state_mapping: np.ndarray
 
-    def __init__(self, entity: AICharactor | None, state: GameState | None = None, state_table: AIStateTableDict | None = manifest_example) -> None:
+    def __init__(self, entity: AICharactor | None, state: GameState | None = None, state_table: EntityStateTableDict | None = manifest_example) -> None:
         if entity:
             self.entity = entity
         if state:
@@ -114,61 +115,6 @@ class BaseAI:
         v = self.get_state_vector()
         event_type = self.get_event_from_state_vector(v)
         if event_type is not None and self.entity.target is not None:
-            event = self.create_event(event_type, target=self.entity.target, state=self.state)
+            event = self.create_event(event_type, target=self.entity.target, state=self.state) # type: ignore
             if event is not None:
                 self.state.events.put(event)
-
-
-
-class MobAI(BaseAI):
-    def __init__(self, entity: MobCharactor | None) -> None:
-        super().__init__(entity)
-
-    def perceive_state(self) -> None:
-        pass
-
-        # State perception
-        # self.entity.is_alive
-        # self.entity.is_near_death
-        # self.entity.targeted
-        # self.entity.targeting
-        # self.entity.in_target_missile_range
-        # self.entity.target_in_missile_range
-        # self.entity.in_target_melee_range
-        # self.entity.target_in_melee_range
-        # self.entity.in_target_spell_range
-        # self.entity.target_in_spell_range
-
-        
-
-    # def create_event(self) -> AIEvent | None:
-    #     pass
-
-
-
-
-
-
-
-
-
-
-
-        # # Acquire target if none exists or if target is dead
-        # if self.entity.in_player_fov:
-        #     if not self.target or not self.target.is_alive:
-        #         self.target = self.engine.player
-
-        #     # Recalculate path to target
-        #     self.path = self.get_path_to(self.target.location) if self.target else []
-
-        # if self.target:
-        #     if self.distance_to_target is not None:
-        #         if self.distance_to_target <= 1:
-        #             return AIEventTargetInMeleeRange(self.entity, self.target)
-                
-        #         else:
-        #             if self.path:
-        #                 return AIEventPathToTarget(self.entity, self.path[0])
-            
-        # return AIEventNone(self.entity)

@@ -10,6 +10,7 @@ import tcod
 import threading
 
 # from core_components import roster, atlas, ui
+from core_components.actions.library import GeneralAction
 from core_components.events.library import BaseGameEvent
 from core_components.graphics import colors
 from core_components.actions.base import BaseGameAction
@@ -32,7 +33,7 @@ class GameState:
     
     ui: UIDisplay
     events: Queue[BaseGameEvent | tcod.event.Event]
-    actions: Queue[BaseGameAction]
+    actions: Queue[GeneralAction]
     dispatchers: List[BaseEventDispatcher]
     game_over: threading.Event
     roster: Roster
@@ -78,7 +79,13 @@ class GameState:
                 next_action = action.perform()
                 if next_action is not None:
                     self.actions.put(next_action)
-                        
+
+                self.events.put(FOVUpdateEvent(""))
+
+                for entity in self.roster.live_ai_actors:
+                    if entity:  
+                        entity.ai.update_state() # type: ignore
+                
             except queue.Empty:
                 time.sleep(0.05)
 

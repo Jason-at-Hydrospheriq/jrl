@@ -68,7 +68,9 @@ class MainMapDisplay(BaseUIWidget):
         If it isn't, but it's in the "explored" array, then draw it with the "dark" colors.
         Otherwise, the default is "SHROUD".
         """
+        player = state.roster.player
         game_map = state.map.active
+        actors = state.roster.live_actors
         # console_width = self.width
         # console_height = self.height
 
@@ -84,11 +86,13 @@ class MainMapDisplay(BaseUIWidget):
             default=SHROUD,
         ) 
 
-        if len(state.roster.live_actors) > 0:
+        if len(actors) > 0:
             for actor in state.roster.live_actors:
-                if game_map.visible[actor.location.x, actor.location.y]:
+                if actor.is_spotted:
                     console.print(actor.location.x, actor.location.y, actor.symbol, fg=actor.color)
-
+        if player:
+            console.print(player.location.x, player.location.y, player.symbol, fg=player.color)
+    
     # def print_entities(self, entities, key, tile_map: GraphicTileMap) -> None:
     #     for entity in sorted(entities, key=key, reverse=False):
     #         if tile_map.is_visible(entity.location):

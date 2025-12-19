@@ -45,7 +45,7 @@ class EngineBaseAction(GeneralAction):
     
     def __init__(self, state: GameState | None = None) -> None:
         if state:
-            self.state = state
+            super().__init__(state)
             self.roster = state.roster
     
 
@@ -80,6 +80,11 @@ class FOVUpdateAction(EngineBaseAction):
                     newly_seen_tiles = np.logical_or(prior_seen_tiles, visible_tiles)
                     self.state.map.active.set_state_bits('seen', newly_seen_tiles)
 
+            if len(self.state.roster.live_actors) > 0:
+                for actor in self.state.roster.live_actors:
+                    if self.state.map.active.visible[actor.location.x, actor.location.y]:
+                        if actor is not self.state.roster.player:
+                            actor.is_spotted = True
 
 class EntityActionOnTarget(EngineBaseAction):
     def __init__(self, state: GameState | None = None, 
@@ -109,7 +114,12 @@ class EntityActionOnDestination(EngineBaseAction):
 
 
 class EntityAcquireTargetAction(EntityActionOnTarget):
-    
+    def __init__(self, state: GameState | None = None, 
+                 entity: TargetingEntity | CombatEntity | None = None, 
+                 target: TargetableEntity | CombatEntity | None = None) -> None:
+        if state and entity and target is not None:
+            super().__init__(state=state, entity=entity, target=target)
+
     def perform(self) -> None:
         if self.entity is not None:
             if isinstance(self.target, TargetableEntity):

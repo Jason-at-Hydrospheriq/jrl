@@ -6,7 +6,7 @@ import numpy as np
 
 from core_components.dispatchers.base import *
 from core_components.entities.library import BaseEntity, TargetableEntity, MobileEntity, TargetingEntity, CombatEntity
-from core_components.events.library import FOVUpdateEvent, GameStartEvent, GameOverEvent, MeleeAttackEvent, FOVUpdateEvent
+from core_components.events.library import FOVUpdateEvent, GameStartEvent, GameOverEvent, MeleeAttackEvent, FOVUpdateEvent, TargetAvailableAIEvent, OnTargetAIEvent
 from core_components.actions.library import EntityAcquireTargetAction, EntityActionOnDestination, EntityActionOnTarget, EntityCollisionAction, EntityMeleeAction, FOVUpdateAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
 from core_components.tiles.base import TileTuple, TileCoordinate
 
@@ -80,6 +80,34 @@ class AIDispatcher(BaseEventDispatcher):
             state_action.target = target
 
         return state_action
+    
+    def _ev_targetavailableaievent(self, 
+                          event: TargetAvailableAIEvent, 
+                          state: GameState) -> EntityAcquireTargetAction:
+        entity = event.entity
+        target = event.target
+
+        state_action = self.create_action_on_target(self.TARGET_ACQUISITION_ACTION, state, entity, target) # type: ignore
+
+        if isinstance(entity, TargetingEntity) and isinstance(target, TargetableEntity):
+            state_action.entity = entity
+            state_action.target = target
+
+        return state_action # type: ignore
+    
+    def _ev_ontargetaievent(self,
+                        event: OnTargetAIEvent,
+                        state: GameState) -> EntityMeleeAction:
+            entity = event.entity
+            target = event.target
+    
+            state_action = self.create_action_on_target(self.MOVEMENT_ACTION, state, entity, target) # type: ignore
+    
+            if isinstance(entity, CombatEntity) and isinstance(target, CombatEntity):
+                state_action.entity = entity
+                state_action.destination = target.location
+    
+            return state_action # type: ignore
     
     # def _ev_targetcollision(self) -> Sequence[BaseAction]:
             

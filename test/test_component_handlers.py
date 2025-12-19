@@ -4,14 +4,14 @@ import numpy as np
 
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from core_components.entities.ai import BaseAI, AIStateTableDict, manifest_example
+from core_components.handlers.base import BaseHandler, EntityStateTableDict, manifest_example
 from core_components.entities.library import AICharactor
 from core_components.events.library import AIEvent, EntityEvent
 from state import GameState
 
 def test_component_base_ai_empty_init():
     # Arrange & Act
-    ai = BaseAI(entity=None, state=None, state_table=None)
+    ai = BaseHandler(entity=None, state=None, state_table=None)
 
     # Assert
     try:
@@ -32,11 +32,11 @@ def test_component_base_ai_full_init():
     # Arrange
     mock_entity = AICharactor(symbol='A', color=(255,0,0), name="TestAI")
     mock_state = GameState()  # Assuming GameState can be instantiated like this
-    custom_state_table: AIStateTableDict = {'bits': ('is_alive',),
+    custom_state_table: EntityStateTableDict = {'bits': ('is_alive',),
                                             'vector_tuples': ((0,), (1,)),
                                             'mapping': (None, AIEvent)}
     # Act
-    ai = BaseAI(entity=mock_entity, state=mock_state, state_table=custom_state_table)
+    ai = BaseHandler(entity=mock_entity, state=mock_state, state_table=custom_state_table)
 
     # Assert
     try:    
@@ -60,7 +60,7 @@ def test_component_base_ai_get_state_vector():
     mock_entity.is_spotting = True
     mock_entity.is_targeting = False
 
-    ai = BaseAI(entity=mock_entity)
+    ai = BaseHandler(entity=mock_entity)
 
     # Act
     state_vector = ai.get_state_vector()
@@ -79,7 +79,7 @@ def test_component_base_ai_get_state_vector():
 def test_component_base_ai_get_event_from_state_vector():
     # Arrange
     mock_entity = AICharactor(symbol='A', color=(255,0,0), name="TestAI")
-    ai = BaseAI(entity=mock_entity)
+    ai = BaseHandler(entity=mock_entity)
 
     # Act & Assert
     try:
@@ -105,7 +105,7 @@ def test_component_base_ai_get_event_from_state_vector():
 def test_component_base_ai_set_state_matrix():
     # Arrange
     mock_entity = AICharactor(symbol='A', color=(255,0,0), name="TestAI")
-    ai = BaseAI(entity=mock_entity)
+    ai = BaseHandler(entity=mock_entity)
 
     # Act
     ai._set_state_matrix()
@@ -126,7 +126,7 @@ def test_component_base_ai_create_event():
     mock_entity = AICharactor(symbol='A', color=(255,0,0), name="TestAI")
     mock_target = AICharactor(symbol='T', color=(0,255,0), name="TargetAI")
     mock_state = GameState()
-    ai = BaseAI(entity=mock_entity, state=mock_state)
+    ai = BaseHandler(entity=mock_entity, state=mock_state)
 
     ai_event_type = AIEvent()
     entity_event_type = EntityEvent() 
@@ -158,7 +158,7 @@ def test_component_base_ai_update_state():
     mock_entity.is_targeting = False
     mock_entity.target = mock_entity
 
-    ai = BaseAI(entity=mock_entity)
+    ai = BaseHandler(entity=mock_entity)
     mock_state = GameState()
     ai.state = mock_state
     mock_entity._ai = ai  # type: ignore

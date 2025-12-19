@@ -7,8 +7,9 @@ from typing import List, Optional, Tuple, Type, TYPE_CHECKING
 from core_components.entities.attributes import *
 
 if TYPE_CHECKING:
-    from core_components.entities.ai import BaseAI
+    from core_components.handlers.base import BaseHandler
 
+from core_components.handlers.library import MobHandler
 from core_components.tiles.base import TileCoordinate
 
 
@@ -21,7 +22,7 @@ class BaseEntity:
     symbol: str
     color: Tuple[int, int, int]
     name: str
-    is_spotted: bool = False # Is visible in player's FOV
+    is_spotted: bool = False # Is visible in another entity's FOV
 
     def __init__(   self, 
                  location: TileCoordinate | None = None,
@@ -92,12 +93,19 @@ class TargetingEntity(BaseEntity):
         self.clear_target()
         self.target_color = target.color  # Store original color
         self.target = target
+        self.target.targeter = self
         self.target.color = (255, 0, 0)  # Change color to indicate targeting
-        
+        self.target.is_targeted = True
+        self.is_targeting = True
+
     def clear_target(self) -> None:
         if self.target is not None and hasattr(self, 'target_color'):
             self.target.color = self.target_color  # Restore original color
+            self.target.targeter = None
+            self.target.is_targeted = False
+
         self.target = None
+        self.is_targeting = False
 
 
 class TargetableEntity(BaseEntity):
@@ -189,7 +197,7 @@ class CombatEntity(TargetingEntity):
     
 
 class AIEntity(BaseEntity):
-    _ai: BaseAI | None = None
+    _ai: BaseHandler | None = None
     is_in_missile_range: bool = False
     is_in_melee_range: bool = False
     is_in_spell_range: bool = False
@@ -200,7 +208,7 @@ class AIEntity(BaseEntity):
                     symbol: str=' ', 
                     color: Tuple[int, int, int]=(0,0,0), 
                     name: str="<Unnamed>", 
-                    ai_cls: BaseAI | None = None,
+                    ai_cls: BaseHandler | None = None,
                  ) -> None:
         
         super().__init__(location=location, symbol=symbol, color=color, name=name)
@@ -209,7 +217,7 @@ class AIEntity(BaseEntity):
             self._ai = ai_cls
 
     @property
-    def ai(self) -> BaseAI | None:
+    def ai(self) -> BaseHandler | None:
         return self._ai
     
 
@@ -282,7 +290,7 @@ class AICharactor(Charactor, AIEntity):
                     fov_radius: int = 4,
                     physical: PhysicalStats | None = None,
                     combat: CombatStats | None = None,
-                    ai_cls:BaseAI | None = None,
+                    ai_cls:BaseHandler | None = None,
                     ) -> None:
         
         Charactor.__init__(self, location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat)
@@ -304,7 +312,7 @@ class NonPlayerCharactor(AICharactor):
                 fov_radius: int = 4,
                 physical: PhysicalStats | None = None,
                 combat: CombatStats | None = None,
-                ai_cls: BaseAI | None = None,
+                ai_cls: BaseHandler | None = None,
                 ) -> None:
         
         super().__init__(location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat, ai_cls=ai_cls)
@@ -319,8 +327,8 @@ class MobCharactor(AICharactor):
                 name: str = "<Unnamed>",
                 fov_radius: int = 4,
                 physical: PhysicalStats | None = None,
-                combat: CombatStats | None = None,
-                ai_cls: BaseAI | None = None,
+                combat: CombatStats | None = None
                 ) -> None:
         
-        super().__init__(location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat, ai_cls=ai_cls)
+        super().__init__(location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat)
+        self._ai = MobHandler(self)

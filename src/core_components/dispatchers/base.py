@@ -13,9 +13,9 @@ if TYPE_CHECKING:
     from state import GameState
 
 from core_components.events.library import BaseGameEvent
-from core_components.actions.library import BaseGameAction, NoAction, SystemExitAction
+from core_components.actions.library import BaseGameAction, GeneralAction, NoAction, SystemExitAction
 
-T = TypeVar('T', bound=BaseGameAction)
+T = TypeVar('T', bound=GeneralAction)
 
 class BaseEventDispatcher(Protocol):
     # List of all possible actions that can be dispatched.
@@ -26,7 +26,7 @@ class BaseEventDispatcher(Protocol):
 
     def dispatch(self, 
                  event: BaseGameEvent | tcod.event.Event,
-                 actions: Queue[BaseGameAction],
+                 actions: Queue[GeneralAction],
                  state: GameState) -> bool:
             
         try:
@@ -46,7 +46,7 @@ class BaseEventDispatcher(Protocol):
     @classmethod
     def create_state_action(cls, action: T, state: GameState) -> T:
         
-        """ This method creates a copy of the action and adds the state to it. If the action is not a subclass of BaseGameAction, it will raise an error. 
+        """ This method creates a copy of the action and adds the state to it. If the action is not a subclass of GeneralAction, it will raise an error. 
         Subclasses of BaseEventDispatcher can override this method to add additional state information to the action. """
 
         clone = deepcopy(action)
@@ -61,5 +61,5 @@ class BaseEventDispatcher(Protocol):
 
     def _ev_quit(self, 
                  event: tcod.event.Quit, 
-                 state: GameState) -> List[BaseGameAction]:
+                 state: GameState) -> List[GeneralAction]:
         return [self.create_state_action(self.SYSTEMEXIT, state)]

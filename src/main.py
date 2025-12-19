@@ -6,7 +6,7 @@ import tcod
 from PIL import Image
 import numpy as np
 
-from core_components.events.library import FOVUpdateEvent
+#from core_components.events.library import FOVUpdateEvent
 from engine import Engine
 
 TITLE = "JRL - Jay's Roguelike"
@@ -31,7 +31,6 @@ def main() -> None:
 
     while True:
         # Update Console
-        game.state.events.put(FOVUpdateEvent(""))
     
         game.map.update_state()
 

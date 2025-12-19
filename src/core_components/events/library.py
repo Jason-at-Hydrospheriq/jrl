@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import tcod.event
 
 from core_components.events.base import BaseGameEvent
-from core_components.entities.library import BaseEntity, Charactor, AICharactor
 if TYPE_CHECKING:
     from state import GameState
+    from core_components.entities.library import BaseEntity, Charactor, AICharactor
 
 
 """This module contains all event classes used by the game to respond to various situations. An Input Event is a wrapper to trigger actions from player input events from tcod (keyboard/mouse)."""
@@ -139,6 +139,14 @@ class AttackedAIEvent(AIEvent):
 
 
 class TargetAvailableAIEvent(AIEvent):
+    def __init__(self, entity: AICharactor | None = None, target: Charactor | None = None) -> None:
+        if entity:
+            self.entity = entity
+        if target:
+            self.target = target
+
+
+class OnTargetAIEvent(AIEvent):
     def __init__(self, entity: AICharactor | None = None, target: Charactor | None = None) -> None:
         if entity:
             self.entity = entity

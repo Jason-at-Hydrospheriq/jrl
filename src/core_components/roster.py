@@ -9,9 +9,9 @@ from copy import deepcopy
 
 from core_components.entities.library import *
 from core_components.entities import attributes
-from core_components.maps.base import GraphicTileMap
 from core_components.maps.library import DefaultTileMap
 from core_components.tiles.base import TileTuple
+from core_components.handlers.library import MobHandler
 
 if TYPE_CHECKING:
     from state import GameState
@@ -29,14 +29,12 @@ class Roster:
     ORC = MobCharactor( name="Orc", 
                         symbol=chr(65), 
                         color=(63, 127, 63),
-                        ai_cls=None, 
                         physical=attributes.PhysicalStats(max_hp=10, constitution=12),
                         combat=attributes.CombatStats(defense=0, attack_power=3))
 
     TROLL = MobCharactor(   name="Troll", 
                             symbol=chr(65), 
                             color=(0, 127, 0), 
-                            ai_cls=None,
                             physical=attributes.PhysicalStats(max_hp=16, constitution=12),
                             combat=attributes.CombatStats(defense=1, attack_power=4))
 
