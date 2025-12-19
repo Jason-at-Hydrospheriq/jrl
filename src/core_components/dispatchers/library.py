@@ -2,21 +2,21 @@
 # # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Tuple
-from tcod.map import compute_fov
+import numpy as np
+
 from core_components.dispatchers.base import *
 from core_components.entities.library import BaseEntity, TargetableEntity, MobileEntity, TargetingEntity, CombatEntity
-from core_components.events.library import FOVUpdateEvent, GameStartEvent, GameOverEvent, MeleeAttack, FOVUpdateEvent
+from core_components.events.library import FOVUpdateEvent, GameStartEvent, GameOverEvent, MeleeAttackEvent, FOVUpdateEvent
 from core_components.actions.library import EntityAcquireTargetAction, EntityActionOnDestination, EntityActionOnTarget, EntityCollisionAction, EntityMeleeAction, FOVUpdateAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
 from core_components.tiles.base import TileTuple, TileCoordinate
 
 A = TypeVar('A', EntityActionOnDestination, EntityActionOnTarget)
 
-class EntityDispatcher(BaseEventDispatcher):
+class AIDispatcher(BaseEventDispatcher):
     MOVEMENT_ACTION = EntityMoveAction()
     COLLISION_ACTION = EntityCollisionAction()
-    MELEE_ATTACK = EntityMeleeAction()
     TARGET_ACQUISITION_ACTION = EntityAcquireTargetAction()
+    MELEE_ATTACK = EntityMeleeAction()
 
     @classmethod
     def create_action_on_target(cls, action: A, state: GameState, entity: BaseEntity, target: BaseEntity | TileCoordinate) -> A:
@@ -31,7 +31,45 @@ class EntityDispatcher(BaseEventDispatcher):
             clone.destination = target
         return clone
     
-    def _ev_meleeattack(self,  event: MeleeAttack, state: GameState) -> EntityActionOnTarget:
+    def get_path_to(self, state: GameState, entity: BaseEntity,destination: TileCoordinate) -> List[TileCoordinate]:
+        """Compute and return a path to the target position.
+
+        If there is no valid path then returns an empty list.
+        """
+        game_map = state.map.active
+
+        # Copy the traversable array.
+        cost = np.array(game_map.blocks_movement, dtype=np.int8)
+
+        for location in state.roster.entity_blocked_locations:
+            # Check that an enitiy blocks movement and the cost isn't zero (blocking.)
+            if location and cost[location.x, location.y]:
+                # Add to the cost of a blocked position.
+                # A lower number means more enemies will crowd behind each other in
+                # hallways.  A higher number means enemies will take longer paths in
+                # order to surround the player.
+                cost[location.x, location.y] += 10
+
+        # Create a graph from the cost array and pass that graph to a new pathfinder.
+        graph = tcod.path.SimpleGraph(cost=cost, cardinal=2, diagonal=3)
+        pathfinder = tcod.path.Pathfinder(graph)
+
+        pathfinder.add_root((entity.location.x, entity.location.y))  # Start position.
+
+        # Compute the path to the destination and remove the starting point.
+        path: List[List[int]] = pathfinder.path_to((destination.x, destination.y))[1:].tolist()
+        # Convert from List[List[int]] to List[Tuple[int, int]].
+        return [game_map.grid.get_location(index[0], index[1]) for index in path]
+    
+    def distance_to_target(self, entity: BaseEntity, target: BaseEntity) -> int | None:
+        if target:
+            dx = target.location.x - entity.location.x
+            dy = target.location.y - entity.location.y
+            return max(abs(dx), abs(dy))
+        
+        return None
+
+    def _ev_meleeattack(self,  event: MeleeAttackEvent, state: GameState) -> EntityActionOnTarget:
         entity = event.entity
         target = event.target
 

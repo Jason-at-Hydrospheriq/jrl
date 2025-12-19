@@ -14,7 +14,7 @@ from core_components.events.library import BaseGameEvent
 from core_components.graphics import colors
 from core_components.actions.base import BaseGameAction
 from core_components.dispatchers.base import BaseEventDispatcher
-from core_components.dispatchers.library import SystemDispatcher, InputDispatcher, EntityDispatcher
+from core_components.dispatchers.library import SystemDispatcher, InputDispatcher, AIDispatcher
 from core_components.events.library import *
 from core_components.roster import Roster
 from core_components.atlas import Atlas
@@ -49,7 +49,7 @@ class GameState:
         self.events = Queue()
         self.actions = Queue()
         self.game_over = threading.Event()
-        self.dispatchers = [SystemDispatcher(), InputDispatcher(), EntityDispatcher()]   
+        self.dispatchers = [SystemDispatcher(), InputDispatcher(), AIDispatcher()]   
         self.log = MessageLog()
         
     def dispatch(self) -> None:

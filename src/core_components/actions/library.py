@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from core_components.actions.base import BaseGameAction
 from core_components.entities.library import CombatEntity, MobCharactor, MobileEntity, PlayerCharactor, TargetableEntity, TargetingEntity, MortalEntity
-from core_components.events.library import MeleeAttack
+from core_components.events.library import MeleeAttackEvent
 
 
 class GeneralAction(BaseGameAction):
@@ -114,7 +114,7 @@ class EntityAcquireTargetAction(EntityActionOnTarget):
         if self.entity is not None:
             if isinstance(self.target, TargetableEntity):
                 self.entity.acquire_target(self.target)
-                self.state.log.add(text=f"{self.entity.name} has spotted the {self.target.name}.")
+                self.state.log.add(text=f"{self.entity.name} has engaged the {self.target.name}.")
 
 
 class EntityCollisionAction(EntityActionOnTarget):
@@ -157,10 +157,10 @@ class EntityMeleeAction(EntityActionOnTarget):
 
 
         if self.entity is not None and self.target is not None and isinstance(self.entity, CombatEntity) and isinstance(self.target, CombatEntity):
-            engaged = self.entity.in_combat and self.target.in_combat
+            engaged = self.entity.is_in_combat and self.target.is_in_combat
             if not engaged:
-                 self.entity.in_combat = True
-                 self.target.in_combat = True
+                 self.entity.is_in_combat = True
+                 self.target.is_in_combat = True
 
             if engaged:     
                 attack_power = self.entity.combat.attack_power # type: ignore
@@ -173,12 +173,12 @@ class EntityMeleeAction(EntityActionOnTarget):
                     self.state.log.add(text=f"{self.entity.name} attacks the {self.target.name} for {damage} damage!")
 
                 if isinstance(self.entity, PlayerCharactor) and isinstance(self.target, MobCharactor): # Launch counterattack if target was a mob
-                    counterattack_event = MeleeAttack(entity=self.target, target=self.entity, message=f"{self.target.name} counterattacks {self.entity.name}!")
+                    counterattack_event = MeleeAttackEvent(entity=self.target, target=self.entity, message=f"{self.target.name} counterattacks {self.entity.name}!")
                     self.state.events.put(counterattack_event)
 
                 if self.target.physical.hp <= 0 and isinstance(self.entity, CombatEntity): #type: ignore
                     self.entity.clear_target()
-                    self.entity.in_combat = False
+                    self.entity.is_in_combat = False
                 
                 if self.target.physical.hp <= 0 and isinstance(self.target, MortalEntity): #type: ignore
                     return EntityDeathAction(self.state, self.entity, self.target).perform() # type: ignore

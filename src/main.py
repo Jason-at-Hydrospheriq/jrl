@@ -15,7 +15,7 @@ FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
 
 def main() -> None:
 
-    tileset = tcod.tileset.load_truetype_font("core_components\\graphics\\resources\\Doto_Rounded-SemiBold.ttf", 25, 25)
+    tileset = tcod.tileset.load_truetype_font("core_components\\graphics\\resources\\GoogleSansCode-SemiBold.ttf", 25, 25)
     img = Image.open("core_components\\graphics\\resources\\player\\test-5.png")
     img = img.convert("RGBA")
     tileset.set_tile(64, np.array(img))
