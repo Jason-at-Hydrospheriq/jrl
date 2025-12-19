@@ -28,15 +28,16 @@ def main() -> None:
     
     game.ui.context = tcod.context.new(columns = WIDTH, rows = HEIGHT, tileset=tileset, title="Jay's Roguelike", vsync=True, sdl_window_flags=FLAGS)
     game.state.log.add("Welcome to Jay's Roguelike!")
+    game.ui.render()
 
     while True:
-        # Update Console
-    
+        # Update Internal State
         game.map.update_state()
 
+        # Update Console
         game.ui.render()
 
-        # Update Game State
+        # Update State Inputs
         for game_event in tcod.event.wait():
             if isinstance(game_event, tcod.event.KeyDown):
                 game.state.events.put(game_event)

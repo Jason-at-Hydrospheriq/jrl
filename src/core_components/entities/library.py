@@ -95,7 +95,6 @@ class TargetingEntity(BaseEntity):
         self.target = target
         self.target.color = (255, 0, 0)  # Change color to indicate targeting
 
-
     def clear_target(self) -> None:
         if self.target is not None and hasattr(self, 'target_color'):
             self.target.color = self.target_color  # Restore original color
@@ -159,9 +158,10 @@ class MortalEntity(BaseEntity):
 class CombatEntity(TargetingEntity):
     combat: CombatStats | None
     is_in_combat: bool = False
-    is_target_in_missile_range: bool = False
-    is_target_in_melee_range: bool = False
-    is_target_in_spell_range: bool = False
+
+    melee_range_threshold: int = 1  # Distance threshold for melee range
+    missile_range_threshold: int = 5  # Distance threshold for missile range
+    spell_range_threshold: int = 3  # Distance threshold for spell range
 
     def __init__(   self, 
                     *, 
@@ -175,6 +175,33 @@ class CombatEntity(TargetingEntity):
         super().__init__(location=location, symbol=symbol, color=color, name=name)
         self.combat = combat
 
+    @property
+    def is_target_in_melee_range(self) -> bool:
+        distance = self.distance_to_target()
+        if self.target is None:
+            return False
+        if self.target and distance is not None:
+            return distance <= self.melee_range_threshold
+        return False
+    
+    @property
+    def is_target_in_missile_range(self) -> bool:
+        distance = self.distance_to_target()
+        if self.target is None:
+            return False
+        if self.target and distance is not None:
+            return distance <= self.missile_range_threshold
+        return False
+    
+    @property
+    def is_target_in_spell_range(self) -> bool:
+        distance = self.distance_to_target()
+        if self.target is None:
+            return False
+        if self.target and distance is not None:
+            return distance <= self.spell_range_threshold
+        return False
+    
     def acquire_target(self, target: TargetableEntity) -> None:
         if isinstance(target, CombatEntity):
             combat_status = (self.is_in_combat, target.is_in_combat)
@@ -185,11 +212,17 @@ class CombatEntity(TargetingEntity):
                     self.is_in_combat = False
                 case (False, True): # Entity is not in combat, target is in combat. Entity is surprised.
                     self.is_in_combat = True
-                case (False, False): # Neither are in combat, hostile mobs are ALWAYS in combat.
+                case (False, False): # Neither are in combat
                     pass
-                    
-        self.target = target
+        super().acquire_target(target)
 
+    def distance_to_target(self) -> Optional[int]:
+        if self.target is None:
+            return None
+        dx = self.target.location.x - self.location.x
+        dy = self.target.location.y - self.location.y
+        return max(abs(dx), abs(dy))  # Using Chebyshev distance for grid-based movement
+    
     def attack(self) -> int:
         return self.combat.attack_power - self.target.combat.defense  # type: ignore
     
