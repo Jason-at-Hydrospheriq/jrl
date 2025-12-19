@@ -11,12 +11,11 @@ from state import GameState
 
 def test_component_base_ai_empty_init():
     # Arrange & Act
-    ai = BaseHandler(entity=None, state=None, state_table=None)
+    ai = BaseHandler(entity=None, state_table=None)
 
     # Assert
     try:
         assert not hasattr(ai, 'entity'), "Entity should be None"
-        assert not hasattr(ai, 'state'), "State should be None"
         assert not hasattr(ai, 'state_table'), "State table should be None"
         assert not hasattr(ai, '_state_matrix'), "State matrix should be None"
         assert not hasattr(ai, '_state_mapping'), "State mapping should be None"
@@ -31,17 +30,15 @@ def test_component_base_ai_empty_init():
 def test_component_base_ai_full_init():
     # Arrange
     mock_entity = AICharactor(symbol='A', color=(255,0,0), name="TestAI")
-    mock_state = GameState()  # Assuming GameState can be instantiated like this
     custom_state_table: EntityStateTableDict = {'bits': ('is_alive',),
                                             'vector_tuples': ((0,), (1,)),
                                             'mapping': (None, AIEvent)}
     # Act
-    ai = BaseHandler(entity=mock_entity, state=mock_state, state_table=custom_state_table)
+    ai = BaseHandler(entity=mock_entity, state_table=custom_state_table)
 
     # Assert
     try:    
         assert ai.entity == mock_entity, "Entity should match the mock entity"
-        assert ai.state == mock_state, "State should match the mock state"
         assert ai.state_table == custom_state_table, "State table should match the custom state table"
         assert isinstance(ai._state_matrix, np.ndarray), "State matrix should be a numpy ndarray"
         assert isinstance(ai._state_mapping, np.ndarray), "State mapping should be a numpy ndarray"
@@ -126,14 +123,14 @@ def test_component_base_ai_create_event():
     mock_entity = AICharactor(symbol='A', color=(255,0,0), name="TestAI")
     mock_target = AICharactor(symbol='T', color=(0,255,0), name="TargetAI")
     mock_state = GameState()
-    ai = BaseHandler(entity=mock_entity, state=mock_state)
+    ai = BaseHandler(entity=mock_entity)
 
-    ai_event_type = AIEvent()
-    entity_event_type = EntityEvent() 
+    ai_event_template = AIEvent()
+    entity_event_template = EntityEvent() 
     
     # Act
-    created_ai_event = ai.create_event(ai_event_type, target=mock_target, state=mock_state) #type: ignore
-    created_entity_event = ai.create_event(entity_event_type, target=mock_target, state=mock_state) #type: ignore
+    created_ai_event = ai.create_event(ai_event_template, target=mock_target, state=mock_state) #type: ignore
+    created_entity_event = ai.create_event(entity_event_template, target=mock_target, state=mock_state) #type: ignore
 
     # Assert
     try:
@@ -160,11 +157,10 @@ def test_component_base_ai_update_state():
 
     ai = BaseHandler(entity=mock_entity)
     mock_state = GameState()
-    ai.state = mock_state
     mock_entity._ai = ai  # type: ignore
 
     # Act
-    ai.update_state()
+    ai.update_state(state=mock_state)
     
     # Assert
     try:

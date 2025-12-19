@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
+import numpy as np
 
 if TYPE_CHECKING:
     from core_components.entities.library import MobCharactor
@@ -57,7 +58,18 @@ class MobHandler(BaseHandler):
         self._set_state_mapping()
 
 
+    def get_state_vector(self) -> np.ndarray:
+        state_vector = [0, 0, 0, 0, 0]  # Default state vector  
 
+        try:
+            for idx, bit in enumerate(self.state_table['bits']):
+                state_name = str(bit)
+                state_value = getattr(self.entity, state_name, 0)
+                state_vector[idx] = int(state_value)
+            return np.array(state_vector)
+    
+        except Exception as e:     
+            raise e
 
 
 

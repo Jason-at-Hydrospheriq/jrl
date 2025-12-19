@@ -51,7 +51,7 @@ class BaseHandler:
             self._set_state_mapping()
 
     def get_state_vector(self) -> np.ndarray:
-        state_vector = [0, 0, 0, 0, 0]  # Default state vector  
+        state_vector = [0, 0, 0, 0]  # Default state vector  
 
         try:
             for idx, bit in enumerate(self.state_table['bits']):
@@ -125,3 +125,5 @@ class BaseHandler:
                 event = self.create_event(event_type, target=state.roster.player, state=state) # type: ignore
             if event is not None: # type: ignore
                 state.events.put(event) # type: ignore
+        if event is not None:
+            state.events.put(event)
