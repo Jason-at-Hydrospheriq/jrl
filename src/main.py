@@ -5,7 +5,7 @@ from __future__ import annotations
 import tcod
 from PIL import Image
 import numpy as np
-
+import os
 
 from engine import Engine
 
@@ -15,18 +15,18 @@ FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
 
 def main() -> None:
 
-    tileset = tcod.tileset.load_truetype_font("core_components\\ui\\graphics\\resources\\GoogleSansCode-SemiBold.ttf", 25, 25)
-    img = Image.open("core_components\\ui\\graphics\\resources\\player\\test-5.png")
+    tileset = tcod.tileset.load_truetype_font(os.path.join("core_components", "ui", "graphics", "resources", "GoogleSansCode-SemiBold.ttf"), 25, 25)
+    img = Image.open(os.path.join("core_components", "ui", "graphics", "resources", "player", "test-5.png"))
     img = img.convert("RGBA")
     tileset.set_tile(64, np.array(img))
-    img = Image.open("core_components\\ui\\graphics\\resources\\mob\\test-3.png")
+    img = Image.open(os.path.join("core_components", "ui", "graphics", "resources", "mob", "test-3.png"))
     img = img.convert("RGBA")
     tileset.set_tile(65, np.array(img))
 
     game = Engine()    
     game.start()
     
-    game.ui.context = tcod.context.new(columns = WIDTH, rows = HEIGHT, tileset=tileset, title="Jay's Roguelike", vsync=True, sdl_window_flags=FLAGS)
+    game.ui.context = tcod.context.new(columns = WIDTH, rows = HEIGHT, tileset=tileset, title=TITLE, vsync=True, sdl_window_flags=FLAGS)
     game.state.log.add("Welcome to Jay's Roguelike!")
     game.ui.render()
 
