@@ -6,7 +6,7 @@ import tcod
 from PIL import Image
 import numpy as np
 
-#from core_components.events.library import FOVUpdateEvent
+
 from engine import Engine
 
 TITLE = "JRL - Jay's Roguelike"
@@ -15,11 +15,11 @@ FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
 
 def main() -> None:
 
-    tileset = tcod.tileset.load_truetype_font("core_components\\graphics\\resources\\GoogleSansCode-SemiBold.ttf", 25, 25)
-    img = Image.open("core_components\\graphics\\resources\\player\\test-5.png")
+    tileset = tcod.tileset.load_truetype_font("core_components\\ui\\graphics\\resources\\GoogleSansCode-SemiBold.ttf", 25, 25)
+    img = Image.open("core_components\\ui\\graphics\\resources\\player\\test-5.png")
     img = img.convert("RGBA")
     tileset.set_tile(64, np.array(img))
-    img = Image.open("core_components\\graphics\\resources\\mob\\test-3.png")
+    img = Image.open("core_components\\ui\\graphics\\resources\\mob\\test-3.png")
     img = img.convert("RGBA")
     tileset.set_tile(65, np.array(img))
 

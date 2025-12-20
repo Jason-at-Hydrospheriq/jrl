@@ -2,14 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from copy import deepcopy
 from typing import Any, Protocol, Set, Dict, TypedDict, TYPE_CHECKING
 from tcod.context import Context
 from tcod.console import Console
-import numpy as np
 
-from core_components.tiles.base import TileTuple
-from core_components.maps.library import DEFAULT_MANIFEST
+from core_components.maps.tilemaps import DEFAULT_MANIFEST
 
 if TYPE_CHECKING:
     from state import GameState
@@ -18,8 +15,8 @@ class UIManifestDict(TypedDict):
     widgets: Dict[str, Dict[str, Any]]
 
 
-class BaseUI(Protocol):
-    __slots__ = ("context", "widgets", "state", "console", "context_width", "window_height")
+class BaseUI:
+    __slots__ = ("context", "widgets", "state", "console", "context_width", "context_height", "console_width", "console_height")
 
     context: Context
     console: Console

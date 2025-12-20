@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 from copy import deepcopy
-import queue
 from typing import List, Protocol, TYPE_CHECKING, TypeVar
 from queue import Queue
 import tcod
@@ -12,10 +11,10 @@ import tcod.event
 if TYPE_CHECKING:
     from state import GameState
 
-from core_components.events.library import BaseGameEvent
-from core_components.actions.library import BaseGameAction, GeneralAction, NoAction, SystemExitAction
+from core_components.ai.events import BaseGameEvent
+from core_components.ai.actions import EngineBaseAction, NoAction, SystemExitAction
 
-T = TypeVar('T', bound=GeneralAction)
+T = TypeVar('T', bound=EngineBaseAction)
 
 class BaseEventDispatcher(Protocol):
     # List of all possible actions that can be dispatched.
@@ -26,7 +25,7 @@ class BaseEventDispatcher(Protocol):
 
     def dispatch(self, 
                  event: BaseGameEvent | tcod.event.Event,
-                 actions: Queue[GeneralAction],
+                 actions: Queue[EngineBaseAction],
                  state: GameState) -> bool:
             
         try:
@@ -61,5 +60,5 @@ class BaseEventDispatcher(Protocol):
 
     def _ev_quit(self, 
                  event: tcod.event.Quit, 
-                 state: GameState) -> List[GeneralAction]:
+                 state: GameState) -> List[EngineBaseAction]:
         return [self.create_state_action(self.SYSTEMEXIT, state)]

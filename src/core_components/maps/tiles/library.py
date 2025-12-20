@@ -7,7 +7,7 @@ from warnings import warn
 from typing import Tuple
 import numpy as np
 
-from core_components.tiles.base import BaseTileGrid, TileCoordinate, TileArea, TileTuple
+from core_components.maps.tiles.base import BaseTileGrid, TileCoordinate, TileArea, TileTuple
 
 DEFAULT_GRID_SIZE = TileTuple( ([10], [10]) )
 DEFAULT_CENTER_LOCATION = TileTuple( ([5], [5]) )

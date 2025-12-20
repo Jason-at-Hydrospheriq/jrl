@@ -4,12 +4,12 @@
 from __future__ import annotations
 from copy import deepcopy
 import numpy as np
-from typing import Generator, Tuple
+from typing import Generator
 import random
 
-from core_components.tiles.library import *
-from core_components.generators.base import BaseMapGenerator
-from core_components.maps.library import GraphicTileMap, DefaultTileMap, DEFAULT_MANIFEST
+from core_components.maps.tiles import *
+from core_components.maps.generators.base import BaseMapGenerator
+from core_components.maps.tilemaps import DefaultTileMap
 
 RECTANGULAR_ROOM_TEMPLATE = RectangularRoom()
 CIRCULAR_ROOM_TEMPLATE = CircularRoom()

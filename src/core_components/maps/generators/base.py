@@ -9,10 +9,9 @@ from copy import deepcopy
 import numpy as np
 
 # Defined as a global constant for graphic dtype
-from core_components.tiles.base import TileCoordinate, TileTuple
-from core_components.maps.base import GraphicTileMap
-from core_components.maps.library import DefaultTileMap
-from core_components.tiles.library import GenericMapArea
+from core_components.maps.tiles.base import TileCoordinate, TileTuple
+from core_components.maps.tilemaps import DefaultTileMap
+from core_components.maps.tiles import GenericMapArea
 
 class BaseMapGenerator(Protocol):
     map_template: DefaultTileMap

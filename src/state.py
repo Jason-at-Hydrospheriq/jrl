@@ -10,15 +10,14 @@ import tcod
 import threading
 
 # from core_components import roster, atlas, ui
-from core_components.actions.library import GeneralAction
-from core_components.events.library import BaseGameEvent
-from core_components.graphics import colors
-from core_components.dispatchers.base import BaseEventDispatcher
-from core_components.dispatchers.library import SystemDispatcher, InputDispatcher, AIDispatcher
-from core_components.events.library import *
-from core_components.roster import Roster
-from core_components.atlas import Atlas
-from core_components.ui import UIDisplay
+from core_components.ai.actions import GeneralAction
+from core_components.ai.dispatchers import BaseEventDispatcher
+from core_components.ai.dispatchers import SystemDispatcher, InputDispatcher, AIDispatcher
+from core_components.ai.events import *
+from core_components.ui.graphics import colors
+from core_components import Roster
+from core_components import Atlas
+from core_components import UIDisplay
 
 class GameState:
     """

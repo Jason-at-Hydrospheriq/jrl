@@ -9,9 +9,8 @@ from copy import deepcopy
 
 from core_components.entities.library import *
 from core_components.entities import attributes
-from core_components.maps.library import DEFAULT_MANIFEST, DefaultTileMap
-from core_components.tiles.base import TileTuple
-from core_components.handlers.library import MobHandler
+from core_components.maps.tilemaps import DEFAULT_MANIFEST, DefaultTileMap
+from core_components.maps.tiles import TileTuple
 
 if TYPE_CHECKING:
     from state import GameState

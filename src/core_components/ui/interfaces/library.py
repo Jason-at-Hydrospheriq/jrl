@@ -2,17 +2,18 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 from tcod.console import Console
 from tcod.context import Context
 import numpy as np
-from core_components.interfaces.base import BaseUI, BaseUIWidget
-from core_components.graphics import colors
+
+from core_components.ui.interfaces import BaseUIWidget
+from core_components.ui.graphics import colors
 
 if TYPE_CHECKING:
     from state import GameState
 
-from core_components.graphics.tile_types import SHROUD
+from core_components.ui.graphics.tile_types import SHROUD
 
 
 class HealthBarWidget(BaseUIWidget):

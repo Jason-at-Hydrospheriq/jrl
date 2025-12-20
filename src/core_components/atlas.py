@@ -6,10 +6,8 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING
 
 
-from core_components.generators.library import DungeonGenerator
-from core_components.maps.base import GraphicTileMap, TileCoordinate
-from core_components.maps.library import DefaultTileMap
-from core_components.generators.base import BaseMapGenerator
+from core_components.maps.generators import BaseMapGenerator, DungeonGenerator
+from core_components.maps.tilemaps import DefaultTileMap
 
 if TYPE_CHECKING:
     from state import GameState        

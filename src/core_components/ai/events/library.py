@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import tcod.event
 
-from core_components.events.base import BaseGameEvent
+from core_components.ai.events import BaseGameEvent
+
 if TYPE_CHECKING:
     from state import GameState
     from core_components.entities.library import BaseEntity, Charactor, AICharactor

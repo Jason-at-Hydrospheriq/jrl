@@ -4,11 +4,11 @@
 from __future__ import annotations
 import numpy as np
 
-from core_components.dispatchers.base import *
+from core_components.ai.dispatchers.base import *
 from core_components.entities.library import BaseEntity, TargetableEntity, MobileEntity, TargetingEntity, CombatEntity, Charactor
-from core_components.events.library import FOVUpdateEvent, GameStartEvent, GameOverEvent, MeleeAttackEvent, FOVUpdateEvent, TargetAvailableAIEvent, OnTargetAIEvent, TargetOutOfRangeAIEvent
-from core_components.actions.library import EntityAcquireTargetAction, EntityActionOnDestination, EntityActionOnTarget, EntityCollisionAction, EntityMeleeAction, FOVUpdateAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
-from core_components.tiles.base import TileTuple, TileCoordinate
+from core_components.ai.events.library import FOVUpdateEvent, GameStartEvent, GameOverEvent, MeleeAttackEvent, FOVUpdateEvent, TargetAvailableAIEvent, OnTargetAIEvent, TargetOutOfRangeAIEvent
+from core_components.ai.actions.library import EntityAcquireTargetAction, EntityActionOnDestination, EntityActionOnTarget, EntityCollisionAction, EntityMeleeAction, FOVUpdateAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
+from core_components.maps.tiles.base import TileTuple, TileCoordinate
 
 A = TypeVar('A', EntityActionOnDestination, EntityActionOnTarget)
 

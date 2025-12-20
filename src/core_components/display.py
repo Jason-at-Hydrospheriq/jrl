@@ -1,12 +1,14 @@
-from typing import Dict, Set, TYPE_CHECKING
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from tcod.context import Context
 import numpy as np
 
-from core_components.interfaces.base import BaseUI, BaseUIWidget, UIManifestDict
-from core_components.interfaces.library import HealthBarWidget, MainMapDisplay, MessageLogWidget
-from copy import deepcopy
-from core_components.tiles.base import TileTuple
-from core_components.maps.library import DEFAULT_MANIFEST
+from core_components.ui.interfaces import *
+from core_components.ui.interfaces import HealthBarWidget, MainMapDisplay, MessageLogWidget
+from core_components.maps.tilemaps import DEFAULT_MANIFEST
 
 if TYPE_CHECKING:
     from state import GameState

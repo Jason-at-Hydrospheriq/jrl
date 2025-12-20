@@ -7,14 +7,13 @@ from tcod.map import compute_fov
 from tcod import libtcodpy
 import numpy as np
 
-from core_components.tiles.base import TileCoordinate
+from core_components.maps.tiles import TileCoordinate
 
 if TYPE_CHECKING:
     from state import GameState
 
-from core_components.actions.base import BaseGameAction
 from core_components.entities.library import Charactor, CombatEntity, MobCharactor, MobileEntity, PlayerCharactor, TargetableEntity, TargetingEntity, MortalEntity
-from core_components.events.library import FOVUpdateEvent, MeleeAttackEvent, TargetAvailableAIEvent
+from core_components.ai.events import FOVUpdateEvent, MeleeAttackEvent, TargetAvailableAIEvent
 
 
 class GeneralAction:
