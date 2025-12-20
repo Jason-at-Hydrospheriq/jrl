@@ -69,7 +69,7 @@ class BaseHandler:
             if index and index.size > 0:
                 event = self._state_mapping[index[0]][0]
                 return event
-            return np.nan
+            return np.nan # shold be zero
             
         except Exception as e:     
             raise e

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from state import GameState
 
 from core_components.actions.base import BaseGameAction
-from core_components.entities.library import CombatEntity, MobCharactor, MobileEntity, PlayerCharactor, TargetableEntity, TargetingEntity, MortalEntity
+from core_components.entities.library import Charactor, CombatEntity, MobCharactor, MobileEntity, PlayerCharactor, TargetableEntity, TargetingEntity, MortalEntity
 from core_components.events.library import FOVUpdateEvent, MeleeAttackEvent, TargetAvailableAIEvent
 
 
@@ -108,9 +108,13 @@ class FOVUpdateAction(EngineBaseAction):
 
 
 class EntityActionOnTarget(EngineBaseAction):
+    entity: Charactor | None = None
+    target: Charactor | None = None
+
     def __init__(self, state: GameState | None = None, 
-                 entity: TargetingEntity | CombatEntity | None = None, 
-                 target: TargetableEntity | CombatEntity | None = None) -> None:
+                 entity: Charactor | None = None, 
+                 target: Charactor | None = None) -> None:
+        
         if state:
             super().__init__(state)
         self.entity = entity
@@ -118,6 +122,9 @@ class EntityActionOnTarget(EngineBaseAction):
 
 
 class EntityActionOnDestination(EngineBaseAction):
+    entity: MobileEntity | None = None
+    destination: TileCoordinate | None = None
+
     def __init__(self, *,
                  state: GameState | None = None,  
                  entity: MobileEntity | None = None, 
@@ -129,21 +136,20 @@ class EntityActionOnDestination(EngineBaseAction):
             self.entity = entity
         if destination:
             self.destination = destination
-            
-        if hasattr(entity, 'destination'): 
-            self.entity.destination = destination #type: ignore
 
 
 class EntityAcquireTargetAction(EntityActionOnTarget):
+
     def __init__(self, state: GameState | None = None, 
-                 entity: TargetingEntity | CombatEntity | None = None, 
-                 target: TargetableEntity | CombatEntity | None = None) -> None:
+                 entity: Charactor | None = None, 
+                 target: Charactor | None = None) -> None:
+        
         if state and entity and target is not None:
             super().__init__(state=state, entity=entity, target=target)
 
     def perform(self) -> None:
         if self.entity is not None:
-            if isinstance(self.target, TargetableEntity):
+            if isinstance(self.target, Charactor):
                 self.entity.acquire_target(self.target)
                 self.entity.is_targeting = True
                 self.target.is_targeted = True
@@ -173,10 +179,13 @@ class EntityCollisionAction(EntityActionOnTarget):
 
 
 class EntityMoveAction(EntityActionOnDestination):
+    entity: MobileEntity | None = None
+    destination: TileCoordinate | None = None
 
     def perform(self) -> None:
 
-        if self.entity and self.entity.destination:
+        if self.entity and self.destination:
+            self.entity.destination = self.destination
             self.entity.move()
 
             self.state.events.put(FOVUpdateEvent(""))
@@ -188,8 +197,8 @@ class EntityMoveAction(EntityActionOnDestination):
 
 class EntityMeleeAction(EntityActionOnTarget):
     def __init__(self, state: GameState | None = None, 
-                 entity: TargetingEntity | CombatEntity | None = None, 
-                 target: TargetableEntity | CombatEntity | None = None) -> None:
+                 entity: Charactor | None = None, 
+                 target: Charactor | None = None) -> None:
         if state and entity and target is not None:
             super().__init__(state=state, entity=entity, target=target)
 
@@ -197,8 +206,7 @@ class EntityMeleeAction(EntityActionOnTarget):
         damage = 0
         defense = 0
         attack_power = 0
-
-
+    
         if self.entity is not None and self.target is not None and isinstance(self.entity, CombatEntity) and isinstance(self.target, CombatEntity):
             engaged = self.entity.is_in_combat and self.target.is_in_combat
             if not engaged:
@@ -209,7 +217,7 @@ class EntityMeleeAction(EntityActionOnTarget):
                 attack_power = self.entity.combat.attack_power # type: ignore
                 defense = self.target.combat.defense # type: ignore
                 
-                if isinstance(self.target, MortalEntity): # Attack only mortal entities
+                if isinstance(self.target, Charactor): # Attack only mortal entities
                     defense = 1  # Basic defense for non-combat entities
                     damage = max(0, attack_power - defense)
                     self.target.take_damage(damage)
@@ -219,7 +227,7 @@ class EntityMeleeAction(EntityActionOnTarget):
                     counterattack_event = MeleeAttackEvent(entity=self.target, target=self.entity)
                     self.state.events.put(counterattack_event)
 
-                if self.target.physical.hp <= 0 and isinstance(self.entity, CombatEntity): #type: ignore
+                if self.target.physical.hp <= 0 and isinstance(self.entity, Charactor): #type: ignore
                     self.entity.clear_target()
                     self.entity.is_in_combat = False
                 
@@ -228,26 +236,27 @@ class EntityMeleeAction(EntityActionOnTarget):
 
 
 class EntityDeathAction(EntityActionOnTarget):
-
-    def __init__(self, state: GameState, entity: CombatEntity, target: MortalEntity) -> None:
+        
+    def __init__(self, state: GameState, entity: Charactor, target: Charactor) -> None:
         self.state = state
         self.entity = entity
         self.target = target
 
     def perform(self) -> None:
         
-        if self.target == self.state.roster.player:
-            death_message = f"You have been slain by the {self.entity.name}! Game Over."
-            self.state.log.add(text=death_message)
-            self.target.clear_target() # type: ignore
-            self.target.die()
+        if self.entity and self.target is not None:
+            if self.target == self.state.roster.player:
+                death_message = f"You have been slain by the {self.entity.name}! Game Over."
+                self.state.log.add(text=death_message)
+                self.target.clear_target()
+                self.target.die()
 
-            return GameOverAction(self.state).perform()
+                return GameOverAction(self.state).perform()
 
-        else:
-            death_message = f"You have slain the {self.target.name}!"
-            self.state.log.add(text=death_message)
-            self.target.clear_target() # type: ignore
-            self.target.die()
+            else:
+                death_message = f"You have slain the {self.target.name}!"
+                self.state.log.add(text=death_message)
+                self.target.clear_target()
+                self.target.die()
 
             

@@ -177,17 +177,10 @@ class OnTargetAIEvent(AIEvent):
             self.target = target
 
 
-class TargetInMeleeRangeAIEvent(AIEvent):
+class TargetOutOfRangeAIEvent(AIEvent):
+    entity: AICharactor | None
+    target: Charactor | None
+    
     def __init__(self, entity: AICharactor | None = None, target: Charactor | None = None) -> None:
-        if entity:
             self.entity = entity
-        if target:
-            self.target = target
-
-
-class TargetInMissileRangeAIEvent(AIEvent):
-    def __init__(self, entity: AICharactor | None = None, target: Charactor | None = None) -> None:
-        if entity:
-            self.entity = entity
-        if target:
             self.target = target

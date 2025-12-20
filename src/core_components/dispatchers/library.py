@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 
 from core_components.dispatchers.base import *
-from core_components.entities.library import BaseEntity, TargetableEntity, MobileEntity, TargetingEntity, CombatEntity
-from core_components.events.library import FOVUpdateEvent, GameStartEvent, GameOverEvent, MeleeAttackEvent, FOVUpdateEvent, TargetAvailableAIEvent, OnTargetAIEvent
+from core_components.entities.library import BaseEntity, TargetableEntity, MobileEntity, TargetingEntity, CombatEntity, Charactor
+from core_components.events.library import FOVUpdateEvent, GameStartEvent, GameOverEvent, MeleeAttackEvent, FOVUpdateEvent, TargetAvailableAIEvent, OnTargetAIEvent, TargetOutOfRangeAIEvent
 from core_components.actions.library import EntityAcquireTargetAction, EntityActionOnDestination, EntityActionOnTarget, EntityCollisionAction, EntityMeleeAction, FOVUpdateAction, GameStartAction, GameOverAction, EntityMoveAction, GeneralAction
 from core_components.tiles.base import TileTuple, TileCoordinate
 
@@ -23,9 +23,9 @@ class AIDispatcher(BaseEventDispatcher):
         clone = super().create_state_action(action, state)
         if isinstance(entity, MobileEntity) and isinstance(clone, EntityActionOnDestination):
             clone.entity = entity
-        elif isinstance(entity, (TargetingEntity, CombatEntity)) and isinstance(clone, EntityActionOnTarget):
+        elif isinstance(entity, (Charactor)) and isinstance(clone, EntityActionOnTarget):
             clone.entity = entity
-        if isinstance(clone, EntityActionOnTarget) and isinstance(target, (TargetableEntity, CombatEntity)):
+        if isinstance(clone, EntityActionOnTarget) and isinstance(target, (Charactor)):
             clone.target = target
         elif isinstance(target, TileCoordinate) and isinstance(clone, EntityActionOnDestination):
             clone.destination = target
@@ -39,26 +39,18 @@ class AIDispatcher(BaseEventDispatcher):
         game_map = state.map.active
 
         # Copy the traversable array.
-        cost = np.array(game_map.blocks_movement, dtype=np.int8)
+        cost = np.array(game_map.blocks_movement, dtype=np.int8) + 1
 
         for location in state.roster.entity_blocked_locations:
-            # Check that an enitiy blocks movement and the cost isn't zero (blocking.)
             if location and cost[location.x, location.y]:
-                # Add to the cost of a blocked position.
-                # A lower number means more enemies will crowd behind each other in
-                # hallways.  A higher number means enemies will take longer paths in
-                # order to surround the player.
                 cost[location.x, location.y] += 10
 
-        # Create a graph from the cost array and pass that graph to a new pathfinder.
-        graph = tcod.path.SimpleGraph(cost=cost, cardinal=2, diagonal=3)
+        graph = tcod.path.SimpleGraph(cost=cost, cardinal=2, diagonal=0)
         pathfinder = tcod.path.Pathfinder(graph)
-
-        pathfinder.add_root((entity.location.x, entity.location.y))  # Start position.
-
-        # Compute the path to the destination and remove the starting point.
-        path: List[List[int]] = pathfinder.path_to((destination.x, destination.y))[1:].tolist()
-        # Convert from List[List[int]] to List[Tuple[int, int]].
+        start = entity.location.to_tuple
+        end = destination.to_tuple
+        pathfinder.add_root(start)  
+        path = pathfinder.path_to(end)[1:]
         return [game_map.grid.get_location(index[0], index[1]) for index in path]
     
     def distance_to_target(self, entity: BaseEntity, target: BaseEntity) -> int | None:
@@ -95,19 +87,19 @@ class AIDispatcher(BaseEventDispatcher):
 
         return state_action # type: ignore
     
-    def _ev_ontargetaievent(self,
-                        event: OnTargetAIEvent,
-                        state: GameState) -> EntityMeleeAction:
-            entity = event.entity
-            target = event.target
+    # def _ev_ontargetaievent(self,
+    #                     event: OnTargetAIEvent,
+    #                     state: GameState) -> EntityMeleeAction:
+    #         entity = event.entity
+    #         target = event.target
     
-            state_action = self.create_action_on_target(self.MOVEMENT_ACTION, state, entity, target) # type: ignore
+    #         state_action = self.create_action_on_target(self.MOVEMENT_ACTION, state, entity, target) # type: ignore
     
-            if isinstance(entity, CombatEntity) and isinstance(target, CombatEntity):
-                state_action.entity = entity
-                state_action.destination = target.location
+    #         if isinstance(entity, CombatEntity) and isinstance(target, CombatEntity):
+    #             state_action.entity = entity
+    #             state_action.destination = target.location
     
-            return state_action # type: ignore
+    #         return state_action # type: ignore
     
     def _ev_meleeattackevent(self,
                          event: MeleeAttackEvent,
@@ -123,6 +115,23 @@ class AIDispatcher(BaseEventDispatcher):
     
             return state_action # type: ignore
     
+    def _ev_targetoutofrangeaievent(self,
+                            event: TargetOutOfRangeAIEvent,
+                            state: GameState) -> EntityMoveAction:
+            entity = event.entity
+            target = event.target
+            state_action: EntityMoveAction
+            path = []
+            state_action = self.create_action_on_target(self.MOVEMENT_ACTION, state, entity, target) # type: ignore
+    
+            if entity and target:
+                path = self.get_path_to(state, entity, target.location)
+            if path:
+                state_action.destination = path[0]  # Move to the next step in the path.
+
+            return state_action 
+    
+    # type: ignore
     # def _ev_targetcollision(self) -> Sequence[BaseAction]:
             
     #         if isinstance(obstacle, TargetableEntity):
@@ -162,9 +171,9 @@ class InputDispatcher(BaseEventDispatcher):
         clone = super().create_state_action(action, state)
         if isinstance(entity, MobileEntity) and isinstance(clone, EntityActionOnDestination):
             clone.entity = entity
-        elif isinstance(entity, (TargetingEntity, CombatEntity)) and isinstance(clone, EntityActionOnTarget):
+        elif isinstance(entity, (Charactor)) and isinstance(clone, EntityActionOnTarget):
             clone.entity = entity
-        if isinstance(clone, EntityActionOnTarget) and isinstance(target, (TargetableEntity, CombatEntity)):
+        if isinstance(clone, EntityActionOnTarget) and isinstance(target, (Charactor)):
             clone.target = target
         elif isinstance(target, TileCoordinate) and isinstance(clone, EntityActionOnDestination):
             clone.destination = target

@@ -67,7 +67,9 @@ class MobileEntity(BaseEntity):
         super().__init__(location=location, symbol=symbol, color=color, name=name)
         if destination:
             self.destination = destination
-    
+        elif location:
+            self.destination = self.location
+
     def move(self) -> None:
         if self.destination is not None:
             self.location = self.destination

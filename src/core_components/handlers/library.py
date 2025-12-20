@@ -8,7 +8,7 @@ import numpy as np
 if TYPE_CHECKING:
     from core_components.entities.library import MobCharactor
 
-from core_components.events.library import MeleeAttackEvent, TargetAvailableAIEvent, OnTargetAIEvent
+from core_components.events.library import MeleeAttackEvent, TargetAvailableAIEvent, OnTargetAIEvent, TargetOutOfRangeAIEvent
 from core_components.handlers.base import BaseHandler, EntityStateTableDict
 
 
@@ -46,7 +46,7 @@ MOB_STATES = EntityStateTableDict({   'bits': ('is_alive', 'is_spotted', 'is_spo
  (1, 1, 1, 0, 1),
  (1, 1, 1, 1, 0),
  (1, 1, 1, 1, 1)),
-                                        'mapping': tuple([0]*20 + [TargetAvailableAIEvent] + [0] * 2 + [MeleeAttackEvent] + [0]*4 + [TargetAvailableAIEvent] + [0]*2 + [MeleeAttackEvent]),
+                                        'mapping': tuple([0]*20 + [TargetAvailableAIEvent] + [0] + [TargetOutOfRangeAIEvent] + [MeleeAttackEvent] + [0]*4 + [TargetAvailableAIEvent] + [0] + [TargetOutOfRangeAIEvent] + [MeleeAttackEvent]),
                     })
 
 
