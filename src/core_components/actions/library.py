@@ -17,12 +17,10 @@ from core_components.entities.library import Charactor, CombatEntity, MobCharact
 from core_components.events.library import FOVUpdateEvent, MeleeAttackEvent, TargetAvailableAIEvent
 
 
-class GeneralAction(BaseGameAction):
+class GeneralAction:
 
-    def __init__(self, state: GameState | None = None) -> None:
-        
-        if state:
-            self.state = state
+    def __init__(self) -> None:
+        pass
 
     def perform(self) -> None:
         raise NotImplementedError()
@@ -33,30 +31,30 @@ class NoAction(GeneralAction):
     def perform(self) -> None:
         pass
 
-        
-class SystemExitAction(GeneralAction):
-
-    def perform(self) -> None:
-        self.state.game_over.set()
-
 
 class EngineBaseAction(GeneralAction):
     state: GameState
     
     def __init__(self, state: GameState | None = None) -> None:
         if state:
-            super().__init__(state)
+            self.state = state
             self.roster = state.roster
-    
 
-class GameStartAction(GeneralAction):
+
+class SystemExitAction(EngineBaseAction):
+
+    def perform(self) -> None:
+        self.state.game_over.set()
+
+    
+class GameStartAction(EngineBaseAction):
 
     def perform(self) -> None:
         print("Game On")
         self.state.game_over.clear()
 
 
-class GameOverAction(GeneralAction):
+class GameOverAction(EngineBaseAction):
 
     def perform(self) -> None:
         print("Game Over")

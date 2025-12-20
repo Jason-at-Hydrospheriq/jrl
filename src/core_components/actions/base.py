@@ -2,14 +2,11 @@
 # # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Protocol, TYPE_CHECKING
+from typing import Protocol, runtime_checkable
 
-if TYPE_CHECKING:
-    from state import GameState
-
-class BaseGameAction:
+@runtime_checkable
+class BaseGameAction(Protocol):
     """ A generic action that is dispatched by the AI to an action queue. Actions have a perform method that updates the game state when called."""
-    state: GameState
     
     def perform(self) -> None:
         ...
