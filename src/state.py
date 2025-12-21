@@ -10,9 +10,8 @@ import tcod
 import threading
 
 # from core_components import roster, atlas, ui
-from core_components.ai.actions import GeneralAction
-from core_components.ai.dispatchers import BaseEventDispatcher
-from core_components.ai.dispatchers import SystemDispatcher, InputDispatcher, AIDispatcher
+from core_components.ai import GameAction, GameEvent, StateTransitionObject
+from core_components.ai.handlers import Handler
 from core_components.ai.events import *
 from core_components.ui.graphics import colors
 from core_components import Roster
@@ -24,15 +23,15 @@ class GameState:
     The States class has a roster of entities, the game map, and the UI states. It is used by the Engine to pass the state of the entities, game map, and UI 
     to the GameAI. The GameAI returns a sequence of actions that the Engine then performs to update the state.  
     """
-    GAMESTART = GameStartEvent(message="Game has started!")
-    GAMEOVER = GameOverEvent(message="Game Over!")
+    # GAMESTART = GameStartEvent(message="Game has started!")
+    # GAMEOVER = GameOverEvent(message="Game Over!")
 
-    __slots__ = ("roster", "map","ui", "events", "actions", "dispatchers", "game_over", "log")
+    __slots__ = ("roster", "map","ui", "events", "actions", "handler", "game_over", "log")
     
     ui: UIDisplay
-    events: Queue[BaseGameEvent | tcod.event.Event]
-    actions: Queue[GeneralAction]
-    dispatchers: List[BaseEventDispatcher]
+    events: Queue[StateTransitionObject]
+    actions: Queue[StateTransitionObject]
+    handler: Handler
     game_over: threading.Event
     roster: Roster
     map: Atlas  
@@ -44,21 +43,20 @@ class GameState:
         self.map = Atlas(state=self)
         self.ui = UIDisplay()
         self.ui.state = self
-        
+        self.handler = Handler()
         self.events = Queue()
         self.actions = Queue()
         self.game_over = threading.Event()
-        self.dispatchers = [SystemDispatcher(), InputDispatcher(), AIDispatcher()]   
         self.log = MessageLog()
         
-    def dispatch(self) -> None:
+    def handle(self) -> None:
 
         while True:
             try:
-                event = self.events.get_nowait()
 
-                for dispatcher in self.dispatchers:
-                    dispatcher.dispatch(event, self.actions, self)
+                next_event = self.events.get_nowait()
+                if next_event is not None and isinstance(next_event, GameEvent):
+                    next_event.trigger()
             
             except queue.Empty:
                 time.sleep(0.05)
@@ -67,16 +65,15 @@ class GameState:
                 print(f"Error dispatching event: {e}")
                 break
     
-    def update(self) -> None:
+    def dispatch(self) -> None:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
         while True:
             try:
-                action = self.actions.get_nowait()
-                next_action = action.perform()
-                if next_action is not None:
-                    self.actions.put(next_action)
+                next_action = self.actions.get_nowait()
+                if next_action is not None and isinstance(next_action, GameAction):
+                    next_action.perform()
                 
             except queue.Empty:
                 time.sleep(0.05)

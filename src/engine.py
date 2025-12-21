@@ -26,8 +26,8 @@ class Engine:
         self.ui = self.state.ui    
 
     def start(self) -> None:
+        self.threads.append(threading.Thread(target=self.state.handle).start())
         self.threads.append(threading.Thread(target=self.state.dispatch).start())
-        self.threads.append(threading.Thread(target=self.state.update).start())
 
         self.atlas.create_map()
         self.map = self.atlas.active

@@ -38,9 +38,8 @@ def main() -> None:
         game.ui.render()
 
         # Update State Inputs
-        for game_event in tcod.event.wait():
-            if isinstance(game_event, tcod.event.KeyDown):
-                game.state.events.put(game_event)
+        for event in tcod.event.wait():
+            game.state.handler.handle(event)
 
         if game.state.game_over.is_set():
             game.ui.context.close()   
