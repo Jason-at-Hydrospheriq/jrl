@@ -3,7 +3,7 @@ from core_components.dispatchers.library import *
 
 def test_dispatcher_initialization():
     # Arrange & Act
-    dispatchers = [EntityDispatcher(), InputDispatcher(), InterfaceDispatcher(),SystemDispatcher()]
+    dispatchers = [AIDispatcher(), InputDispatcher(), InterfaceDispatcher(),SystemDispatcher()]
     
     # Assert
     try:
@@ -25,7 +25,7 @@ def test_dispatcher_initialization():
 
 def test_dispatcher_ev_quit():
     # Arrange
-    dispatchers = [EntityDispatcher(), InputDispatcher(), InterfaceDispatcher(),SystemDispatcher()]
+    dispatchers = [AIDispatcher(), InputDispatcher(), InterfaceDispatcher(),SystemDispatcher()]
     dummy_state = GameState()  # Assuming GameState can be instantiated without parameters
 
     # Act & Assert

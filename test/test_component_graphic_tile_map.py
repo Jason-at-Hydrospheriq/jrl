@@ -2,10 +2,12 @@ from copy import deepcopy
 import itertools
 import pytest
 from sys import path
+
+from core_components.graphics.tile_types import ascii_graphic
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
-from core_components.maps.library import DefaultTileMap, DEFAULT_MANIFEST, ascii_graphic
+from core_components.maps.library import DefaultTileMap, DEFAULT_MANIFEST
 from core_components.tiles.base import BaseTileGrid, TileCoordinate, TileTuple
 
 

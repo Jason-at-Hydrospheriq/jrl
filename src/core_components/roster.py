@@ -9,42 +9,52 @@ from copy import deepcopy
 
 from core_components.entities.library import *
 from core_components.entities import attributes
-from core_components.maps.base import GraphicTileMap
-from core_components.maps.library import DefaultTileMap
-from core_components.tiles.base import TileTuple
+from core_components.maps.tilemaps import DEFAULT_MANIFEST, DefaultTileMap
+from core_components.maps.tiles import TileTuple
+
+if TYPE_CHECKING:
+    from state import GameState
 
 M = TypeVar('M', bound='BaseEntity')
 
 class Roster:
-
+    PARENT_MAP_SIZE = DEFAULT_MANIFEST['dimensions']['grid_size']
     PLAYER = PlayerCharactor(   name="Player", 
                             symbol=chr(64), 
                             color=(130, 200, 255),
+                            location=TileCoordinate(TileTuple(([0], [0])), 
+                                                    parent_map_size=PARENT_MAP_SIZE),
                             physical=attributes.PhysicalStats(max_hp=30, constitution=14),
                             combat=attributes.CombatStats(defense=2, attack_power=5))
 
     ORC = MobCharactor( name="Orc", 
                         symbol=chr(65), 
                         color=(63, 127, 63),
-                        ai_cls=None, 
+                        location=TileCoordinate(TileTuple(([0], [0])), 
+                                                parent_map_size=PARENT_MAP_SIZE),
                         physical=attributes.PhysicalStats(max_hp=10, constitution=12),
                         combat=attributes.CombatStats(defense=0, attack_power=3))
 
     TROLL = MobCharactor(   name="Troll", 
                             symbol=chr(65), 
                             color=(0, 127, 0), 
-                            ai_cls=None,
+                            location=TileCoordinate(TileTuple(([0], [0])), 
+                                                    parent_map_size=PARENT_MAP_SIZE),
                             physical=attributes.PhysicalStats(max_hp=16, constitution=12),
                             combat=attributes.CombatStats(defense=1, attack_power=4))
 
     """ The Roster component manages the state of all entities in the game. """
 
-    __slots__ = ("entities", "spawn")
+    __slots__ = ("state", "entities", "spawn")
     
+    state: GameState
     entities: Set[BaseEntity]
     spawn: Callable
 
-    def __init__(self) -> None:
+    def __init__(self, state: GameState | None = None) -> None:
+        if state is not None:
+            self.state = state
+    
         self.entities = set()    
 
     @property
