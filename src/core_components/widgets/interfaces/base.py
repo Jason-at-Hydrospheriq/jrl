@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Protocol, Set, Dict, TypedDict, TYPE_CHECKING
 from tcod.context import Context
 from tcod.console import Console
+from transitions import Machine
 
 from core_components.maps.tilemaps import DEFAULT_MANIFEST
 
@@ -16,8 +17,7 @@ class UIManifestDict(TypedDict):
 
 
 class BaseUI:
-    __slots__ = ("context", "widgets", "state", "console", "context_width", "context_height", "console_width", "console_height")
-
+    machine: Machine
     context: Context
     console: Console
     state: GameStore
@@ -59,6 +59,22 @@ class BaseUI:
                 widget = widget_cls(widget_name, upper_Left_x=x, upper_Left_y=y, width=width, height=height)
                 self.add_widget(widget=widget, x=x, y=y)
 
+
+        states = ['idle', 
+                    {'name': 'started', 'on_enter': '_start'}, 
+                    {'name': 'stopped', 'on_enter': '_stop'}]
+        transitions =[
+            {'trigger': 'start', 'source': 'stopped', 'dest': 'started'},
+            {'trigger': 'stop', 'source': 'started', 'dest': 'stopped'}
+            ]
+        self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
+
+    def _start(self) -> None:
+        ...
+
+    def _stop(self) -> None:
+        ...
+        
     def add_widget(self, *, widget: BaseUIWidget, x: int = -1, y: int = -1) -> None:
         """Spawn a copy of this entity at the given location."""
         widget.upper_Left_x = x

@@ -18,6 +18,10 @@ if TYPE_CHECKING:
 M = TypeVar('M', bound='BaseEntity')
 
 class Portfolio:
+    store: GameStore
+    entities: Set[BaseEntity]
+    spawn: Callable
+
     PARENT_MAP_SIZE = DEFAULT_MANIFEST['dimensions']['grid_size']
     PLAYER = PlayerCharactor(   name="Player", 
                             symbol=chr(64), 
@@ -26,7 +30,6 @@ class Portfolio:
                                                     parent_map_size=PARENT_MAP_SIZE),
                             physical=attributes.PhysicalStats(max_hp=30, constitution=14),
                             combat=attributes.CombatStats(defense=2, attack_power=5))
-
     ORC = MobCharactor( name="Orc", 
                         symbol=chr(65), 
                         color=(63, 127, 63),
@@ -34,7 +37,6 @@ class Portfolio:
                                                 parent_map_size=PARENT_MAP_SIZE),
                         physical=attributes.PhysicalStats(max_hp=10, constitution=12),
                         combat=attributes.CombatStats(defense=0, attack_power=3))
-
     TROLL = MobCharactor(   name="Troll", 
                             symbol=chr(65), 
                             color=(0, 127, 0), 
@@ -43,17 +45,10 @@ class Portfolio:
                             physical=attributes.PhysicalStats(max_hp=16, constitution=12),
                             combat=attributes.CombatStats(defense=1, attack_power=4))
 
-    """ The Roster component manages the state of all entities in the game. """
 
-    __slots__ = ("state", "entities", "spawn")
-    
-    state: GameStore
-    entities: Set[BaseEntity]
-    spawn: Callable
-
-    def __init__(self, state: GameStore | None = None) -> None:
-        if state is not None:
-            self.state = state
+    def __init__(self, store: GameStore | None = None) -> None:
+        if store is not None:
+            self.store = store
     
         self.entities = set()    
 

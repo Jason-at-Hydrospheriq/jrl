@@ -22,8 +22,8 @@ class GameStore:
     atlas: Atlas | None
 
     def __init__(self) -> None:
-        self.portfolio = Portfolio()
-        self.atlas = Atlas()
+        self.portfolio = Portfolio(store=self)
+        self.atlas = Atlas(store=self)
 
         states = ['idle', 
                   {'name': 'started', 'on_enter': '_start'}, 
@@ -36,21 +36,18 @@ class GameStore:
         
     def _start(self):
         """Starts the game loop and prepares the game state for play."""
-        # if self.atlas is not None:
-        #     self.atlas.start() # type: ignore
-        # if self.portfolio is not None:
-        #     self.portfolio.start() # type: ignore
 
-        # self.atlas.create_map()
-        # self.map = self.atlas.active
+        if self.atlas is not None:
+            self.atlas.create_map()
+            self.map = self.atlas.active
 
-        # if self.map is not None:
-        #     self.library.spawn_player(self.map)
-        #     self.library.initialize_random_mobs(self.map, max_mobs_per_area=3)
-        #     self.player = self.library.player
-        #     if self.player is not None:
-        #         self.player.fov_radius = 6
-        #     self.mobs = self.library.live_ai_actors
+        if self.portfolio and self.map is not None:
+            self.portfolio.spawn_player(self.map)
+            self.portfolio.initialize_random_mobs(self.map, max_mobs_per_area=3)
+            self.player = self.portfolio.player
+            if self.player is not None:
+                self.player.fov_radius = 6
+            self.mobs = self.portfolio.live_ai_actors
 
         print(f"Game Store is {self.state}.") # type: ignore
 

@@ -18,17 +18,14 @@ class Atlas:
     It also provides a way to save and load maps from a file.
 
     """
-    
-    __slots__ = ("state","generators", "library", "active")
-    
-    state: GameStore
+    store: GameStore
     generators: OrderedDict[str, BaseMapGenerator]
     library: OrderedDict[str, DefaultTileMap]
     active: DefaultTileMap
 
-    def __init__(self, state: GameStore | None = None) -> None:
-        if state is not None:
-            self.state = state
+    def __init__(self, store: GameStore | None = None) -> None:
+        if store is not None:
+            self.store = store
 
         self.generators = OrderedDict({'dungeon': DungeonGenerator()})
         self.library = OrderedDict({})

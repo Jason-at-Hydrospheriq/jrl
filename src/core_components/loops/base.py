@@ -71,6 +71,7 @@ class BaseLoopHandler:
             
         return False
 
+
 class BaseGameAction:
     store: StatefulObject | None
     transformer: BaseLoopHandler | None

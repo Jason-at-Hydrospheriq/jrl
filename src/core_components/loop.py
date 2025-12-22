@@ -45,16 +45,22 @@ class GameLoop:
             ]
         self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
 
-        self.threads.append(threading.Thread(target=self.event_loop))
-        self.threads.append(threading.Thread(target=self.action_loop))
+
 
     def _start(self) -> None:
         """Starts the game loop threads."""
-        self.stop_signal.clear()
-        self.handler.start() # type: ignore
-        for thread in self.threads:
-            if thread is not None and not thread.is_alive():
-                thread.start()
+        try:
+            self.handler.start() # type: ignore
+
+            if not self.threads:
+                self.threads.append(threading.Thread(target=self.event_loop))
+                self.threads.append(threading.Thread(target=self.action_loop))
+                for thread in self.threads:
+                    if thread is not None:
+                        thread.start()
+        except Exception as e:
+            print(f"Error starting game loop: {e}")
+            
         print("Game loop has started.")
 
     def _pause(self) -> None:
@@ -65,7 +71,7 @@ class GameLoop:
         try:
             self.stop_signal.set()
             for thread in self.threads:
-                if thread is not None and not thread.is_alive():
+                if thread is not None:
                     thread.join()
             self.handler.stop() # type: ignore
             print("Game loop has stopped.")
