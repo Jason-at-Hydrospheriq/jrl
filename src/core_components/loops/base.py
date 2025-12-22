@@ -6,6 +6,7 @@ from copy import deepcopy
 from type_protocols import *
 from typing import TYPE_CHECKING, Set, Tuple, TypeVar
 import tcod
+from transitions import Machine
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
@@ -14,18 +15,25 @@ if TYPE_CHECKING:
 class BaseLoopHandler:
     """The GameHandler is responsible for tranforming Game Inputs and AI Actions into Game Events
     and sending them to the State Action Queue."""
-    store: StatefulObject | None 
+    store: StatefulObject | None
+    machine: Machine
     behaviors: Set[Tuple[str, StateActionObject]] | None # Has a set of behaviors (events/actions) that can be queued for execution by the game engine.
+    T = TypeVar('T', bound=StateActionObject)
 
     def __init__(self, store: StatefulObject | None = None, behaviors: Set[Tuple[str, StateActionObject]] | None = None) -> None:
         self.store = store
         self.behaviors = behaviors
-
-    T = TypeVar('T', bound=StateActionObject)
-    
+        states = ['started', 'stopped']
+        transitions =[
+            {'trigger': 'start', 'source': 'stopped', 'dest': 'started'},
+            {'trigger': 'stop', 'source': 'started', 'dest': 'stopped'}
+            ]
+        
+        self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
+        
     def _transform(self, name: str) -> StateActionObject | None:
         """Should NOT be overidden by subclasses. Retrieves a behavior (Event or Action) by name from the behaviors set."""
-        if self.behaviors is not None:
+        if self.behaviors is not None and self.is_started(): # type: ignore
             for behavior in self.behaviors:
                 if name == behavior[0]:
                     action = behavior[1]
@@ -45,27 +53,23 @@ class BaseLoopHandler:
         ...
 
     def _transform_send(self, event: StateActionObject | tcod.event.Event) -> bool:
-        try:
-            action = self._transform(event.__class__.__name__.lower())
-            contextualized_action = None
-            if action:
-                contextualized_action = self._set_context(action)
-            
-            if contextualized_action:
-                return self._send(contextualized_action)
-            else:
+        if self.is_started(): # type: ignore
+            try:
+                action = self._transform(event.__class__.__name__.lower())
+                contextualized_action = None
+                if action:
+                    contextualized_action = self._set_context(action)
+                
+                if contextualized_action:
+                    return self._send(contextualized_action)
+                else:
+                    return False
+                
+            except Exception as e:
+                print(f"Handler error: {e}")
                 return False
             
-        except Exception as e:
-            print(f"Dispatch error: {e}")
-            return False
-
-    # def handle(self, event: StateActionObject | tcod.event.Event | None = None) -> bool:
-    #     if event is not None:
-    #             return self._transform_send(event)
-        
-    #     return False
-    
+        return False
 
 class BaseGameAction:
     store: StatefulObject | None

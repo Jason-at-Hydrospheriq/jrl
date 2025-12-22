@@ -6,7 +6,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
 from core_components.handlers.base import BaseHandler, EntityStateTableDict, manifest_example
 from core_components.entities.library import AICharactor
-from core_components.events.library import AIEvent, EntityEvent
+from core_components.events import AIEvent, EntityEvent
 from core_components.store import GameStore
 
 def test_component_base_ai_empty_init():

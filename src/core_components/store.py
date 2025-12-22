@@ -21,8 +21,6 @@ class GameStore:
     portfolio: Portfolio | None
     atlas: Atlas | None
 
-    __slots__ = ("portfolio", "atlas", "machine")
-
     def __init__(self) -> None:
         self.portfolio = Portfolio()
         self.atlas = Atlas()
@@ -38,10 +36,10 @@ class GameStore:
         
     def _start(self):
         """Starts the game loop and prepares the game state for play."""
-        if self.atlas is not None:
-            self.atlas.start() # type: ignore
-        if self.portfolio is not None:
-            self.portfolio.start() # type: ignore
+        # if self.atlas is not None:
+        #     self.atlas.start() # type: ignore
+        # if self.portfolio is not None:
+        #     self.portfolio.start() # type: ignore
 
         # self.atlas.create_map()
         # self.map = self.atlas.active
@@ -58,10 +56,10 @@ class GameStore:
 
     def _stop(self):
         """Handles any cleanup or finalization needed when the game stops."""
-        if self.atlas is not None:
-            self.atlas.stop() # type: ignore
-        if self.portfolio is not None:
-            self.portfolio.stop() # type: ignore
+        # if self.atlas is not None:
+        #     self.atlas.stop() # type: ignore
+        # if self.portfolio is not None:
+        #     self.portfolio.stop() # type: ignore
         print(f"Game Store is {self.state}.") # type: ignore
 
         # self.portfolio = None

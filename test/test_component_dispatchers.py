@@ -9,7 +9,7 @@ from core_components.dispatchers.base import BaseEventDispatcher
 from core_components.dispatchers.library import SystemDispatcher, InputDispatcher
 from core_components.entities.library import CombatEntity, MobileEntity, PlayerCharactor, TargetableEntity
 from core_components.entities.factory import spawn, PLAYER
-from core_components.actions.library import EntityMoveAction, GeneralAction
+from core_components.actions import EntityMoveAction, GeneralAction
 from core_components.tiles.base import TileCoordinate, TileTuple
 from core_components.store import GameStore
 

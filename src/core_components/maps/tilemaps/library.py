@@ -7,7 +7,7 @@ import numpy as np
 
 from core_components.maps.tilemaps import GraphicTileMap, GraphicsManifestDict
 from core_components.maps.tiles import TileTuple
-from core_components.ui.graphics import ascii_graphic
+from core_components.widgets.graphics import ascii_graphic
 
 DEFAULT_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': TileTuple(([50], [50]))},
                                          'statespace': {    'bits': ('blocks_movement', 'blocks_vision', 'visible', 'seen'),

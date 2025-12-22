@@ -1,7 +1,7 @@
 import pytest
 
 from ai import GameAI
-from components.events.library import GameOver
+from components.events import GameOver
 from core_components.store import GameStore
 
 def test_game_over_event_handling():

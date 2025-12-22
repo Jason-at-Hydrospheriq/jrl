@@ -1,2 +1,2 @@
-from core_components.ai.actions.base import BaseGameAction
-from core_components.ai.actions.library import *
+from core_components.loops.base import BaseGameAction
+from core_components.loops.actions import *

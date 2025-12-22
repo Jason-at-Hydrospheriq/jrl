@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import tcod.event
 
-from core_components.ai.events import BaseGameEvent
+from core_components.loops.events import BaseGameEvent
 
 if TYPE_CHECKING:
     from core_components.store import GameStore

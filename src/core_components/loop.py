@@ -30,14 +30,18 @@ class GameLoop:
         self.handler = GameLoopHandler(store=store) if store else GameLoopHandler()
         self.threads = []
         self.stop_signal = threading.Event()
-        threading.excepthook = self.threaded_exception_handler
+        #threading.excepthook = self.threaded_exception_handler
 
         states = ['idle', 
-                  {'name': 'started', 'on_enter': '_start'}, 
+                  {'name': 'started', 'on_enter': '_start'},
+                  {'name': 'paused', 'on_enter': '_pause'},
                   {'name': 'stopped', 'on_enter': '_stop'}]
         transitions =[
             {'trigger': 'start', 'source': 'stopped', 'dest': 'started'},
-            {'trigger': 'stop', 'source': 'started', 'dest': 'stopped'}
+            {'trigger': 'pause', 'source': 'started', 'dest': 'paused'},
+            {'trigger': 'start', 'source': 'paused', 'dest': 'started'},
+            {'trigger': 'stop', 'source': 'started', 'dest': 'stopped'},
+            {'trigger': 'stop', 'source': 'paused', 'dest': 'stopped'}
             ]
         self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
 
@@ -47,10 +51,14 @@ class GameLoop:
     def _start(self) -> None:
         """Starts the game loop threads."""
         self.stop_signal.clear()
+        self.handler.start() # type: ignore
         for thread in self.threads:
             if thread is not None and not thread.is_alive():
                 thread.start()
         print("Game loop has started.")
+
+    def _pause(self) -> None:
+        self.handler.stop()  # type: ignore
 
     def _stop(self) -> None:
         """Stops the game loop threads."""
@@ -59,16 +67,17 @@ class GameLoop:
             for thread in self.threads:
                 if thread is not None and not thread.is_alive():
                     thread.join()
+            self.handler.stop() # type: ignore
             print("Game loop has stopped.")
 
         except Exception as e:
             print(f"Error stopping game loop: {e}")
-            
+    
     def action_loop(self) -> None:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
-        while not self.stop_signal.is_set():
+        while not self.stop_signal.is_set() and self.state == 'started':  # type: ignore
             try:
                 next_action = None
                 if self.handler and self.handler.actions is not None:
@@ -87,7 +96,7 @@ class GameLoop:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
-        while not self.stop_signal.is_set():
+        while not self.stop_signal.is_set() and self.state == 'started':  # type: ignore
             try:
                 next_event = None
                 if self.handler and self.handler.events is not None:

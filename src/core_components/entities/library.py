@@ -7,9 +7,9 @@ from typing import List, Optional, Tuple, Type, TYPE_CHECKING
 from core_components.entities.attributes import *
 
 if TYPE_CHECKING:
-    from core_components.ai.handlers import BaseHandler
+    from core_components.loops import BaseLoopHandler
 
-from core_components.ai.handlers import MobHandler
+from core_components.loops.handlers import MobHandler
 from core_components.maps.tiles import TileCoordinate
 
 

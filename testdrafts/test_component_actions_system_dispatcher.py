@@ -9,7 +9,7 @@ def test_dispatcher_ev_gamestart():
     state = GameStore()
     dispatcher = SystemDispatcher()
     
-    from core_components.events.library import GameStart
+    from core_components.events import GameStart
     event = GameStart(message='Game Started')
     
     actions = dispatcher.dispatch(event, state)
@@ -26,7 +26,7 @@ def test_dispatcher_ev_gameover():
     state = GameStore()
     dispatcher = SystemDispatcher()
     
-    from core_components.events.library import GameOver
+    from core_components.events import GameOver
     event = GameOver(message='Game Over')
     
     actions = dispatcher.dispatch(event, state)

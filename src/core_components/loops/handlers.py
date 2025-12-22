@@ -6,6 +6,7 @@ from queue import Queue
 from typing import TYPE_CHECKING
 import tcod
 from type_protocols import *
+from transitions import Machine
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
@@ -17,7 +18,7 @@ from core_components.loops.actions import NoAction
 class GameLoopHandler(BaseLoopHandler):
     """The GameLoopHandler is responsible for tranforming Game Inputs and AI Actions into Game Events
     and sending them to the Store Action Queue."""
-    
+    machine: Machine
     events: Queue[BaseGameEvent | tcod.event.Event]
     actions: Queue[BaseGameAction]
 
@@ -27,19 +28,24 @@ class GameLoopHandler(BaseLoopHandler):
                         }
         
         super().__init__(store=store, behaviors=game_behaviors) # type: ignore
-    
+
+        
+        self.events = Queue()
+        self.actions = Queue()
+
     def _send(self, action: StateActionObject)  -> bool:
         try:
 
-            if isinstance(action, BaseGameEvent) and isinstance(action.store, GameStore):
+            if isinstance(action, BaseGameEvent):
                 self.events.put(action)
                 return True
             
-            elif isinstance(action, BaseGameAction) and isinstance(action.store, GameStore):
+            elif isinstance(action, BaseGameAction):
                 self.actions.put(action)
                 return True
                     
             return False
+        
         except Exception as e:
             raise e
         
@@ -48,3 +54,6 @@ class GameLoopHandler(BaseLoopHandler):
                 return self._transform_send(event)
         
         return False
+
+class MobHandler(BaseLoopHandler):
+    pass

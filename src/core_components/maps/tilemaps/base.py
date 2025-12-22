@@ -10,7 +10,7 @@ from copy import deepcopy
 import numpy as np
 
 from core_components.maps.tiles import BaseTileGrid, TileTuple, TileArea, TileCoordinate
-from core_components.ui.graphics import ascii_graphic
+from core_components.widgets.graphics.tile_types import ascii_graphic
 
 # A typed dictionary for map graphics
 class GraphicsManifestDict(TypedDict):

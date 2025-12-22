@@ -1,2 +1,2 @@
-from core_components.ai.base import GameAction, GameEvent, StateTransitionObject
-from core_components.ai.handlers import Handler
+from core_components.loops.base import GameAction, GameEvent, StateTransitionObject
+from core_components.loops.handlers import Handler

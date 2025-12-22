@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from core_components.store import GameStore
     from core_components.entities.library import AICharactor, TargetableEntity
 
-from core_components.ai.events import CharactorEvent, EntityEvent, AIEvent
+from core_components.loops.events import CharactorEvent, EntityEvent, AIEvent
 
 AE = TypeVar('AE', bound=AIEvent)
 EE = TypeVar('EE', bound=CharactorEvent)

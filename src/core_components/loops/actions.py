@@ -8,25 +8,23 @@ import libtcodpy
 from tcod.map import compute_fov
 from type_protocols import *
 
-from core_components.entities.library import Charactor, CombatEntity, MobileEntity, TargetableEntity, TargetingEntity
+
 from core_components.maps.tiles.base import TileCoordinate
 from core_components.loops.base import BaseGameAction
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
-    from core_components.loops.handlers import  GameLoopHandler
-
-
+    from core_components.loops.handlers import GameLoopHandler
+    from core_components.entities.library import Charactor, CombatEntity, MobileEntity, TargetableEntity, TargetingEntity
 
 class NoAction(BaseGameAction):
 
     def perform(self) -> None:
+        print("...nothing was done.")
         pass
 
 
 class FOVUpdateAction(BaseGameAction):
-        def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None) -> None:
-            super().__init__(handler, store)
 
         def perform(self) -> None:
             self.transformer.handle(None) # type: ignore
@@ -76,9 +74,9 @@ class EntityActionOnTarget(BaseGameAction):
     entity: Charactor | None = None
     target: Charactor | None = None
 
-    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: Charactor | None = None, 
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
-        super().__init__(handler, store)
+        super().__init__(store, handler)
 
         self.entity = entity
         self.target = target
@@ -91,9 +89,9 @@ class EntityActionOnDestination(BaseGameAction):
     entity: MobileEntity | None = None
     destination: TileCoordinate | None = None
 
-    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: MobileEntity | None = None, 
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: MobileEntity | None = None, 
                  destination: TileCoordinate | None = None) -> None:
-        super().__init__(handler, store)
+        super().__init__(store, handler)
 
         self.entity = entity
         self.destination = destination
@@ -104,9 +102,9 @@ class EntityActionOnDestination(BaseGameAction):
 
 class EntityAcquireTargetAction(EntityActionOnTarget):
 
-    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: Charactor | None = None, 
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
-        super().__init__(handler, store, entity, target)
+        super().__init__(store, handler, entity, target)
 
     def perform(self) -> None:
         self.transformer.handle(None) # type: ignore
@@ -121,9 +119,9 @@ class EntityAcquireTargetAction(EntityActionOnTarget):
 
 class EntityCollisionAction(EntityActionOnTarget):
 
-    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: Charactor | None = None, 
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
-        super().__init__(handler, store, entity, target)
+        super().__init__(store, handler, entity, target)
 
     def perform(self) -> None:
         entity_can_target = issubclass(self.entity.__class__, TargetingEntity) if self.entity else False
@@ -147,9 +145,9 @@ class EntityCollisionAction(EntityActionOnTarget):
 
 class EntityMoveAction(EntityActionOnDestination):
 
-    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: MobileEntity | None = None, 
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: MobileEntity | None = None, 
                  destination: TileCoordinate | None = None) -> None:
-        super().__init__(handler, store, entity, destination)
+        super().__init__(store, handler, entity, destination)
 
     def perform(self) -> None:
         event = self.transformer.get_template('fovupdateevent') # type: ignore <-- Add this line to send a reaction event
@@ -165,9 +163,9 @@ class EntityMoveAction(EntityActionOnDestination):
 
 
 class EntityMeleeAction(EntityActionOnTarget):
-    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: Charactor | None = None, 
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
-        super().__init__(handler, store, entity, target)
+        super().__init__(store, handler, entity, target)
 
     def perform(self) -> None:
         self.transformer.handle(None) # type: ignore
@@ -202,9 +200,10 @@ class EntityMeleeAction(EntityActionOnTarget):
 
 class EntityDeathAction(EntityActionOnTarget):
         
-    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: Charactor | None = None, 
+
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
-        super().__init__(handler, store, entity, target)
+        super().__init__(store, handler, entity, target)
 
     def perform(self) -> None:
         self.transformer.handle(None) # type: ignore
