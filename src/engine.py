@@ -20,10 +20,10 @@ class GameEngine:
     store: GameStore | None
     display: Display | None
 
-    def __init__(self) -> None:
-        self.loop = GameLoop()
-        self.display = Display()
-        self.store = GameStore()
+    def __init__(self, loop: GameLoop | None = None, display: Display | None = None, store: GameStore | None = None) -> None:
+        self.loop = loop
+        self.display = display
+        self.store = store
 
         states = [{'name': 'idle', 'on_enter': '_initialize'}, 
                   {'name': 'playing', 'on_enter': '_play'},

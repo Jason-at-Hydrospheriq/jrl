@@ -2,102 +2,92 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Protocol, runtime_checkable, Set, Tuple, TypeVar, TYPE_CHECKING
-from queue import Queue
+from copy import deepcopy
+from type_protocols import *
+from typing import TYPE_CHECKING, Set, Tuple, TypeVar
+import tcod
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
 
 
-@runtime_checkable
-class GameStateObject(Protocol):
-    state: GameStore | None
+class BaseLoopHandler:
+    """The GameHandler is responsible for tranforming Game Inputs and AI Actions into Game Events
+    and sending them to the State Action Queue."""
+    store: StatefulObject | None 
+    behaviors: Set[Tuple[str, StateActionObject]] | None # Has a set of behaviors (events/actions) that can be queued for execution by the game engine.
 
+    def __init__(self, store: StatefulObject | None = None, behaviors: Set[Tuple[str, StateActionObject]] | None = None) -> None:
+        self.store = store
+        self.behaviors = behaviors
 
-@runtime_checkable
-class StateTransitionObject(GameStateObject, Protocol):
-    transformer: object | None
+    T = TypeVar('T', bound=StateActionObject)
     
+    def _transform(self, name: str) -> StateActionObject | None:
+        """Should NOT be overidden by subclasses. Retrieves a behavior (Event or Action) by name from the behaviors set."""
+        if self.behaviors is not None:
+            for behavior in self.behaviors:
+                if name == behavior[0]:
+                    action = behavior[1]
+                    return deepcopy(action)
 
-@runtime_checkable
-class GameAction(StateTransitionObject, Protocol):
-    """ The Game Action is created by the Dispatcher and is sent to the State Actions queue.
-    Actions have a 'perform' method that wraps the execution of a Dispatcher method. When the GameState pulls the Game Action from the queue, it
-    calls the 'perform' method to execute the Handler method."""
+            raise ValueError(f"Behavior not found for event: {name}")
+        raise ValueError(f"State behaviors object not found: {name}")
+    
+    def _set_context(self, action: T, *args, **kwargs) -> T:
+        """Can be overidden by subclasses. Sets the context of the StateActionObject item with the arguments."""
+        action.store = self.store
+        action.transformer = self
+        return action
 
-    state: GameStore | None
-    transformer: object | None # This should be set to the Handler that will handle any associated reaction events.
-    
-    def __init__(self) -> None:
-        self.state = None
-        self.transformer = None
-    
-    def perform(self) -> None:
+    def _send(self, action: StateActionObject)  -> bool:
+        "This method must be overidden by subclasses. Enqueues the contextualized input_item into a GameState queue."
         ...
 
-
-@runtime_checkable
-class GameEvent(StateTransitionObject, Protocol):
-    """ The Game Event is created by a Handler and sent to the State Events queue. 
-    Game Events have a 'trigger' method that wraps the execution of an associated 
-    Dispatcher method. When the GameState pulls the Game Event from the queue, it
-    calls the 'trigger' method to execute the Dispatcher method."""
-    state: GameStore | None
-    transformer: object | None # This should be set to the Dispatcher that will dispatch the associated action.
-
-    def __init__(self) -> None:
-        self.state = None
-        self.transformer = None
-        
-    def trigger(self) -> None:
-        ...
-
-
-@runtime_checkable
-class StateTransformer(Protocol):
-    """The StateFormer Protocol is a mixin class that has a 'transform' method. The 'transform' method
-      provides sets the attributes of StateTransitionObject instances with the Game State data required
-      by the STO methods."""
-    templates: Set[Tuple[str, StateTransitionObject]]
-
-    T = TypeVar('T', bound=StateTransitionObject)
-
-    def _enqueue(self, input_item: StateTransitionObject)  -> bool:
-        
-        if input_item.state is not None:
-            output_item: StateTransitionObject | None
-            output_items: Queue[StateTransitionObject]
-
-            if isinstance(input_item, GameEvent):
-                output_items = input_item.state.actions
-            else:
-                output_items = input_item.state.events
-
-            try:
-
-                output_item_name = type(input_item).__name__.lower()
-                output_item = self.get_template(output_item_name)
-
-                if output_item:
-                    transformed_item = self.transform(output_item, input_item.state)
-                    output_items.put(transformed_item)
-                    return True
-                
-                return False
-        
-            except Exception as e:
-                raise e
+    def _transform_send(self, event: StateActionObject | tcod.event.Event) -> bool:
+        try:
+            action = self._transform(event.__class__.__name__.lower())
+            contextualized_action = None
+            if action:
+                contextualized_action = self._set_context(action)
             
-        return False
-    
-    def get_template(self, name: str) -> StateTransitionObject | None:
-        for template in self.templates:
-            if template[0] == name:
-                return template[1]
-        return None
-    
-    def transform(self, item: T, state: GameStore) -> T:
-        item.state = state
-        item.transformer = self
-        return item
+            if contextualized_action:
+                return self._send(contextualized_action)
+            else:
+                return False
+            
+        except Exception as e:
+            print(f"Dispatch error: {e}")
+            return False
 
+    # def handle(self, event: StateActionObject | tcod.event.Event | None = None) -> bool:
+    #     if event is not None:
+    #             return self._transform_send(event)
+        
+    #     return False
+    
+
+class BaseGameAction:
+    store: StatefulObject | None
+    transformer: BaseLoopHandler | None
+    
+    def __init__(self, store: GameStore| None = None, transformer: BaseLoopHandler | None = None) -> None:
+        self.store = store
+        self.transformer = transformer
+
+    def perform(self) -> None:
+        raise NotImplementedError("Subclasses must implement the perform method.")
+
+
+class BaseGameEvent:
+    store: StatefulObject | None
+    transformer: BaseLoopHandler | None
+    
+    def __init__(self, store: GameStore| None = None, transformer: BaseLoopHandler | None = None) -> None:
+        self.store = store
+        self.transformer = transformer
+
+    def trigger(self) -> None:
+        if self.transformer:
+            self.transformer._transform_send(self)
+        

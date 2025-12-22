@@ -5,7 +5,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
 from core_components.generators.library import DungeonGenerator
 from core_components.dispatchers.library import SystemDispatcher
-from core_components.portfolio import Portfolio
+from core_components.entities.portfolio import Portfolio
 
 def test_component_roster_initialization():
     # Arrange

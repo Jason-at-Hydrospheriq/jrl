@@ -9,7 +9,7 @@ from transitions import Machine
 @runtime_checkable
 class StatefulObject(Protocol):
     """The StatefulObject Protocol is a mixin class that has a 'machine' attribute."""
-    machine: Machine# Has a state machine that defines states and transitions.
+    machine: Machine # Has a state machine that defines states and transitions.
 
 @runtime_checkable
 class StateStoreObject(Protocol):

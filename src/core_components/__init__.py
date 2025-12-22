@@ -19,6 +19,6 @@ __maintainer__ = "Jason Nichols"
 __email__ = "guumbarahma@gmail.com"
 __status__ = "Prototype"
 
-from core_components.atlas import Atlas
-from core_components.portfolio import Portfolio
+from core_components.maps.atlas import Atlas
+from core_components.entities.portfolio import Portfolio
 from core_components.display import Display

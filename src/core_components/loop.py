@@ -4,25 +4,30 @@
 from __future__ import annotations
 from transitions import Machine
 import threading
-from typing import List
-from queue import Queue
-import tcod
+from typing import TYPE_CHECKING, List
 import time
 import queue
 
+from core_components.loops.handlers import GameLoopHandler
+from core_components.loops.base import BaseGameEvent, BaseGameAction
+
+if TYPE_CHECKING:
+    from core_components.store import GameStore
 
 class GameLoop:
+    """
+    The GameLoop manages the main game loop, processing events and actions in separate threads. It has a list of managed threads and provides an API for starting and stopping the loop. 
+    It uses a GameLoopHandler to handle the transformation and dispatching of events and actions.
+
+    Duck Types: StatefulObject
+    """
     machine: Machine
-    events: Queue[GameEvent | tcod.event.Event] | None
-    actions: Queue[GameAction] | None
     handler: GameLoopHandler | None
     threads: List[threading.Thread | None]
     stop_signal: threading.Event
 
-    def __init__(self) -> None:
-        self.events = Queue()
-        self.actions = Queue()
-        self.handler = None
+    def __init__(self, store: GameStore | None = None) -> None:
+        self.handler = GameLoopHandler(store=store) if store else GameLoopHandler()
         self.threads = []
         self.stop_signal = threading.Event()
         threading.excepthook = self.threaded_exception_handler
@@ -66,9 +71,9 @@ class GameLoop:
         while not self.stop_signal.is_set():
             try:
                 next_action = None
-                if self.actions is not None:
-                    next_action = self.actions.get_nowait()
-                if next_action is not None and isinstance(next_action, GameAction):
+                if self.handler and self.handler.actions is not None:
+                    next_action = self.handler.actions.get_nowait()
+                if next_action is not None and isinstance(next_action, BaseGameAction):
                     next_action.perform()
                 
             except queue.Empty:
@@ -85,9 +90,9 @@ class GameLoop:
         while not self.stop_signal.is_set():
             try:
                 next_event = None
-                if self.events is not None:
-                    next_event = self.events.get_nowait()
-                if next_event is not None and isinstance(next_event, GameEvent):
+                if self.handler and self.handler.events is not None:
+                    next_event = self.handler.events.get_nowait()
+                if next_event is not None and isinstance(next_event, BaseGameEvent):
                     next_event.trigger()
                 
             except queue.Empty:

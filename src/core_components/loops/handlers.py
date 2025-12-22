@@ -2,38 +2,49 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import Set, Tuple
+from queue import Queue
+from typing import TYPE_CHECKING
 import tcod
+from type_protocols import *
 
-from core_components.loops.base import StateTransformer, StateTransitionObject, GameEvent, GameAction
+if TYPE_CHECKING:
+    from core_components.store import GameStore
+
+from core_components.loops.base import BaseLoopHandler, BaseGameAction, BaseGameEvent
 from core_components.loops.actions import NoAction
-from core_components.loops.events import NonEvent
 
 
-class Handler(StateTransformer):
-    """The Handler is responsible for tranforming Game Inputs and AI Actions into Game Events
-    and sending them to the State Action Queue."""
-
-    templates: Set[Tuple[str, StateTransitionObject]]
+class GameLoopHandler(BaseLoopHandler):
+    """The GameLoopHandler is responsible for tranforming Game Inputs and AI Actions into Game Events
+    and sending them to the Store Action Queue."""
     
-    def __init__(self):
-        super().__init__()
-        self.templates = {
-                        ('noaction', NonEvent()),
+    events: Queue[BaseGameEvent | tcod.event.Event]
+    actions: Queue[BaseGameAction]
+
+    def __init__(self, store: GameStore | None = None) -> None:
+        game_behaviors = {
                         ('nonevent', NoAction()),
                         }
-    
-    def dispatch(self, event: GameEvent) -> bool:
-        return super()._enqueue(event)   
         
-    def handle(self, event: GameAction | tcod.event.Event | None = None) -> bool:
+        super().__init__(store=store, behaviors=game_behaviors) # type: ignore
+    
+    def _send(self, action: StateActionObject)  -> bool:
+        try:
+
+            if isinstance(action, BaseGameEvent) and isinstance(action.store, GameStore):
+                self.events.put(action)
+                return True
+            
+            elif isinstance(action, BaseGameAction) and isinstance(action.store, GameStore):
+                self.actions.put(action)
+                return True
+                    
+            return False
+        except Exception as e:
+            raise e
+        
+    def handle(self, event: BaseGameEvent | tcod.event.Event | None = None) -> bool:
         if event is not None:
-            if isinstance(event, tcod.event.Event):
-                # Handle tcod event conversion to GameEvent here if needed
-                pass
-
-            parsed_event: GameAction | GameEvent = event  # type: ignore
-
-            return super()._enqueue(parsed_event)
+                return self._transform_send(event)
         
         return False

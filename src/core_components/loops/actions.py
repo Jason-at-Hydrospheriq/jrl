@@ -6,94 +6,47 @@ from typing import TYPE_CHECKING
 import numpy as np
 import libtcodpy
 from tcod.map import compute_fov
+from type_protocols import *
 
 from core_components.entities.library import Charactor, CombatEntity, MobileEntity, TargetableEntity, TargetingEntity
 from core_components.maps.tiles.base import TileCoordinate
+from core_components.loops.base import BaseGameAction
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
-    from core_components.automata.handlers import Handler
+    from core_components.loops.handlers import  GameLoopHandler
 
-    
-class BaseAction:
-    state: GameStore | None
-    transformer: object | None
-    
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
-        self.state = state
-        self.transformer = handler
+
+
+class NoAction(BaseGameAction):
 
     def perform(self) -> None:
-        # event = self.transformer.get_template('event_name') # type: ignore <-- Add this line to send a reaction event
-        # self.transformer.handle(event) # type: ignore  <-- Add this line to send a reaction event
-        ...
-    
-
-class NoAction(BaseAction):
-    
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
-        super().__init__(handler, state)
-
-    def perform(self) -> None:
-        self.transformer.handle(None) # type: ignore
+        pass
 
 
-class SystemExitAction(BaseAction):
-    
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
-        super().__init__(handler, state)
-
-    def perform(self) -> None:
-        self.transformer.handle(None) # type: ignore
-        if self.state:
-            self.state.game_over.set()
-
-    
-class GameStartAction(BaseAction):
-    
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
-        super().__init__(handler, state)
-
-    def perform(self) -> None:
-        self.transformer.handle(None) # type: ignore
-        if self.state:
-            self.state.game_over.clear()
-
-
-class GameOverAction(BaseAction):
-    
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
-        super().__init__(handler, state)
-
-    def perform(self) -> None:
-        self.transformer.handle(None) # type: ignore
-        if self.state:
-            self.state.game_over.set()
-
-
-class FOVUpdateAction(BaseAction):
-        def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
-            super().__init__(handler, state)
+class FOVUpdateAction(BaseGameAction):
+        def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None) -> None:
+            super().__init__(handler, store)
 
         def perform(self) -> None:
             self.transformer.handle(None) # type: ignore
-            if self.state:
+            if self.store:
                 """Recompute the visible area based on the players point of view."""
-                tile_blocks_vision = self.state.map.active.blocks_vision if self.state.map and self.state.map.active else None
-                player = self.state.roster.player
-                mobs = self.state.roster.live_ai_actors
-                player_visible_tiles = np.full((self.state.map.active.grid.width, self.state.map.active.grid.height), False, order="F")            
+                tile_blocks_vision = self.store.map.active.blocks_vision if self.store.map and self.store.map.active else None
+                player = self.store.roster.player
+                mobs = self.store.roster.live_ai_actors
+                player_visible_tiles = np.full((self.store.map.active.grid.width, self.store.map.active.grid.height), False, order="F")            
 
                 # UPDATE PLAYER FOV
                 if player and tile_blocks_vision is not None:
                     player_visible_tiles = compute_fov( ~tile_blocks_vision, (player.location.x, player.location.y), radius=player.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
-                    self.state.map.active.set_state_bits('visible', player_visible_tiles)
+                    self.store.map.active.set_store_bits('visible', player_visible_tiles)
 
                     # If a tile is "visible" it should be added to "explored".
                     if player_visible_tiles is not None:
-                        prior_seen_tiles = self.state.map.active.get_state_bits('seen')
+                        prior_seen_tiles = self.store.map.active.get_store_bits('seen')
                         newly_seen_tiles = np.logical_or(prior_seen_tiles, player_visible_tiles)
-                        self.state.map.active.set_state_bits('seen', newly_seen_tiles)
+                        self.store.map.active.set_store_bits('seen', newly_seen_tiles)
                 
                 # UPDATE MOB FOV AND SPOTTING
                 if len(mobs) > 0 and player and tile_blocks_vision is not None:
@@ -108,7 +61,7 @@ class FOVUpdateAction(BaseAction):
 
                         if mob_visible_tiles[player.location.x, player.location.y]:
                             mob.is_spotting = True
-                            self.state.log.add(text=f"You have been spotted!")
+                            self.store.log.add(text=f"You have been spotted!")
                             player.is_spotted = True
 
                         elif not mob_visible_tiles[player.location.x, player.location.y]:
@@ -119,13 +72,13 @@ class FOVUpdateAction(BaseAction):
                             player.is_spotting = True
 
 
-class EntityActionOnTarget(BaseAction):
+class EntityActionOnTarget(BaseGameAction):
     entity: Charactor | None = None
     target: Charactor | None = None
 
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: Charactor | None = None, 
+    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
-        super().__init__(handler, state)
+        super().__init__(handler, store)
 
         self.entity = entity
         self.target = target
@@ -134,13 +87,13 @@ class EntityActionOnTarget(BaseAction):
         ...
 
 
-class EntityActionOnDestination(BaseAction):
+class EntityActionOnDestination(BaseGameAction):
     entity: MobileEntity | None = None
     destination: TileCoordinate | None = None
 
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: MobileEntity | None = None, 
+    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: MobileEntity | None = None, 
                  destination: TileCoordinate | None = None) -> None:
-        super().__init__(handler, state)
+        super().__init__(handler, store)
 
         self.entity = entity
         self.destination = destination
@@ -151,26 +104,26 @@ class EntityActionOnDestination(BaseAction):
 
 class EntityAcquireTargetAction(EntityActionOnTarget):
 
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: Charactor | None = None, 
+    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
-        super().__init__(handler, state, entity, target)
+        super().__init__(handler, store, entity, target)
 
     def perform(self) -> None:
         self.transformer.handle(None) # type: ignore
-        if self.entity and self.state and self.target is not None:
+        if self.entity and self.store and self.target is not None:
             if isinstance(self.target, Charactor):
                 self.entity.acquire_target(self.target)
                 self.entity.is_targeting = True
                 self.target.is_targeted = True
                 self.target.targeter = self.entity
-                self.state.log.add(text=f"{self.entity.name} has engaged the {self.target.name}.")
+                self.store.log.add(text=f"{self.entity.name} has engaged the {self.target.name}.")
  
 
 class EntityCollisionAction(EntityActionOnTarget):
 
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: Charactor | None = None, 
+    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
-        super().__init__(handler, state, entity, target)
+        super().__init__(handler, store, entity, target)
 
     def perform(self) -> None:
         entity_can_target = issubclass(self.entity.__class__, TargetingEntity) if self.entity else False
@@ -186,35 +139,35 @@ class EntityCollisionAction(EntityActionOnTarget):
             entity_has_target = self.entity.target is not None if hasattr(self.entity, 'target') else False
             
             if entity_targets and not entity_has_target:
-                return EntityAcquireTargetAction(state=self.state, entity=self.entity, target=self.target).perform() # Acquire target.
+                return EntityAcquireTargetAction(store=self.store, entity=self.entity, target=self.target).perform() # Acquire target.
         
             elif entity_melees and entity_has_target:
-                return EntityMeleeAction(state=self.state, entity=self.entity, target=self.target).perform() # Immediate melee attack.
+                return EntityMeleeAction(store=self.store, entity=self.entity, target=self.target).perform() # Immediate melee attack.
 
 
 class EntityMoveAction(EntityActionOnDestination):
 
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: MobileEntity | None = None, 
+    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: MobileEntity | None = None, 
                  destination: TileCoordinate | None = None) -> None:
-        super().__init__(handler, state, entity, destination)
+        super().__init__(handler, store, entity, destination)
 
     def perform(self) -> None:
         event = self.transformer.get_template('fovupdateevent') # type: ignore <-- Add this line to send a reaction event
         self.transformer.handle(event) # type: ignore  <-- Add this line to send a reaction event
 
-        if self.entity and self.state and self.destination:
+        if self.entity and self.store and self.destination:
             self.entity.destination = self.destination
             self.entity.move()
 
-            for entity in self.state.roster.live_ai_actors:
+            for entity in self.store.roster.live_ai_actors:
                 if entity:  
-                    entity.ai.update_state(self.state) # type: ignore
+                    entity.ai.update_store(self.store) # type: ignore
 
 
 class EntityMeleeAction(EntityActionOnTarget):
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: Charactor | None = None, 
+    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
-        super().__init__(handler, state, entity, target)
+        super().__init__(handler, store, entity, target)
 
     def perform(self) -> None:
         self.transformer.handle(None) # type: ignore
@@ -237,29 +190,29 @@ class EntityMeleeAction(EntityActionOnTarget):
                     defense = 1  # Basic defense for non-combat entities
                     damage = max(0, attack_power - defense)
                     self.target.take_damage(damage)
-                    self.state.log.add(text=f"{self.entity.name} attacks the {self.target.name} for {damage} damage!") # type: ignore
+                    self.store.log.add(text=f"{self.entity.name} attacks the {self.target.name} for {damage} damage!") # type: ignore
 
                 if self.target.physical.hp <= 0 and isinstance(self.entity, Charactor): #type: ignore
                     self.entity.clear_target()
                     self.entity.is_in_combat = False
                 
                 if self.target.physical.hp <= 0 and isinstance(self.target, MortalEntity): #type: ignore
-                    return EntityDeathAction(self.state, self.entity, self.target).perform() # type: ignore
+                    return EntityDeathAction(self.store, self.entity, self.target).perform() # type: ignore
 
 
 class EntityDeathAction(EntityActionOnTarget):
         
-    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: Charactor | None = None, 
+    def __init__(self, handler:  GameLoopHandler | None = None, store: GameStore | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
-        super().__init__(handler, state, entity, target)
+        super().__init__(handler, store, entity, target)
 
     def perform(self) -> None:
         self.transformer.handle(None) # type: ignore
         
-        if self.state and self.entity and self.target is not None:
-            if self.target == self.state.roster.player:
+        if self.store and self.entity and self.target is not None:
+            if self.target == self.store.roster.player:
                 death_message = f"You have been slain by the {self.entity.name}! Game Over."
-                self.state.log.add(text=death_message)
+                self.store.log.add(text=death_message)
                 self.target.clear_target()
                 self.target.die()
 
@@ -268,7 +221,7 @@ class EntityDeathAction(EntityActionOnTarget):
 
             else:
                 death_message = f"You have slain the {self.target.name}!"
-                self.state.log.add(text=death_message)
+                self.store.log.add(text=death_message)
                 self.target.clear_target()
                 self.target.die()
                 self.entity.clear_target()
