@@ -9,7 +9,7 @@ from tcod.console import Console
 from core_components.maps.tilemaps import DEFAULT_MANIFEST
 
 if TYPE_CHECKING:
-    from state import GameState
+    from core_components.store import GameStore
 
 class UIManifestDict(TypedDict):
     widgets: Dict[str, Dict[str, Any]]
@@ -20,7 +20,7 @@ class BaseUI:
 
     context: Context
     console: Console
-    state: GameState
+    state: GameStore
     widgets: Set[BaseUIWidget]
     context_width: int
     context_height: int
@@ -29,7 +29,7 @@ class BaseUI:
 
     """ The UI Manager handles the various UI components and their interactions. """
     
-    def __init__(self, context: Context | None = None, state: GameState | None = None, ui_manifest: UIManifestDict | None = None, *, context_width: int = 80, context_height: int = 50) -> None:
+    def __init__(self, context: Context | None = None, state: GameStore | None = None, ui_manifest: UIManifestDict | None = None, *, context_width: int = 80, context_height: int = 50) -> None:
 
         if context is not None:
             self.context = context
@@ -107,6 +107,6 @@ class BaseUIWidget(Protocol):
         self.height = height
 
 
-    def render(self, context: Context, console: Console, state: GameState) -> None:
+    def render(self, context: Context, console: Console, state: GameStore) -> None:
         """ Render the UI component """
         raise NotImplementedError()

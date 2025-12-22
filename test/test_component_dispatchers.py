@@ -11,7 +11,7 @@ from core_components.entities.library import CombatEntity, MobileEntity, PlayerC
 from core_components.entities.factory import spawn, PLAYER
 from core_components.actions.library import EntityMoveAction, GeneralAction
 from core_components.tiles.base import TileCoordinate, TileTuple
-from state import GameState
+from core_components.store import GameStore
 
 def test_input_dispatcher_initialization():
     pass
@@ -47,7 +47,7 @@ def test_input_dispatcher_initialization():
 def test_input_dispatcher_create_move_action_on_target():
     # Arrange
     dispatcher = InputDispatcher()
-    dummy_state = GameState()
+    dummy_state = GameStore()
     dummy_entity = MobileEntity()  # Replace with an actual entity mock or instance
     dummy_destination = TileCoordinate(TileTuple(([5], [5])), TileTuple(([80], [50])))
 
@@ -70,7 +70,7 @@ def test_input_dispatcher_create_move_action_on_target():
 def test_input_dispatcher_create_target_action_on_target():
     # Arrange
     dispatcher = InputDispatcher()
-    dummy_state = GameState()
+    dummy_state = GameStore()
     dummy_entity = CombatEntity()  # Replace with an actual entity mock or instance
     dummy_target = TargetableEntity()  # Replace with an actual target mock or instance
 
@@ -125,7 +125,7 @@ def test_input_dispatcher_get_destination():
 def test_input_dispatcher_ev_keydown_escape():
     # Arrange
     dispatcher = InputDispatcher()
-    dummy_state = GameState()
+    dummy_state = GameStore()
     event = tcod.event.KeyDown(sym=tcod.event.KeySym.ESCAPE, 
                                         scancode=0x01, 
                                         mod=0)  # Simulate ESCAPE key press
@@ -152,7 +152,7 @@ def test_input_dispatcher_ev_keydown_escape():
 def test_input_dispatcher_ev_keydown_movement():
     # Arrange
     dispatcher = InputDispatcher()
-    dummy_state = GameState()
+    dummy_state = GameStore()
     location_tuple = TileTuple(([10], [10]))
     location_coord = TileCoordinate(location_tuple, TileTuple(([80], [50])))
     dummy_entity = dummy_state.roster.spawn(PLAYER, location_coord)

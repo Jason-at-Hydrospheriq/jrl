@@ -2,7 +2,7 @@ import pytest
 from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from core_components.roster import Roster, ORC, TROLL, PLAYER
+from core_components.portfolio import Portfolio, ORC, TROLL, PLAYER
 from core_components.tiles.base import TileCoordinate, TileTuple
 
 # def test_roster_spawn():

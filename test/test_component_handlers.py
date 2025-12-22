@@ -7,7 +7,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from core_components.handlers.base import BaseHandler, EntityStateTableDict, manifest_example
 from core_components.entities.library import AICharactor
 from core_components.events.library import AIEvent, EntityEvent
-from state import GameState
+from core_components.store import GameStore
 
 def test_component_base_ai_empty_init():
     # Arrange & Act
@@ -122,7 +122,7 @@ def test_component_base_ai_create_event():
     # Arrange
     mock_entity = AICharactor(symbol='A', color=(255,0,0), name="TestAI")
     mock_target = AICharactor(symbol='T', color=(0,255,0), name="TargetAI")
-    mock_state = GameState()
+    mock_state = GameStore()
     ai = BaseHandler(entity=mock_entity)
 
     ai_event_template = AIEvent()
@@ -156,7 +156,7 @@ def test_component_base_ai_update_state():
     mock_entity.target = mock_entity
 
     ai = BaseHandler(entity=mock_entity)
-    mock_state = GameState()
+    mock_state = GameStore()
     mock_entity._ai = ai  # type: ignore
 
     # Act

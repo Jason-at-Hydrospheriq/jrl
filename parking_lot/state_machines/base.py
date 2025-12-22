@@ -7,7 +7,7 @@ from typing import Tuple, TypeVar, TypedDict, TYPE_CHECKING
 import numpy as np  
 
 if TYPE_CHECKING:
-    from state import GameState
+    from core_components.store import GameStore
     from core_components.entities.library import AICharactor, TargetableEntity
 
 from core_components.ai.events import CharactorEvent, EntityEvent, AIEvent
@@ -34,7 +34,7 @@ manifest_example = EntityStateTableDict({   'bits': ('is_alive', 'is_spotted', '
                     })
 
 
-class BaseHandler:
+class BaseMachine:
     __slots__ = ("entity", "state", "state_table", "_state_matrix", "_state_mapping")
     entity: AICharactor
     state_table: EntityStateTableDict
@@ -96,7 +96,7 @@ class BaseHandler:
         except Exception as e:     
             raise e
 
-    def create_event(self, event: AE | EE, target: TargetableEntity, state: GameState ) -> AE | EE | None:
+    def create_event(self, event: AE | EE, target: TargetableEntity, state: GameStore ) -> AE | EE | None:
         try:
             if event is not None:
                 clone = deepcopy(event)
@@ -113,7 +113,7 @@ class BaseHandler:
             print(f"Error creating event: {e}")
             raise e
         
-    def update_state(self, state: GameState) -> None:
+    def update_state(self, state: GameStore) -> None:
         v = self.get_state_vector()
         event_type = self.get_event_from_state_vector(v)
         event = None

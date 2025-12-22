@@ -2,49 +2,90 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-import threading
-from typing import List
+from transitions import Machine
 
-from state import GameState
+from core_components.store import GameStore
+from core_components.display import Display
+from core_components.loop import GameLoop
 
-class Engine:
+class GameEngine:
     """
-    The Engine updates the game state in the main loop. It is has States that it passes to the Game AI. 
-    The GameAI converts states to a sequence of actions that the Engine performs in the main game loop.  
-    """
+    The Game updates the game state in the main loop. It is has States that it passes to the Game AI. 
+    The GameAI converts states to a sequence of actions that the Game performs in the main game loop.
 
-    state: GameState
-    threads: List[threading.Thread | None]
-    
+    Duck Types: StatefulObject, StateReferenceObject
+    """
+    machine: Machine
+    loop: GameLoop | None
+    store: GameStore | None
+    display: Display | None
+
     def __init__(self) -> None:
-        self.state = GameState()
-        self.threads = []
+        self.loop = GameLoop()
+        self.display = Display()
+        self.store = GameStore()
 
-        # Convenience links to the game state
-        self.atlas = self.state.map
-        self.roster = self.state.roster
-        self.ui = self.state.ui    
+        states = [{'name': 'idle', 'on_enter': '_initialize'}, 
+                  {'name': 'playing', 'on_enter': '_play'},
+                  {'name': 'paused', 'on_enter': '_pause'},
+                  {'name': 'resuming', 'on_enter': '_play'},
+                  {'name': 'shutdown', 'on_enter': '_shutdown'},
+                  {'name': 'resetting', 'on_enter': '_reset'}]
+        transitions =[
+            {'trigger': 'start', 'source': 'shutdown', 'dest': 'idle'},
+            {'trigger': 'play', 'source': 'idle', 'dest': 'playing'},
+            {'trigger': 'pause', 'source': 'playing', 'dest': 'paused'},
+            {'trigger': 'resume', 'source': 'paused', 'dest': 'resuming'},
+            {'trigger': 'stop', 'source': 'idle', 'dest': 'shutdown'},
+            {'trigger': 'stop', 'source': 'playing', 'dest': 'shutdown'},
+            {'trigger': 'reset', 'source': 'shutdown', 'dest': 'resetting'},
+            {'trigger': 'reset', 'source': 'playing', 'dest': 'resetting'},
+            {'trigger': 'reset', 'source': 'idle', 'dest': 'resetting'},
+            {'trigger': 'restart', 'source': 'resetting', 'dest': 'idle'},
+            ]
+        self.machine = Machine(model=self, states=states, transitions=transitions, initial='shutdown')
 
-    def start(self) -> None:
-        self.threads.append(threading.Thread(target=self.state.handle).start())
-        self.threads.append(threading.Thread(target=self.state.dispatch).start())
+    def _initialize(self) -> None:
+        """Initializes the game state, including the portfolio, atlas, and display."""
+        print("Initializing the game.")
+        if self.display:
+            self.display.start() # type: ignore
+        if self.loop:
+            self.loop.start() # type: ignore
 
-        self.atlas.create_map()
-        self.map = self.atlas.active
-
-        if self.map is not None:
-            self.state.roster.spawn_player(self.map)
-            self.state.roster.initialize_random_mobs(self.map, max_mobs_per_area=3)
-            self.player = self.state.roster.player
-            if self.player is not None:
-                self.player.fov_radius = 6
-            self.mobs = self.state.roster.live_ai_actors
-
-    def stop(self) -> None:
-        self.state.game_over.set()
+        print(f"Game is {self.state}.") # type: ignore
     
-    def threaded_exception_handler(self, args):
-        print(f"Thread failed: {args.thread.name}")
-        print(f"Exception type: {args.exc_type}")
-        print(f"Exception value: {args.exc_value}")
-        print(f"Exception traceback: {args.exc_traceback}")
+    def _play(self) -> None:
+        """Starts the main game loop, processing events and updating the game state."""
+        print("Starting the game.")
+        if self.store:
+            self.store.start() # type: ignore
+    
+        print(f"Game is {self.state}.") # type: ignore
+
+    def _pause(self) -> None:
+        """Pauses the game loop, halting event processing and state updates."""
+        print("Pausing the game.")
+        if self.store:
+            self.store.stop() # type: ignore
+
+        print(f"Game is {self.state}.") # type: ignore
+
+    def _shutdown(self) -> None:
+        """Cleans up resources and stops the game loop."""
+        print("Shutting down the game.")
+        if self.loop:
+            self.loop.stop() # type: ignore
+        if self.display:
+            self.display.stop() # type: ignore
+
+        print(f"Game is {self.state}.") # type: ignore
+
+    def _reset(self) -> None:
+        """Resets the game state to its initial configuration."""
+        print("Resetting the game.")
+        self.store = GameStore()
+        self.restart() # type: ignore
+        self.play() # type: ignore
+        
+        print(f"Game is {self.state}.") # type: ignore

@@ -13,11 +13,11 @@ from core_components.maps.tilemaps import DEFAULT_MANIFEST, DefaultTileMap
 from core_components.maps.tiles import TileTuple
 
 if TYPE_CHECKING:
-    from state import GameState
+    from core_components.store import GameStore
 
 M = TypeVar('M', bound='BaseEntity')
 
-class Roster:
+class Portfolio:
     PARENT_MAP_SIZE = DEFAULT_MANIFEST['dimensions']['grid_size']
     PLAYER = PlayerCharactor(   name="Player", 
                             symbol=chr(64), 
@@ -47,11 +47,11 @@ class Roster:
 
     __slots__ = ("state", "entities", "spawn")
     
-    state: GameState
+    state: GameStore
     entities: Set[BaseEntity]
     spawn: Callable
 
-    def __init__(self, state: GameState | None = None) -> None:
+    def __init__(self, state: GameStore | None = None) -> None:
         if state is not None:
             self.state = state
     

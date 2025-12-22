@@ -10,7 +10,7 @@ from core_components.maps.generators import BaseMapGenerator, DungeonGenerator
 from core_components.maps.tilemaps import DefaultTileMap
 
 if TYPE_CHECKING:
-    from state import GameState        
+    from core_components.store import GameStore        
 
 class Atlas:
     """The Atlas component is a collection of map generators and a history of their generated maps. 
@@ -21,12 +21,12 @@ class Atlas:
     
     __slots__ = ("state","generators", "library", "active")
     
-    state: GameState
+    state: GameStore
     generators: OrderedDict[str, BaseMapGenerator]
     library: OrderedDict[str, DefaultTileMap]
     active: DefaultTileMap
 
-    def __init__(self, state: GameState | None = None) -> None:
+    def __init__(self, state: GameStore | None = None) -> None:
         if state is not None:
             self.state = state
 

@@ -2,10 +2,10 @@ import pytest
 
 from ai import GameAI
 from components.events.library import GameOver
-from state import GameState
+from core_components.store import GameStore
 
 def test_game_over_event_handling():
-    state = GameState()
+    state = GameStore()
     state.game_over = False
     
     game_ai = GameAI(state)
@@ -22,7 +22,7 @@ def test_game_over_event_handling():
         pytest.fail("GameOver event was not handled correctly by GameAI")
 
 def test_game_ai_initialization():
-    state = GameState()
+    state = GameStore()
     game_ai = GameAI(state)
     
     try:
@@ -33,7 +33,7 @@ def test_game_ai_initialization():
         pytest.fail("GameAI did not initialize correctly with GameState")
 
 def test_game_ai_no_events():
-    state = GameState()
+    state = GameStore()
     game_ai = GameAI(state)
     
     actions = game_ai.get_actions()
@@ -46,7 +46,7 @@ def test_game_ai_no_events():
         pytest.fail("GameAI returned actions when there were no events")    
 
 def test_game_ai_multiple_events():
-    state = GameState()
+    state = GameStore()
     game_ai = GameAI(state)
     
     # Post multiple GameOver events
@@ -64,7 +64,7 @@ def test_game_ai_multiple_events():
         pytest.fail("GameAI did not handle multiple GameOver events correctly")
 
 def test_game_ai_event_clearing():
-    state = GameState()
+    state = GameStore()
     game_ai = GameAI(state)
     
     game_ai.state.game_events.post(GameOver(message='Game Over'))

@@ -2,18 +2,18 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 from tcod.console import Console
 from tcod.context import Context
 import numpy as np
 
-from core_components.ui.interfaces import BaseUIWidget
-from core_components.ui.graphics import colors
+from core_components.widgets.interfaces import BaseUIWidget
+from core_components.widgets.graphics import colors
 
 if TYPE_CHECKING:
-    from state import GameState
+    from core_components.store import GameStore
 
-from core_components.ui.graphics.tile_types import SHROUD
+from core_components.widgets.graphics.tile_types import SHROUD
 
 
 class HealthBarWidget(BaseUIWidget):
@@ -27,7 +27,7 @@ class HealthBarWidget(BaseUIWidget):
         self.width = width
         self.height = height
 
-    def render(self, context: Context, console: Console, state: GameState) -> None:
+    def render(self, context: Context, console: Console, state: GameStore) -> None:
         bar_width = 0
         current_value = 0
         maximum_value = 1
@@ -61,7 +61,7 @@ class MainMapDisplay(BaseUIWidget):
         self.width = width
         self.height = height
 
-    def render(self, context: Context, console: Console, state: GameState) -> None:
+    def render(self, context: Context, console: Console, state: GameStore) -> None:
         """
         Renders the map.
 
@@ -113,6 +113,33 @@ class MainMapDisplay(BaseUIWidget):
         # self.print_entities(engine.roster.all_non_actors, key=lambda e: hasattr(e, 'blocks_movement'), tile_map=tile_map)
 
 
+class Message:
+    """ A single message for the message log. """
+    def __init__(self, text: str, fg: Tuple[int, int, int] = colors.white) -> None:
+        self.plain_text = text
+        self.fg= fg
+        self.count = 1
+        if self.count > 1:
+            self.text = f"{self.plain_text} (x{self.count})"
+
+
+class MessageLog:
+    """ A simple message log widget to display game messages. """
+    def __init__(self) -> None:
+        self.messages: list[Message] = []
+        
+    def add(self, text: str, fg: Tuple[int, int, int] = colors.white, stack: bool = True) -> None:
+        """Add a message to this log.
+        `text` is the message text, `fg` is the text color.
+        If `stack` is True then the message can stack with a previous message
+        of the same text.
+        """
+        if stack and self.messages and text == self.messages[-1].plain_text:
+            self.messages[-1].count += 1
+        else:
+            self.messages.append(Message(text, fg))   
+
+
 class MessageLogWidget(BaseUIWidget):
     """ A simple message log widget to display game messages. """
     def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=5) -> None:
@@ -124,7 +151,7 @@ class MessageLogWidget(BaseUIWidget):
         self.width = width
         self.height = height
 
-    def render(self, context: Context, console: Console, state: GameState) -> None:
+    def render(self, context: Context, console: Console, state: GameStore) -> None:
         y = self.upper_Left_y + self.height - 1
         for message in reversed(state.log.messages[-self.height :]):
             console.print(

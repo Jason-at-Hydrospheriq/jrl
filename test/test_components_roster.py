@@ -5,11 +5,11 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
 from core_components.generators.library import DungeonGenerator
 from core_components.dispatchers.library import SystemDispatcher
-from core_components.roster import Roster
+from core_components.portfolio import Portfolio
 
 def test_component_roster_initialization():
     # Arrange
-    roster = Roster()
+    roster = Portfolio()
 
     # Act
     entities = roster.entities
@@ -18,7 +18,7 @@ def test_component_roster_initialization():
     entity_locations = roster.entity_locations
 
     # Assert
-    assert isinstance(roster, Roster)
+    assert isinstance(roster, Portfolio)
     assert isinstance(entities, set)
     assert player is None
     assert isinstance(all_actors, list)
@@ -26,7 +26,7 @@ def test_component_roster_initialization():
 
 def test_component_roster_entity_blocked_locations():
     # Arrange
-    roster = Roster()
+    roster = Portfolio()
     game_map = DungeonGenerator().generate()
     roster.spawn_player(game_map)
     player_location = None

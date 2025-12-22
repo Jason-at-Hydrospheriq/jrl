@@ -2,11 +2,11 @@ import pytest
 import tcod.event
 
 from core_components.dispatchers.library import SystemDispatcher
-from state import GameState
+from core_components.store import GameStore
 
 
 def test_dispatcher_ev_gamestart():
-    state = GameState()
+    state = GameStore()
     dispatcher = SystemDispatcher()
     
     from core_components.events.library import GameStart
@@ -23,7 +23,7 @@ def test_dispatcher_ev_gamestart():
         pytest.fail("SystemDispatcher did not handle GameStart event correctly")
 
 def test_dispatcher_ev_gameover():
-    state = GameState()
+    state = GameStore()
     dispatcher = SystemDispatcher()
     
     from core_components.events.library import GameOver
@@ -40,7 +40,7 @@ def test_dispatcher_ev_gameover():
         pytest.fail("SystemDispatcher did not handle GameOver event correctly")
 
 def test_dispatcher_ev_keydown():
-    state = GameState()
+    state = GameStore()
     dispatcher = SystemDispatcher()
 
     event = tcod.event.KeyDown(

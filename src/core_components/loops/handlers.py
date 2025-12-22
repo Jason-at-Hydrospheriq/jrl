@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import Set, Tuple
 import tcod
 
-from core_components.ai.base import StateTransformer, StateTransitionObject, GameEvent, GameAction
-from core_components.ai.actions import NoAction
-from core_components.ai.events import NonEvent
+from core_components.loops.base import StateTransformer, StateTransitionObject, GameEvent, GameAction
+from core_components.loops.actions import NoAction
+from core_components.loops.events import NonEvent
 
 
 class Handler(StateTransformer):

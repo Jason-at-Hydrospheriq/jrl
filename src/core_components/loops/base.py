@@ -6,12 +6,12 @@ from typing import Protocol, runtime_checkable, Set, Tuple, TypeVar, TYPE_CHECKI
 from queue import Queue
 
 if TYPE_CHECKING:
-    from state import GameState
+    from core_components.store import GameStore
 
 
 @runtime_checkable
 class GameStateObject(Protocol):
-    state: GameState | None
+    state: GameStore | None
 
 
 @runtime_checkable
@@ -25,7 +25,7 @@ class GameAction(StateTransitionObject, Protocol):
     Actions have a 'perform' method that wraps the execution of a Dispatcher method. When the GameState pulls the Game Action from the queue, it
     calls the 'perform' method to execute the Handler method."""
 
-    state: GameState | None
+    state: GameStore | None
     transformer: object | None # This should be set to the Handler that will handle any associated reaction events.
     
     def __init__(self) -> None:
@@ -42,7 +42,7 @@ class GameEvent(StateTransitionObject, Protocol):
     Game Events have a 'trigger' method that wraps the execution of an associated 
     Dispatcher method. When the GameState pulls the Game Event from the queue, it
     calls the 'trigger' method to execute the Dispatcher method."""
-    state: GameState | None
+    state: GameStore | None
     transformer: object | None # This should be set to the Dispatcher that will dispatch the associated action.
 
     def __init__(self) -> None:
@@ -96,7 +96,7 @@ class StateTransformer(Protocol):
                 return template[1]
         return None
     
-    def transform(self, item: T, state: GameState) -> T:
+    def transform(self, item: T, state: GameStore) -> T:
         item.state = state
         item.transformer = self
         return item

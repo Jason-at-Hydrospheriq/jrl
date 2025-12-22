@@ -11,15 +11,15 @@ from core_components.entities.library import Charactor, CombatEntity, MobileEnti
 from core_components.maps.tiles.base import TileCoordinate
 
 if TYPE_CHECKING:
-    from state import GameState
-    from core_components.ai.handlers import Handler
+    from core_components.store import GameStore
+    from core_components.automata.handlers import Handler
 
     
 class BaseAction:
-    state: GameState | None
+    state: GameStore | None
     transformer: object | None
     
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None) -> None:
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
         self.state = state
         self.transformer = handler
 
@@ -31,7 +31,7 @@ class BaseAction:
 
 class NoAction(BaseAction):
     
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None) -> None:
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
         super().__init__(handler, state)
 
     def perform(self) -> None:
@@ -40,7 +40,7 @@ class NoAction(BaseAction):
 
 class SystemExitAction(BaseAction):
     
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None) -> None:
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
         super().__init__(handler, state)
 
     def perform(self) -> None:
@@ -51,7 +51,7 @@ class SystemExitAction(BaseAction):
     
 class GameStartAction(BaseAction):
     
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None) -> None:
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
         super().__init__(handler, state)
 
     def perform(self) -> None:
@@ -62,7 +62,7 @@ class GameStartAction(BaseAction):
 
 class GameOverAction(BaseAction):
     
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None) -> None:
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
         super().__init__(handler, state)
 
     def perform(self) -> None:
@@ -72,7 +72,7 @@ class GameOverAction(BaseAction):
 
 
 class FOVUpdateAction(BaseAction):
-        def __init__(self, handler: Handler | None = None, state: GameState | None = None) -> None:
+        def __init__(self, handler: Handler | None = None, state: GameStore | None = None) -> None:
             super().__init__(handler, state)
 
         def perform(self) -> None:
@@ -123,7 +123,7 @@ class EntityActionOnTarget(BaseAction):
     entity: Charactor | None = None
     target: Charactor | None = None
 
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None, entity: Charactor | None = None, 
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
         super().__init__(handler, state)
 
@@ -138,7 +138,7 @@ class EntityActionOnDestination(BaseAction):
     entity: MobileEntity | None = None
     destination: TileCoordinate | None = None
 
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None, entity: MobileEntity | None = None, 
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: MobileEntity | None = None, 
                  destination: TileCoordinate | None = None) -> None:
         super().__init__(handler, state)
 
@@ -151,7 +151,7 @@ class EntityActionOnDestination(BaseAction):
 
 class EntityAcquireTargetAction(EntityActionOnTarget):
 
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None, entity: Charactor | None = None, 
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
         super().__init__(handler, state, entity, target)
 
@@ -168,7 +168,7 @@ class EntityAcquireTargetAction(EntityActionOnTarget):
 
 class EntityCollisionAction(EntityActionOnTarget):
 
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None, entity: Charactor | None = None, 
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
         super().__init__(handler, state, entity, target)
 
@@ -194,7 +194,7 @@ class EntityCollisionAction(EntityActionOnTarget):
 
 class EntityMoveAction(EntityActionOnDestination):
 
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None, entity: MobileEntity | None = None, 
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: MobileEntity | None = None, 
                  destination: TileCoordinate | None = None) -> None:
         super().__init__(handler, state, entity, destination)
 
@@ -212,7 +212,7 @@ class EntityMoveAction(EntityActionOnDestination):
 
 
 class EntityMeleeAction(EntityActionOnTarget):
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None, entity: Charactor | None = None, 
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
         super().__init__(handler, state, entity, target)
 
@@ -249,7 +249,7 @@ class EntityMeleeAction(EntityActionOnTarget):
 
 class EntityDeathAction(EntityActionOnTarget):
         
-    def __init__(self, handler: Handler | None = None, state: GameState | None = None, entity: Charactor | None = None, 
+    def __init__(self, handler: Handler | None = None, state: GameStore | None = None, entity: Charactor | None = None, 
                  target: Charactor | None = None) -> None:
         super().__init__(handler, state, entity, target)
 
