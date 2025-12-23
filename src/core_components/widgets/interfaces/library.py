@@ -27,14 +27,14 @@ class HealthBarWidget(BaseUIWidget):
         self.width = width
         self.height = height
 
-    def render(self, context: Context, console: Console, state: GameStore) -> None:
+    def render(self, context: Context, console: Console, store: GameStore) -> None:
         bar_width = 0
         current_value = 0
         maximum_value = 1
 
-        if state.roster.player is not None:
-            current_value = state.roster.player.physical.hp # type: ignore
-            maximum_value = state.roster.player.physical.max_hp # type: ignore
+        if store.portfolio and store.portfolio.player is not None:
+            current_value = store.portfolio.player.physical.hp # type: ignore
+            maximum_value = store.portfolio.player.physical.max_hp # type: ignore
         
         bar_width = int(float(current_value) / maximum_value * self.width)
 
@@ -61,7 +61,7 @@ class MainMapDisplay(BaseUIWidget):
         self.width = width
         self.height = height
 
-    def render(self, context: Context, console: Console, state: GameStore) -> None:
+    def render(self, context: Context, console: Console, store: GameStore) -> None:
         """
         Renders the map.
 
@@ -69,48 +69,27 @@ class MainMapDisplay(BaseUIWidget):
         If it isn't, but it's in the "explored" array, then draw it with the "dark" colors.
         Otherwise, the default is "SHROUD".
         """
-        player = state.roster.player
-        game_map = state.map.active
-        actors = state.roster.live_actors
-        # console_width = self.width
-        # console_height = self.height
+        player = None
+        game_map = None
+        actors = []
 
-        # if context.sdl_window is not None:
-        #     window_width = context.sdl_window.size[0] // 20
-        #     window_height = context.sdl_window.size[1] // 20
-        #     console_width = window_width - 5
-        #     console_height = window_height - 5
+        if store.map and store.portfolio is not None:
+            player = store.portfolio.player
+            game_map = store.map    
+            actors = store.portfolio.live_actors
 
-        console.rgb[0 : self.width, 0 : self.height] = np.select(
-            condlist=[game_map.visible, game_map.seen],
-            choicelist=[game_map.tiles['graphic_type']['visible'], game_map.tiles['graphic_type']['explored']],
-            default=SHROUD,
-        ) 
+            console.rgb[0 : self.width, 0 : self.height] = np.select(
+                condlist=[game_map.visible, game_map.seen],
+                choicelist=[game_map.tiles['graphic_type']['visible'], game_map.tiles['graphic_type']['explored']],
+                default=SHROUD,
+            ) 
 
-        if len(actors) > 0:
-            for actor in state.roster.live_actors:
-                if actor.is_spotted:
-                    console.print(actor.location.x, actor.location.y, actor.symbol, fg=actor.color)
-        if player:
-            console.print(player.location.x, player.location.y, player.symbol, fg=player.color)
-    
-    # def print_entities(self, entities, key, tile_map: GraphicTileMap) -> None:
-    #     for entity in sorted(entities, key=key, reverse=False):
-    #         if tile_map.is_visible(entity.location):
-    #             self.console.print(entity.location.x, entity.location.y, entity.char, fg=entity.color)
-
-    # def render(self, state) -> None:
-    #     x_slice = slice(self.upper_Left_x, self.lower_Right_x)
-    #     y_slice = slice(self.upper_Left_y, self.lower_Right_y)
-        
-    #     # Render Tiles
-    #     self.console.rgb[x_slice, y_slice] = state[:self.width, :self.height]
-    
-        # # Render Actors in order of their is_alive status
-        # self.print_entities(engine.roster.all_actors, key=lambda e: hasattr(e, 'is_alive'), tile_map=tile_map)
-
-        # # Render Non-Actors in order of their blocks_movement status
-        # self.print_entities(engine.roster.all_non_actors, key=lambda e: hasattr(e, 'blocks_movement'), tile_map=tile_map)
+            if len(actors) > 0:
+                for actor in store.portfolio.live_actors:
+                    if actor.is_spotted:
+                        console.print(actor.location.x, actor.location.y, actor.symbol, fg=actor.color)
+            if player:
+                console.print(player.location.x, player.location.y, player.symbol, fg=player.color)
 
 
 class Message:
@@ -151,9 +130,9 @@ class MessageLogWidget(BaseUIWidget):
         self.width = width
         self.height = height
 
-    def render(self, context: Context, console: Console, state: GameStore) -> None:
+    def render(self, context: Context, console: Console, store: GameStore) -> None:
         y = self.upper_Left_y + self.height - 1
-        for message in reversed(state.log.messages[-self.height :]):
+        for message in reversed(store.log.messages[-self.height :]):
             console.print(
                 x=self.upper_Left_x,
                 y=y,

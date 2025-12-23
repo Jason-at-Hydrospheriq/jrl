@@ -11,7 +11,7 @@ import os
 import numpy as np
 
 from core_components.widgets.interfaces import *
-from core_components.widgets.interfaces import HealthBarWidget, MainMapDisplay, MessageLogWidget
+from core_components.widgets.interfaces import HealthBarWidget, MainMapDisplay, MessageLogWidget, MessageLog
 from core_components.maps.tilemaps import DEFAULT_MANIFEST
 
 if TYPE_CHECKING:
@@ -45,18 +45,17 @@ DEFAULT_UI_MANIFEST: UIManifestDict = {
 
 
 class Display(BaseUI):
-    machine: Machine
-    context: tcod.context.Context
 
     TITLE = "JRL - Jay's Roguelike"
     WIDTH, HEIGHT = 200, 96  # Window pixel resolution (when not maximized.)
     FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
     TILESET = tcod.tileset.load_truetype_font(os.path.join("core_components", "widgets", "graphics", "resources", "GoogleSansCode-SemiBold.ttf"), 25, 25)
 
-    def __init__(self, context: Context | None = None, ui_manifest: UIManifestDict | None = DEFAULT_UI_MANIFEST) -> None:
+    def __init__(self, context: Context | None = None, ui_manifest: UIManifestDict | None = DEFAULT_UI_MANIFEST, store: GameStore | None = None) -> None:
         super().__init__(context=context, ui_manifest=ui_manifest)  
+        self.store = store
 
-
+        # Load Tileset Resources
         img = Image.open(os.path.join("core_components", "widgets", "graphics", "resources", "player", "test-5.png"))
         img = img.convert("RGBA")
         self.TILESET.set_tile(64, np.array(img))
@@ -72,5 +71,6 @@ class Display(BaseUI):
 
     def _stop(self) -> None:
         """Cleans up resources used by the display."""
-        self.context.close()
+        if self.context:
+            self.context.close()
         print("Display has stopped.")

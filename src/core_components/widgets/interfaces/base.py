@@ -17,10 +17,10 @@ class UIManifestDict(TypedDict):
 
 
 class BaseUI:
+    store: GameStore | None
     machine: Machine
-    context: Context
-    console: Console
-    state: GameStore
+    context: Context | None
+    console: Console | None
     widgets: Set[BaseUIWidget]
     context_width: int
     context_height: int
@@ -29,13 +29,13 @@ class BaseUI:
 
     """ The UI Manager handles the various UI components and their interactions. """
     
-    def __init__(self, context: Context | None = None, state: GameStore | None = None, ui_manifest: UIManifestDict | None = None, *, context_width: int = 80, context_height: int = 50) -> None:
+    def __init__(self, context: Context | None = None, store: GameStore | None = None, ui_manifest: UIManifestDict | None = None, *, context_width: int = 80, context_height: int = 50) -> None:
 
         if context is not None:
             self.context = context
 
-        if state is not None:
-            self.state = state
+        if store is not None:
+            self.store = store
 
         self.widgets = set()
         self.context_width = context_width
@@ -95,13 +95,14 @@ class BaseUI:
         return {widget for widget in self.widgets if isinstance(widget, widget_type)}
 
     def render(self) -> None:
-        if self.context.sdl_window is not None:
-            # console_width, console_height = self.context.sdl_window.size
-            self.console = self.context.new_console(self.console_width, self.console_height, order="F")
-            for widget in self.widgets:
-                widget.render(self.context, self.console, self.state)
-            self.context.present(self.console)
-            self.console.clear()  
+        if self.context and self.store:
+            if self.context.sdl_window is not None:
+                # console_width, console_height = self.context.sdl_window.size
+                self.console = self.context.new_console(self.console_width, self.console_height, order="F")
+                for widget in self.widgets:
+                    widget.render(self.context, self.console, self.store)
+                self.context.present(self.console)
+                self.console.clear()  
 
 
 class BaseUIWidget(Protocol):
@@ -123,6 +124,6 @@ class BaseUIWidget(Protocol):
         self.height = height
 
 
-    def render(self, context: Context, console: Console, state: GameStore) -> None:
+    def render(self, context: Context, console: Console, store: GameStore) -> None:
         """ Render the UI component """
         raise NotImplementedError()

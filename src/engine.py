@@ -7,6 +7,7 @@ from transitions import Machine
 from core_components.store import GameStore
 from core_components.display import Display
 from core_components.loop import GameLoop
+from type_protocols import StateStoreObject
 
 class GameEngine:
     """
@@ -44,9 +45,29 @@ class GameEngine:
     def _initialize(self) -> None:
         """Initializes the game state, including the portfolio, atlas, and display."""
         print("Initializing the game.")
-        if self.display.state != 'started': # type: ignore
+        if not self.store:
+            self.store = GameStore()
+        if not self.display:
+            self.display = Display()
+        if not self.loop:
+            self.loop = GameLoop()
+
+        stores = []
+        x = self
+
+        while self._get_store_components(x):   
+            new_stores = self._get_store_components(x)
+            for store in new_stores:
+                x = store
+                stores.append(x)
+
+        for store in stores:
+            store.store = self.store
+
+        if self.display and self.display.state != 'started': # type: ignore
             self.display.start() # type: ignore
-        if self.loop.state != 'started':  # type: ignore
+
+        if self.loop and self.loop.state != 'started':  # type: ignore
             self.loop.start() # type: ignore
 
         print(f"Game is {self.state}.") # type: ignore
@@ -54,9 +75,9 @@ class GameEngine:
     def _play(self) -> None:
         """Starts the main game loop, processing events and updating the game state."""
         print("Starting the game.")
-        if self.store.state != 'started': # type: ignore
+        if self.store and self.store.state != 'started': # type: ignore
             self.store.start() # type: ignore
-        if self.loop.state != 'started':  # type: ignore
+        if self.loop and self.loop.state != 'started':  # type: ignore
             self.loop.start() # type: ignore
 
         print(f"Game is {self.state}.") # type: ignore
@@ -64,9 +85,9 @@ class GameEngine:
     def _pause(self) -> None:
         """Pauses the game loop, halting event processing and state updates."""
         print("Pausing the game.")
-        if self.store:
+        if self.store and self.store.state != 'stopped': # type: ignore
             self.store.stop() # type: ignore
-        if self.loop:
+        if self.loop and self.loop.state != 'paused':  # type: ignore
             self.loop.pause() # type: ignore
 
         print(f"Game is {self.state}.") # type: ignore
@@ -74,11 +95,11 @@ class GameEngine:
     def _shutdown(self) -> None:
         """Cleans up resources and stops the game loop."""
         print("Shutting down the game.")
-        if self.store:
+        if self.store and self.store.state != 'stopped': # type: ignore
             self.store.stop() # type: ignore
-        if self.loop:
+        if self.loop and self.loop.state != 'stopped':  # type: ignore
             self.loop.stop() # type: ignore
-        if self.display:
+        if self.display and self.display.state != 'stopped':  # type: ignore
             self.display.stop() # type: ignore
 
         print(f"Game is {self.state}.") # type: ignore
@@ -90,3 +111,12 @@ class GameEngine:
         self.play() # type: ignore
 
         print(f"Game is {self.state}.") # type: ignore
+    
+    def _get_store_components(self, obj: object) -> list[StateStoreObject]:
+        found_stores = []
+        for attribute in dir(obj):
+            y = getattr(obj, attribute)
+            if isinstance(y, StateStoreObject):
+                found_stores.append(y)
+        return found_stores
+

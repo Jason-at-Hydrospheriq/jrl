@@ -21,13 +21,15 @@ class GameLoop:
 
     Duck Types: StatefulObject
     """
+    store: GameStore | None
     machine: Machine
     handler: GameLoopHandler | None
     threads: List[threading.Thread | None]
     stop_signal: threading.Event
 
     def __init__(self, store: GameStore | None = None) -> None:
-        self.handler = GameLoopHandler(store=store) if store else GameLoopHandler()
+        self.store = store
+        self.handler = GameLoopHandler(store=store)
         self.threads = []
         self.stop_signal = threading.Event()
         #threading.excepthook = self.threaded_exception_handler

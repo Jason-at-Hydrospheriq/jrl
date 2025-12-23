@@ -5,10 +5,11 @@ from __future__ import annotations
 from typing import List, Tuple
 from transitions import Machine
 
-# from core_components import roster, atlas, ui
+# from core_components import portfolio, atlas, ui
 
 from core_components import Portfolio
 from core_components import Atlas
+from core_components.widgets.interfaces.library import MessageLog
 
 class GameStore:
     """
@@ -20,6 +21,7 @@ class GameStore:
     machine: Machine
     portfolio: Portfolio | None
     atlas: Atlas | None
+    log: MessageLog
 
     def __init__(self) -> None:
         self.portfolio = Portfolio(store=self)
@@ -33,6 +35,8 @@ class GameStore:
             {'trigger': 'stop', 'source': 'started', 'dest': 'stopped'}
             ]
         self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
+        
+        self.log = MessageLog()
         
     def _start(self):
         """Starts the game loop and prepares the game state for play."""
@@ -48,6 +52,8 @@ class GameStore:
             if self.player is not None:
                 self.player.fov_radius = 6
             self.mobs = self.portfolio.live_ai_actors
+
+        self.log.add("Welcome to JRL - Jay's Roguelike!", fg=(255, 255, 0))
 
         print(f"Game Store is {self.state}.") # type: ignore
 
