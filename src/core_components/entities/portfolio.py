@@ -19,7 +19,7 @@ M = TypeVar('M', bound='BaseEntity')
 
 class Portfolio:
     store: GameStore
-    entities: Set[BaseEntity]
+    entities: Set[BaseGameEntity]
     spawn: Callable
 
     PARENT_MAP_SIZE = DEFAULT_MANIFEST['dimensions']['grid_size']
@@ -70,12 +70,12 @@ class Portfolio:
         self.entities.add(new_player)
 
     @property
-    def all_actors(self) -> List[BaseEntity]:
+    def all_actors(self) -> List[BaseGameEntity]:
         potential_actors = [entity for entity in self.entities if hasattr(entity, 'is_alive')]
         return [entity for entity in potential_actors] #type: ignore
     
     @property
-    def all_non_actors(self) -> List[BaseEntity]:
+    def all_non_actors(self) -> List[BaseGameEntity]:
         potential_non_actors = [entity for entity in self.entities if not hasattr(entity, 'is_alive')]
         return [entity for entity in potential_non_actors] #type: ignore
 
@@ -85,7 +85,7 @@ class Portfolio:
         return [blocker.location for blocker in potential_blockers if blocker.blocks_movement] #type: ignore
     
     @property
-    def live_actors(self) -> List[BaseEntity]:
+    def live_actors(self) -> List[BaseGameEntity]:
         potential_actors = [entity for entity in self.entities if hasattr(entity, 'is_alive')]
         return [entity for entity in potential_actors if entity.is_alive] #type: ignore
     
@@ -93,17 +93,17 @@ class Portfolio:
     def live_ai_actors(self) -> List[AICharactor]:
         return [entity for entity in self.live_actors if isinstance(entity, AICharactor)]
 
-    def entity_collision(self, entity) -> BlockingEntity | None:
+    def entity_collision(self, entity) -> MixInBlockingEntity | None:
         """Check if the given entity's destination collides with any other entity that blocks movement."""
     
         for location in self.entity_blocked_locations:
             potential_blocker = self.get_entity_at_location(location)[0]
-            if entity.destination == location and isinstance(potential_blocker, BlockingEntity):
+            if entity.destination == location and isinstance(potential_blocker, MixInBlockingEntity):
                 return potential_blocker  # Return the first blocking entity found.
 
         return None
     
-    def get_entity_at_location(self, location: TileCoordinate) -> List[BaseEntity]:
+    def get_entity_at_location(self, location: TileCoordinate) -> List[BaseGameEntity]:
         found_entity = []
         for entity in self.entities:
             if entity.location == location:

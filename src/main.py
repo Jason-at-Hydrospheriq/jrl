@@ -18,24 +18,27 @@ def main() -> None:
 
         # Update State Inputs
         for event in tcod.event.wait():
-            if event.type == "QUIT":
-                game.stop()  # type: ignore
-            
-            if event.type == "KEYDOWN":
-                if event.sym == tcod.event.K_ESCAPE:
-                    game.reset()  # type: ignore
-            
-            if event.type == "KEYDOWN":
-                if event.sym == tcod.event.K_p:
-                    if game.state == 'playing':  # type: ignore
-                        game.pause()  # type: ignore
-                    elif game.state == 'paused':  # type: ignore
-                        game.resume()  # type: ignore
-                    elif game.state == 'idle':  # type: ignore
-                        game.play()  # type: ignore
+            if event.type in ( "QUIT", "KEYDOWN" ):
+                match event.type:
+                    case "QUIT":
+                        game.stop()  # type: ignore
+                
+                    case "KEYDOWN":
+                        key_sim = event.sym
+                        match key_sim:
+                            case tcod.event.K_ESCAPE:
+                                game.reset()  # type: ignore
 
-            if game.loop and game.loop.handler:
-                game.loop.handler.handle(event)
+                            case tcod.event.K_p:
+                                if game.state == 'playing':  # type: ignore
+                                    game.pause()  # type: ignore
+                                elif game.state == 'paused':  # type: ignore
+                                    game.play()  # type: ignore
+                                elif game.state == 'idle':  # type: ignore
+                                    game.play()  # type: ignore
+
+                        if game.loop and game.loop.handler:
+                            game.loop.handler.handle(event)
 
         if game.state == 'shutdown':  # type: ignore
             break

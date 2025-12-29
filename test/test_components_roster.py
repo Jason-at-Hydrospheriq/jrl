@@ -12,10 +12,10 @@ def test_component_roster_initialization():
     roster = Portfolio()
 
     # Act
-    entities = roster.entities
-    player = roster.player
-    all_actors = roster.all_actors
-    entity_locations = roster.entity_locations
+    entities = portfolio.entities
+    player = portfolio.player
+    all_actors = portfolio.all_actors
+    entity_locations = portfolio.entity_locations
 
     # Assert
     assert isinstance(roster, Portfolio)
@@ -28,17 +28,17 @@ def test_component_roster_entity_blocked_locations():
     # Arrange
     roster = Portfolio()
     game_map = DungeonGenerator().generate()
-    roster.spawn_player(game_map)
+    portfolio.spawn_player(game_map)
     player_location = None
-    if roster.player is not None:
-        player_location = roster.player.location
+    if portfolio.player is not None:
+        player_location = portfolio.player.location
 
     # Act
-    blocked_locations = roster.entity_blocked_locations
+    blocked_locations = portfolio.entity_blocked_locations
 
     # Assert
     assert isinstance(blocked_locations, list)
     assert len(blocked_locations) == 1
 
-    if roster.player is not None:
+    if portfolio.player is not None:
         assert player_location in blocked_locations

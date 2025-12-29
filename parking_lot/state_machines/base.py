@@ -8,7 +8,7 @@ import numpy as np
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
-    from core_components.entities.library import AICharactor, TargetableEntity
+    from core_components.entities.library import AICharactor, BaseTargetableEntity
 
 from core_components.loops.events import CharactorEvent, EntityEvent, AIEvent
 
@@ -96,7 +96,7 @@ class BaseMachine:
         except Exception as e:     
             raise e
 
-    def create_event(self, event: AE | EE, target: TargetableEntity, state: GameStore ) -> AE | EE | None:
+    def create_event(self, event: AE | EE, target: BaseTargetableEntity, state: GameStore ) -> AE | EE | None:
         try:
             if event is not None:
                 clone = deepcopy(event)
@@ -120,9 +120,9 @@ class BaseMachine:
 
         if event_type != 0 and self.entity.target is not None:
             event = self.create_event(event_type, target=self.entity.target, state=state) # type: ignore
-        elif state.roster.player and event_type != 0 and self.entity.target is None:
-            if self.entity.is_spotting and state.roster.player.is_spotted:
-                event = self.create_event(event_type, target=state.roster.player, state=state) # type: ignore
+        elif state.portfolio.player and event_type != 0 and self.entity.target is None:
+            if self.entity.is_spotting and state.portfolio.player.is_spotted:
+                event = self.create_event(event_type, target=state.portfolio.player, state=state) # type: ignore
             if event is not None: # type: ignore
                 state.events.put(event) # type: ignore
         if event is not None:

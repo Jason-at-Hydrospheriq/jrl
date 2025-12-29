@@ -12,7 +12,7 @@ from core_components.maps.tiles import TileCoordinate
 if TYPE_CHECKING:
     from core_components.store import GameStore
 
-from core_components.entities.library import Charactor, CombatEntity, MobCharactor, MobileEntity, PlayerCharactor, TargetableEntity, TargetingEntity, MortalEntity
+from core_components.entities.library import Charactor, CombatEntity, MobCharactor, MixinBaseMobileEntity, PlayerCharactor, BaseTargetableEntity, BaseTargetingEntity, BaseMortalEntity
 from core_components.loops.events import FOVUpdateEvent, MeleeAttackEvent, TargetAvailableAIEvent
 
 
@@ -65,8 +65,8 @@ class FOVUpdateAction(EngineBaseAction):
         def perform(self) -> None:
             """Recompute the visible area based on the players point of view."""
             tile_blocks_vision = self.state.map.active.blocks_vision if self.state.map and self.state.map.active else None
-            player = self.state.roster.player
-            mobs = self.state.roster.live_ai_actors
+            player = self.state.portfolio.player
+            mobs = self.state.portfolio.live_ai_actors
             player_visible_tiles = np.full((self.state.map.active.grid.width, self.state.map.active.grid.height), False, order="F")            
 
             # UPDATE PLAYER FOV
@@ -119,12 +119,12 @@ class EntityActionOnTarget(EngineBaseAction):
 
 
 class EntityActionOnDestination(EngineBaseAction):
-    entity: MobileEntity | None = None
+    entity: MixinBaseMobileEntity | None = None
     destination: TileCoordinate | None = None
 
     def __init__(self, *,
                  state: GameStore | None = None,  
-                 entity: MobileEntity | None = None, 
+                 entity: MixinBaseMobileEntity | None = None, 
                  destination: TileCoordinate | None = None) -> None:
     
         if state:
@@ -156,9 +156,9 @@ class EntityAcquireTargetAction(EntityActionOnTarget):
 
 class EntityCollisionAction(EntityActionOnTarget):
     def perform(self) -> None:
-        entity_can_target = issubclass(self.entity.__class__, TargetingEntity) if self.entity else False
+        entity_can_target = issubclass(self.entity.__class__, BaseTargetingEntity) if self.entity else False
         entity_can_melee = issubclass(self.entity.__class__, CombatEntity) if self.entity else False
-        target_can_be_targeted = issubclass(self.target.__class__, TargetableEntity) if self.target else False
+        target_can_be_targeted = issubclass(self.target.__class__, BaseTargetableEntity) if self.target else False
         target_can_melee = issubclass(self.target.__class__, CombatEntity) if self.target else False
 
         entity_targets = entity_can_target and target_can_be_targeted
@@ -176,7 +176,7 @@ class EntityCollisionAction(EntityActionOnTarget):
 
 
 class EntityMoveAction(EntityActionOnDestination):
-    entity: MobileEntity | None = None
+    entity: MixinBaseMobileEntity | None = None
     destination: TileCoordinate | None = None
 
     def perform(self) -> None:
@@ -187,7 +187,7 @@ class EntityMoveAction(EntityActionOnDestination):
 
             self.state.events.put(FOVUpdateEvent(""))
 
-            for entity in self.state.roster.live_ai_actors:
+            for entity in self.state.portfolio.live_ai_actors:
                 if entity:  
                     entity.ai.update_state(self.state) # type: ignore
 
@@ -228,7 +228,7 @@ class EntityMeleeAction(EntityActionOnTarget):
                     self.entity.clear_target()
                     self.entity.is_in_combat = False
                 
-                if self.target.physical.hp <= 0 and isinstance(self.target, MortalEntity): #type: ignore
+                if self.target.physical.hp <= 0 and isinstance(self.target, BaseMortalEntity): #type: ignore
                     return EntityDeathAction(self.state, self.entity, self.target).perform() # type: ignore
 
 
@@ -242,7 +242,7 @@ class EntityDeathAction(EntityActionOnTarget):
     def perform(self) -> None:
         
         if self.entity and self.target is not None:
-            if self.target == self.state.roster.player:
+            if self.target == self.state.portfolio.player:
                 death_message = f"You have been slain by the {self.entity.name}! Game Over."
                 self.state.log.add(text=death_message)
                 self.target.clear_target()

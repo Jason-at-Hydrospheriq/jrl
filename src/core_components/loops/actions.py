@@ -6,21 +6,21 @@ from typing import TYPE_CHECKING
 import numpy as np
 import libtcodpy
 from tcod.map import compute_fov
+
 from type_protocols import *
-
-
+from core_components.loops.types import *
 from core_components.maps.tiles.base import TileCoordinate
 from core_components.loops.base import BaseGameAction
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
     from core_components.loops.handlers import GameLoopHandler
-    from core_components.entities.library import Charactor, CombatEntity, MobileEntity, TargetableEntity, TargetingEntity
+    from core_components.entities.library import Charactor, CombatEntity, MixinBaseMobileEntity, TargetableEntity, BaseTargetingEntity
+
 
 class NoAction(BaseGameAction):
 
     def perform(self) -> None:
-        print("...nothing was done.")
         pass
 
 
@@ -31,8 +31,8 @@ class FOVUpdateAction(BaseGameAction):
             if self.store:
                 """Recompute the visible area based on the players point of view."""
                 tile_blocks_vision = self.store.map.active.blocks_vision if self.store.map and self.store.map.active else None
-                player = self.store.roster.player
-                mobs = self.store.roster.live_ai_actors
+                player = self.store.portfolio.player
+                mobs = self.store.portfolio.live_ai_actors
                 player_visible_tiles = np.full((self.store.map.active.grid.width, self.store.map.active.grid.height), False, order="F")            
 
                 # UPDATE PLAYER FOV
@@ -86,10 +86,8 @@ class EntityActionOnTarget(BaseGameAction):
 
 
 class EntityActionOnDestination(BaseGameAction):
-    entity: MobileEntity | None = None
-    destination: TileCoordinate | None = None
 
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: MobileEntity | None = None, 
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: MixinBaseMobileEntity | None = None, 
                  destination: TileCoordinate | None = None) -> None:
         super().__init__(store, handler)
 
@@ -124,7 +122,7 @@ class EntityCollisionAction(EntityActionOnTarget):
         super().__init__(store, handler, entity, target)
 
     def perform(self) -> None:
-        entity_can_target = issubclass(self.entity.__class__, TargetingEntity) if self.entity else False
+        entity_can_target = issubclass(self.entity.__class__, BaseTargetingEntity) if self.entity else False
         entity_can_melee = issubclass(self.entity.__class__, CombatEntity) if self.entity else False
         target_can_be_targeted = issubclass(self.target.__class__, TargetableEntity) if self.target else False
         target_can_melee = issubclass(self.target.__class__, CombatEntity) if self.target else False
@@ -145,7 +143,7 @@ class EntityCollisionAction(EntityActionOnTarget):
 
 class EntityMoveAction(EntityActionOnDestination):
 
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: MobileEntity | None = None, 
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: MixinBaseMobileEntity | None = None, 
                  destination: TileCoordinate | None = None) -> None:
         super().__init__(store, handler, entity, destination)
 
@@ -157,7 +155,7 @@ class EntityMoveAction(EntityActionOnDestination):
             self.entity.destination = self.destination
             self.entity.move()
 
-            for entity in self.store.roster.live_ai_actors:
+            for entity in self.store.portfolio.live_ai_actors:
                 if entity:  
                     entity.ai.update_store(self.store) # type: ignore
 
@@ -209,7 +207,7 @@ class EntityDeathAction(EntityActionOnTarget):
         self.transformer.handle(None) # type: ignore
         
         if self.store and self.entity and self.target is not None:
-            if self.target == self.store.roster.player:
+            if self.target == self.store.portfolio.player:
                 death_message = f"You have been slain by the {self.entity.name}! Game Over."
                 self.store.log.add(text=death_message)
                 self.target.clear_target()

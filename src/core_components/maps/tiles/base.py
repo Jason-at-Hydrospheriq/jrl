@@ -300,6 +300,15 @@ class TileCoordinate(TileCoordinateSystemElement):
         
         return [self.x, self.y]
 
+    @classmethod
+    def from_tuple(cls, coords: Tuple[int, int], parent_map_size: TileTuple | None = None) -> TileCoordinate:
+        """Create a TileCoordinate from a tuple of (x, y) coordinates."""
+        if not isinstance(coords, tuple) or len(coords) != 2:
+            raise ValueError("coords must be a tuple of (x, y).")
+        
+        x, y = coords
+        return cls( TileTuple( ([x], [y]) ), parent_map_size=parent_map_size )
+    
 
 class TileArea(TileCoordinateSystemElement):
 

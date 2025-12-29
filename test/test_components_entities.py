@@ -53,7 +53,7 @@ def test_entity_class_inheritance():
     player2 = deepcopy(player)
 
     try:
-        for cls in [BaseEntity, BlockingEntity, MortalEntity, TargetableEntity, TargetingEntity, CombatEntity, Charactor, PlayerCharactor]:
+        for cls in [BaseGameEntity, MixInBlockingEntity, BaseMortalEntity, BaseTargetableEntity, BaseTargetingEntity, CombatEntity, Charactor, PlayerCharactor]:
             assert isinstance(player, cls), f"PlayerCharactor should inherit from {cls.__name__}"
             assert isinstance(player2, cls), f"Deepcopied PlayerCharactor should inherit from {cls.__name__}"
             

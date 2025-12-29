@@ -52,18 +52,18 @@ class GameEngine:
         if not self.loop:
             self.loop = GameLoop()
 
-        stores = []
-        x = self
-
-        while self._get_store_components(x):   
-            new_stores = self._get_store_components(x)
-            for store in new_stores:
-                x = store
-                stores.append(x)
-
+        # Propagate the store to all StateStoreObjects
+        stores = self._get_all_stores(self)
+        for store in self._get_all_stores(self.store):
+            stores.append(store)
+        
         for store in stores:
             store.store = self.store
 
+        # Start components
+        if self.store and self.store.state != 'started': # type: ignore
+            self.store.start() # type: ignore
+            
         if self.display and self.display.state != 'started': # type: ignore
             self.display.start() # type: ignore
 
@@ -120,3 +120,13 @@ class GameEngine:
                 found_stores.append(y)
         return found_stores
 
+    def _get_all_stores(self, obj: object) -> list[StateStoreObject]:
+        found_stores = []
+        x = obj
+        while self._get_store_components(x):   
+            new_stores = self._get_store_components(x)
+            for store in new_stores:
+                x = store
+                found_stores.append(x)
+        
+        return found_stores

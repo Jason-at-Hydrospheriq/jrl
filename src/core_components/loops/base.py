@@ -73,7 +73,7 @@ class BaseLoopHandler:
 
 
 class BaseGameAction:
-    store: StatefulObject | None
+    store: GameStore | None
     transformer: BaseLoopHandler | None
     
     def __init__(self, store: GameStore| None = None, transformer: BaseLoopHandler | None = None) -> None:

@@ -10,11 +10,11 @@ from core_components.tiles.base import TileCoordinate, TileTuple
 #     location_ = TileTuple(([5], [5]))
 #     spawn_location = TileCoordinate(location_)
     
-#     roster.spawn(ORC, spawn_location)
+#     portfolio.spawn(ORC, spawn_location)
     
 #     try:
-#         assert len(roster.entities) == 1
-#         spawned_orc = next(iter(roster.entities))
+#         assert len(portfolio.entities) == 1
+#         spawned_orc = next(iter(portfolio.entities))
 #         assert spawned_orc.name == "Orc"
 #         assert spawned_orc.location == spawn_location
 
@@ -23,11 +23,11 @@ from core_components.tiles.base import TileCoordinate, TileTuple
 
 # def test_roster_entity_blocked_locations():
 #     roster = Roster()
-#     roster.spawn(ORC, TileCoordinate(1, 1))
-#     roster.spawn(TROLL, TileCoordinate(2, 2))
+#     portfolio.spawn(ORC, TileCoordinate(1, 1))
+#     portfolio.spawn(TROLL, TileCoordinate(2, 2))
     
 #     try:
-#         blocked_locations = roster.entity_blocked_locations
+#         blocked_locations = portfolio.entity_blocked_locations
 #         assert len(blocked_locations) == 2
 #         assert TileCoordinate(1, 1) in blocked_locations
 #         assert TileCoordinate(2, 2) in blocked_locations
@@ -40,29 +40,29 @@ from core_components.tiles.base import TileCoordinate, TileTuple
 #     orc_location = TileCoordinate(3, 3)
 #     troll_location = TileCoordinate(4, 4)
     
-#     roster.spawn(ORC, orc_location)
-#     roster.spawn(TROLL, troll_location)
+#     portfolio.spawn(ORC, orc_location)
+#     portfolio.spawn(TROLL, troll_location)
     
 #     moving_entity = ORC
 #     moving_entity.destination = TileCoordinate(3, 3)  # Collides with spawned ORC
     
 #     try:
-#         assert roster.entity_collision(moving_entity) == True
+#         assert portfolio.entity_collision(moving_entity) == True
         
 #         moving_entity.destination = TileCoordinate(2, 2)  # No collision
-#         assert roster.entity_collision(moving_entity) == False
+#         assert portfolio.entity_collision(moving_entity) == False
 
 #     except AssertionError:
 #         pytest.fail("Entity collision detection did not function as expected")
 
 # def test_roster_live_actors():
 #     roster = Roster()
-#     roster.spawn(ORC, TileCoordinate(1, 1))
-#     roster.spawn(PLAYER, TileCoordinate(2, 2))
-#     roster.spawn(TROLL, TileCoordinate(3, 3))
+#     portfolio.spawn(ORC, TileCoordinate(1, 1))
+#     portfolio.spawn(PLAYER, TileCoordinate(2, 2))
+#     portfolio.spawn(TROLL, TileCoordinate(3, 3))
     
 #     try:
-#         live_actors = roster.live_actors
+#         live_actors = portfolio.live_actors
 #         assert len(live_actors) == 3
         
 #         # Simulate one actor dying
@@ -70,7 +70,7 @@ from core_components.tiles.base import TileCoordinate, TileTuple
 #             if actor.name == "Orc":
 #                 actor.physical.hp = 0  # Orc is dead
         
-#         live_actors_after_death = roster.live_actors
+#         live_actors_after_death = portfolio.live_actors
 #         assert len(live_actors_after_death) == 2
 #         assert live_actors_after_death[0].name == "Player"
 #         assert live_actors_after_death[1].name == "Troll"
@@ -80,12 +80,12 @@ from core_components.tiles.base import TileCoordinate, TileTuple
 
 # def test_roster_live_ai_actors():
 #     roster = Roster()
-#     roster.spawn(ORC, TileCoordinate(1, 1))
-#     roster.spawn(PLAYER, TileCoordinate(2, 2))
-#     roster.spawn(TROLL, TileCoordinate(3, 3))
+#     portfolio.spawn(ORC, TileCoordinate(1, 1))
+#     portfolio.spawn(PLAYER, TileCoordinate(2, 2))
+#     portfolio.spawn(TROLL, TileCoordinate(3, 3))
     
 #     try:
-#         live_ai_actors = roster.live_ai_actors
+#         live_ai_actors = portfolio.live_ai_actors
 #         assert len(live_ai_actors) == 2
         
 #         # Simulate one AI actor dying
@@ -93,7 +93,7 @@ from core_components.tiles.base import TileCoordinate, TileTuple
 #             if actor.name == "Troll":
 #                 actor.physical.hp = 0  #type: ignore  # Troll is dead
         
-#         live_ai_actors_after_death = roster.live_ai_actors
+#         live_ai_actors_after_death = portfolio.live_ai_actors
 #         assert len(live_ai_actors_after_death) == 1
 #         assert live_ai_actors_after_death[0].name == "Orc"
 
@@ -103,16 +103,16 @@ from core_components.tiles.base import TileCoordinate, TileTuple
 # def test_roster_get_entity_at_location():
 #     roster = Roster()
 #     location = TileCoordinate(7, 7)
-#     roster.spawn(ORC, location)
+#     portfolio.spawn(ORC, location)
     
 #     try:
-#         entities_at_location = roster.get_entity_at_location(location)
+#         entities_at_location = portfolio.get_entity_at_location(location)
 #         assert entities_at_location
 #         assert len(entities_at_location) == 1
 #         assert next(iter(entities_at_location)).name == "Orc"
         
 #         empty_location = TileCoordinate(0, 0)
-#         entities_at_empty_location = roster.get_entity_at_location(empty_location)
+#         entities_at_empty_location = portfolio.get_entity_at_location(empty_location)
 #         assert not entities_at_empty_location
 
 #     except AssertionError:

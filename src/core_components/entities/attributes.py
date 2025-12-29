@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from core_components.entities.library import BaseEntity, Charactor, AICharactor
+    from core_components.entities.library import BaseGameEntity, Charactor, AICharactor
 
 
 class BaseStats:
-    entity: BaseEntity | Charactor | AICharactor
+    entity: BaseGameEntity | Charactor | AICharactor
 
 
 class PhysicalStats(BaseStats):

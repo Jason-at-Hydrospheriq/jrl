@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any, Protocol, runtime_checkable, TypeVar, Set, Tuple
 from transitions import Machine
 
+
 @runtime_checkable
 class StatefulObject(Protocol):
     """The StatefulObject Protocol is a mixin class that has a 'machine' attribute."""
@@ -19,7 +20,8 @@ class StateStoreObject(Protocol):
 @runtime_checkable
 class StateActionObject(Protocol):
     """
-    The StateActionObject Protocol is a mixin class that has a 'state' and 'transformer' attributes.
+    A StateActionObject is any object with 'state' and 'transformer' attributes. The 'state' attribute refers to a StatefulObject instance for context,
+    and the 'transformer' attribute refers to a StateTransformer instance that can transform and send the object to a State queue.
     
     Duck Types: StatefulObject
     

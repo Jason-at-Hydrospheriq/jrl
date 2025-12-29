@@ -7,7 +7,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
 from core_components.dispatchers.base import BaseEventDispatcher
 from core_components.dispatchers.library import SystemDispatcher, InputDispatcher
-from core_components.entities.library import CombatEntity, MobileEntity, PlayerCharactor, TargetableEntity
+from core_components.entities.library import CombatEntity, MixinBaseMobileEntity, PlayerCharactor, BaseTargetableEntity
 from core_components.entities.factory import spawn, PLAYER
 from core_components.actions import EntityMoveAction, GeneralAction
 from core_components.tiles.base import TileCoordinate, TileTuple
@@ -48,7 +48,7 @@ def test_input_dispatcher_create_move_action_on_target():
     # Arrange
     dispatcher = InputDispatcher()
     dummy_state = GameStore()
-    dummy_entity = MobileEntity()  # Replace with an actual entity mock or instance
+    dummy_entity = MixinBaseMobileEntity()  # Replace with an actual entity mock or instance
     dummy_destination = TileCoordinate(TileTuple(([5], [5])), TileTuple(([80], [50])))
 
     # Act
@@ -72,7 +72,7 @@ def test_input_dispatcher_create_target_action_on_target():
     dispatcher = InputDispatcher()
     dummy_state = GameStore()
     dummy_entity = CombatEntity()  # Replace with an actual entity mock or instance
-    dummy_target = TargetableEntity()  # Replace with an actual target mock or instance
+    dummy_target = BaseTargetableEntity()  # Replace with an actual target mock or instance
 
     # Act
     action = dispatcher.create_action_on_target(action=dispatcher.TARGET_ACQUISITION_ACTION, state=dummy_state, entity=dummy_entity, target=dummy_target)
@@ -95,7 +95,7 @@ def test_input_dispatcher_get_destination():
     dispatcher = InputDispatcher()
     location_tuple = TileTuple(([10], [10]))
     location_coord = TileCoordinate(location_tuple, TileTuple(([80], [50])))
-    dummy_entity = MobileEntity()
+    dummy_entity = MixinBaseMobileEntity()
     dummy_entity.location = location_coord
 
     class DummyEvent:
@@ -155,8 +155,8 @@ def test_input_dispatcher_ev_keydown_movement():
     dummy_state = GameStore()
     location_tuple = TileTuple(([10], [10]))
     location_coord = TileCoordinate(location_tuple, TileTuple(([80], [50])))
-    dummy_entity = dummy_state.roster.spawn(PLAYER, location_coord)
-    dummy_state.roster.player = dummy_entity  # The player entity
+    dummy_entity = dummy_state.portfolio.spawn(PLAYER, location_coord)
+    dummy_state.portfolio.player = dummy_entity  # The player entity
     
     event = tcod.event.KeyDown(sym=tcod.event.KeySym.UP, 
                                         scancode=0x48, 
