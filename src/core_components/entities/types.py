@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 from type_protocols import *
-
 from typing import Protocol, Tuple, runtime_checkable
 import numpy as np
 
+from core_components.maps.tiles.base import TileCoordinate
 
 @runtime_checkable
 class EntitySubState(Protocol):
@@ -21,17 +21,15 @@ class EntityParentState(Protocol):
     machine: Machine
     substates: list[EntitySubState]
 
-# @runtime_checkable
-# class GameEntity(Protocol):
-#     """The EntityActionObject Protocol is a mixin class that has an 'entity' attribute."""
-#     store: StatefulObject | None
-#     machine: Machine
-#     location: TileCoordinate | None
 
-# @runtime_checkable
-# class BlockingEntity(GameEntity, Protocol):
-#     """The BlockingEntity Protocol is a mixin class that blocks movement."""
-#     blocks_movement: bool | None
+@runtime_checkable
+class GameEntity(Protocol):
+    """The EntityActionObject Protocol is a mixin class that has an 'entity' attribute."""
+    store: StatefulObject | None
+    machine: Machine
+    location: TileCoordinate | None
+    blocks_movement: bool | None
+
     
 # @runtime_checkable
 # class MobileEntity(GameEntity, Protocol):

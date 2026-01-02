@@ -65,7 +65,7 @@ class BaseGameSubState(BaseSubState):
     """
     A generic substate for game entities.
 
-    Duck Types: EntitySubState
+    Duck Types: EntitySubState, BaseSubState
     """
     _state_bits = ('on_map',)
     _states = ({'name': 'in_play'}, 
@@ -90,15 +90,15 @@ class BaseGameEntity(BaseParentState):
     """
     A generic object to represent players, enemies, items, etc.
 
-    Duck Types: StatefulObject, StateStoreObject, GameEntity
+    Duck Types: StatefulObject, StateStoreObject, GameEntity, BaseParentState
     """
     store: StatefulObject | None
     machine: Machine
+    location: TileCoordinate | None
+    blocks_movement: bool | None
     name: str
     symbol: str
     color: Tuple[int, int, int] # Do this like the maps. Numpy datatypes mapped to state.
-    location: TileCoordinate | None
-    blocks_movement: bool = True
 
     # Substate definition
     _substates_manifest = (
@@ -120,7 +120,8 @@ class BaseGameEntity(BaseParentState):
             self.location = TileCoordinate.from_tuple(location, parent_map_size=parent_map_size)
         else:
             self.location = location
-
+            
+        self.blocks_movement = True
         self.symbol = symbol
         self.color = color
         self.name = name
