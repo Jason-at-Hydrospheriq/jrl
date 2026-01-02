@@ -49,7 +49,8 @@ class Display(BaseUI):
     TITLE = "JRL - Jay's Roguelike"
     WIDTH, HEIGHT = 200, 96  # Window pixel resolution (when not maximized.)
     FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
-    TILESET = tcod.tileset.load_truetype_font(os.path.join("core_components", "widgets", "graphics", "resources", "GoogleSansCode-SemiBold.ttf"), 25, 25)
+    src_path = os.path.dirname(os.path.abspath(__file__))
+    TILESET = tcod.tileset.load_truetype_font(os.path.join(src_path, "widgets", "graphics", "resources", "GoogleSansCode-SemiBold.ttf"), 25, 25)
 
     def __init__(self, context: Context | None = None, ui_manifest: UIManifestDict | None = DEFAULT_UI_MANIFEST, store: GameStore | None = None) -> None:
         super().__init__(context=context, ui_manifest=ui_manifest)  

@@ -49,8 +49,6 @@ class GameStore:
             self.portfolio.spawn_player(self.map)
             self.portfolio.initialize_random_mobs(self.map, max_mobs_per_area=3)
             self.player = self.portfolio.player
-            if self.player is not None:
-                self.player.fov_radius = 6
             self.mobs = self.portfolio.live_ai_actors
 
         self.log.add("Welcome to JRL - Jay's Roguelike!", fg=(255, 255, 0))

@@ -51,7 +51,7 @@ class GameLoopHandler(BaseLoopHandler):
         
     def handle(self, event: BaseGameEvent | tcod.event.Event | None = None) -> bool:
         if event is not None:
-                return self._transform_send(event)
+            return self._transform_send(event)
         
         return False
 

@@ -47,8 +47,6 @@ class GameLoop:
             ]
         self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
 
-
-
     def _start(self) -> None:
         """Starts the game loop threads."""
         try:

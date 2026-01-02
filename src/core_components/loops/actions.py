@@ -4,7 +4,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 import numpy as np
-import libtcodpy
+import tcod as libtcodpy
 from tcod.map import compute_fov
 
 from type_protocols import *

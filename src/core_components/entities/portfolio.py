@@ -15,7 +15,7 @@ from core_components.maps.tiles import TileTuple
 if TYPE_CHECKING:
     from core_components.store import GameStore
 
-M = TypeVar('M', bound='BaseEntity')
+M = TypeVar('M', bound=BaseGameEntity)
 
 class Portfolio:
     store: GameStore
@@ -24,26 +24,20 @@ class Portfolio:
 
     PARENT_MAP_SIZE = DEFAULT_MANIFEST['dimensions']['grid_size']
     PLAYER = PlayerCharactor(   name="Player", 
-                            symbol=chr(64), 
-                            color=(130, 200, 255),
-                            location=TileCoordinate(TileTuple(([0], [0])), 
-                                                    parent_map_size=PARENT_MAP_SIZE),
-                            physical=attributes.PhysicalStats(max_hp=30, constitution=14),
-                            combat=attributes.CombatStats(defense=2, attack_power=5))
+                                symbol=chr(64), 
+                                color=(130, 200, 255),
+                                location=TileCoordinate(TileTuple(([0], [0])), 
+                                                    parent_map_size=PARENT_MAP_SIZE))
     ORC = MobCharactor( name="Orc", 
                         symbol=chr(65), 
                         color=(63, 127, 63),
                         location=TileCoordinate(TileTuple(([0], [0])), 
-                                                parent_map_size=PARENT_MAP_SIZE),
-                        physical=attributes.PhysicalStats(max_hp=10, constitution=12),
-                        combat=attributes.CombatStats(defense=0, attack_power=3))
+                                                parent_map_size=PARENT_MAP_SIZE))
     TROLL = MobCharactor(   name="Troll", 
                             symbol=chr(65), 
                             color=(0, 127, 0), 
                             location=TileCoordinate(TileTuple(([0], [0])), 
-                                                    parent_map_size=PARENT_MAP_SIZE),
-                            physical=attributes.PhysicalStats(max_hp=16, constitution=12),
-                            combat=attributes.CombatStats(defense=1, attack_power=4))
+                                                    parent_map_size=PARENT_MAP_SIZE))
 
 
     def __init__(self, store: GameStore | None = None) -> None:
@@ -53,7 +47,7 @@ class Portfolio:
         self.entities = set()    
 
     @property
-    def entity_locations(self) -> List[TileCoordinate]:
+    def entity_locations(self) -> List[TileCoordinate | None]:
         return [entity.location for entity in self.entities if hasattr(entity, 'location')]
 
     @property
@@ -93,12 +87,13 @@ class Portfolio:
     def live_ai_actors(self) -> List[AICharactor]:
         return [entity for entity in self.live_actors if isinstance(entity, AICharactor)]
 
-    def entity_collision(self, entity) -> MixInBlockingEntity | None:
+    def entity_collision(self, entity) -> BaseGameEntity | None:
         """Check if the given entity's destination collides with any other entity that blocks movement."""
-    
+        #TODO should this be a state method of MobileEntity?
+        
         for location in self.entity_blocked_locations:
             potential_blocker = self.get_entity_at_location(location)[0]
-            if entity.destination == location and isinstance(potential_blocker, MixInBlockingEntity):
+            if entity.destination == location and isinstance(potential_blocker, BaseGameEntity):
                 return potential_blocker  # Return the first blocking entity found.
 
         return None
@@ -123,6 +118,7 @@ class Portfolio:
         """Spawn a copy of this entity at the given location and return it."""
         clone = deepcopy(entity)
         clone.location = location
+        clone.store = self.store
         self.entities.add(clone)
         return clone
     
@@ -138,27 +134,28 @@ class Portfolio:
         for room in rooms:
             max_mobs_in_this_room = random.randint(1, max_mobs_per_area)
 
-            if room.contains(self.player.location) if self.player is not None else False:
-                continue  # Skip room if player is inside
-            
-            else:
-                n_mobs_spawned_in_this_room = 0
-                attempts = 100  # Prevent infinite loops
+            if self.player and self.player.location is not None:    
+                if room.contains(self.player.location):
+                    continue  # Skip room if player is inside
+                
+                elif not room.contains(self.player.location):
+                    n_mobs_spawned_in_this_room = 0
+                    attempts = 100  # Prevent infinite loops
 
-                while n_mobs_spawned_in_this_room < max_mobs_in_this_room and attempts > 0:
-                    current_mob_locations = [mob.location for mob in self.live_ai_actors]
+                    while n_mobs_spawned_in_this_room < max_mobs_in_this_room and attempts > 0:
+                        current_mob_locations = [mob.location for mob in self.live_ai_actors]
 
-                    spawn_location = room.get_random_location()
-                    attempts -= 1
-                    
-                    if not any(mob_location == spawn_location for mob_location in current_mob_locations):
-                        if random.random() < 0.8:
-                            self.spawn_at_location(entity=self.ORC, location=spawn_location)
-                        else:
-                            self.spawn_at_location(entity=self.TROLL, location=spawn_location)
-                                
-                        n_total_mobs_spawned_in_this_map += 1
-                        n_mobs_spawned_in_this_room += 1
+                        spawn_location = room.get_random_location()
+                        attempts -= 1
+                        
+                        if not any(mob_location == spawn_location for mob_location in current_mob_locations):
+                            if random.random() < 0.8:
+                                self.spawn_at_location(entity=self.ORC, location=spawn_location)
+                            else:
+                                self.spawn_at_location(entity=self.TROLL, location=spawn_location)
+                                    
+                            n_total_mobs_spawned_in_this_map += 1
+                            n_mobs_spawned_in_this_room += 1
 
         # Generate remainder of mobs in corridors
         corridors = [area for name, area in game_map.areas.items() if name.startswith('_corridor')]
