@@ -5,7 +5,7 @@ import numpy as np
 from transitions import Machine 
 
 from core_components.entities.base  import BaseGameSubState, BaseGameEntity, BaseParentState
-from core_components.entities.library import CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity
+from core_components.entities.library import CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity
 from core_components.entities.custom_types import GameEntity, EntityParentState
 from core_components.maps.tiles.base import TileCoordinate
 from core_components.maps.tilemaps.library import DefaultTileMap
@@ -26,8 +26,10 @@ class DummyGameStore:
     destination_is_map_boundary: bool = False
     map: DefaultTileMap | None = None
 
+
 class DummyPortfolio:
     live_actors: list[BaseGameEntity] = [BaseGameEntity(name='existing_entity')]
+
 
 def test_entity_base_game_substate():
     try:
@@ -455,10 +457,177 @@ def test_entity_mobile_entity():
         pass
 
 def test_entity_targetable_entity():
-    pytest.skip()
+    try:
+        # Arrange
+        targeter = BaseGameEntity()
+        target = TargetableEntity(name='targetable_entity')
+        target.hp = 100
+        target.max_hp = 100
+
+        # Act
+        initial_targeter = target.targeter
+        initial_target_state = target.perception.state # type: ignore | Expect 'unknown'
+        initial_target_state_vector = target.state_vector.copy()
+        initial_hp = target.hp
+        initial_max_hp = target.max_hp
+
+        target.location = TileCoordinate.from_tuple((0,0))
+        target.update()
+        set_location_target_state = target.perception.state # type: ignore | Expect 'not_targeted'
+        set_location_state_vector = target.state_vector.copy()
+
+        target.targeter = targeter # type: ignore
+        target.update()
+        with_targeter_state = target.perception.state # type: ignore | Expect 'targeted'
+        with_targeter_state_vector = target.state_vector.copy()
+
+        target.take_damage(30)
+        target.update()
+        after_damage_target_state = target.perception.state # type: ignore | Expect 'targeted'
+        after_damage_state_vector = target.state_vector.copy()
+        after_damage_hp = target.hp
+        after_damage_max_hp = target.max_hp
+
+        # Assert
+        assert isinstance(target, TargetableEntity), "Expected target to be instance of TargetableEntity"
+        assert isinstance(target, BaseGameEntity), "Expected target to be instance of BaseGameEntity"
+        assert isinstance(target, BaseParentState), "Expected target be an instance of BaseParentState"
+        assert isinstance(target, GameEntity), "Expected target to duck type to GameEntity"
+        assert isinstance(target, EntityParentState), "Expected target to duck type to EntityParentState"
+
+        assert initial_targeter == None, "Expected initial targeter to be None"
+        assert initial_target_state == 'unknown', "Expected initial perception state to be 'unknown'" # type: ignore
+        assert initial_target_state_vector == {'on_map': False, 'is_target': False}, "Expected initial state_vector to have 'on_map' set to False and 'is_target' set to False"
+        assert initial_hp == 100, "Expected initial hp to be 100"
+        assert initial_max_hp == 100, "Expected initial max_hp to be 100"
+
+        assert set_location_target_state == 'not_targeted', "Expected perception state to be 'not_targeted' after setting location" # type: ignore
+        assert set_location_state_vector['on_map'] == True, "Expected state_vector to have 'on_map' set to True after setting location"
+        assert with_targeter_state == 'targeted', "Expected perception state to be 'targeted' after setting targeter" # type: ignore
+        assert with_targeter_state_vector['is_target'] == True, "Expected state_vector to have 'is_target' set to True after setting targeter"
+        assert after_damage_target_state == 'targeted', "Expected perception state to remain 'targeted' after taking damage" # type: ignore
+        assert after_damage_state_vector['is_target'] == True, "Expected state_vector to have 'is_target' remain True after taking damage"
+        assert after_damage_hp == 70, "Expected hp to be 70 after taking 30 damage"
+        assert after_damage_max_hp == 100, "Expected max_hp to remain 100 after taking damage"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    # Atavise
+    finally:
+        pass
 
 def test_entity_targeting_entity():
-    pytest.skip()
+    try:
+        # Arrange
+        store = GameStore()
+        store.map = DefaultTileMap()
+        tile_layout = store.map.get_tile_layout('floor')
+        if tile_layout is not None:
+            tile_layout[0:10,0:10] = True
+        store.map.set_tiles(tile_layout, graphic_name='floor')
+        store.portfolio = DummyPortfolio() # type: ignore
+
+        targeter = TargetingEntity(store=store, name='targeting_entity')
+        targetable_target = TargetableEntity(store=store, name='targetable_entity')
+        targeting_target = TargetingEntity(store=store, name='targeting_target')
+
+        targeting_target.location = TileCoordinate.from_tuple((0,10))
+        targetable_target.location = TileCoordinate.from_tuple((10,0))
+
+        store.portfolio.live_actors = [targetable_target] # type: ignore
+
+        # Act 
+        initial_target = targeter.target # Expect None
+        initial_targeter_state = targeter.focus.state # type: ignore | Expect 'unknown'
+        initial_targeter_state_vector = targeter.state_vector.copy()
+
+        targeter.location = TileCoordinate.from_tuple((0,0))
+        targeter.update()
+        set_location_targeter_state = targeter.focus.state # type: ignore | Expect 'idle'
+        set_location_state_vector = targeter.state_vector.copy()
+
+        targeter.target = targeting_target # type: ignore
+        targeter.update()
+        with_target_state = targeter.focus.state # type: ignore | Expect 'searching'
+        with_target_state_vector = targeter.state_vector.copy()
+
+        targeting_target.location = TileCoordinate.from_tuple((2,2))
+        targeter.update()
+        closer_target_state = targeter.focus.state # type: ignore | Expect 'tracking'
+        closer_target_state_vector = targeter.state_vector.copy()
+
+        targeting_target.location = TileCoordinate.from_tuple((1,1))
+        targeting_target.target = targeter # type: ignore
+        targeter.update()
+        closest_target_state = targeter.focus.state # type: ignore | Expect 'targeting'
+        closest_target_state_vector = targeter.state_vector.copy()
+        
+        targeter.set_target(targetable_target)
+        targeter.update()
+        final_target = targeter.target
+        final_targeter_state = targeter.focus.state # type: ignore
+        target_targeter = targeter # type: ignore
+
+        targeter.clear_target()
+        targeter.update()
+        cleared_target = targeter.target
+        cleared_targeter_state = targeter.focus.state # type: ignore
+
+        targetable_target.location = TileCoordinate.from_tuple((3,3))
+        targeter.acquire_target()
+        targeter.update()
+        acquired_target = targeter.target
+        acquired_targeter_state = targeter.focus.state # type: ignore
+
+        # Assert
+        assert isinstance(targeter, TargetingEntity), "Expected targeter to be instance of TargetingEntity"
+        assert isinstance(targeter, BaseGameEntity), "Expected targeter to be instance of BaseGameEntity"
+        assert isinstance(targeter, BaseParentState), "Expected targeter to be an instance of BaseParentState"
+        assert isinstance(targeter, GameEntity), "Expected target to duck type to GameEntity"
+        assert isinstance(targeter, EntityParentState), "Expected target to duck type to EntityParentState"
+
+        assert initial_target == None, "Expected initial target to be None"
+        assert initial_targeter_state == 'unknown', "Expected initial focus state to be 'unknown'" # type: ignore
+        assert initial_targeter_state_vector == {'on_map': False, 'target_in_fov': False, 'target_is_hostile': False, 'has_target': False}, "Expected initial state_vector to have 'on_map' set to False, 'target_in_fov' set to False, and 'target_is_hostile' set to False"
+
+        assert set_location_targeter_state == 'idle', "Expected focus state to be 'idle' after setting location" # type: ignore
+        assert set_location_state_vector['on_map'] == True, "Expected state_vector to have 'on_map' set to True after setting location"
+
+        assert with_target_state == 'searching', "Expected focus state to be 'searching' after setting target" # type: ignore
+        assert with_target_state_vector['target_in_fov'] == False, "Expected state_vector to have 'target_in_fov' set to False after setting target"
+        assert with_target_state_vector['target_is_hostile'] == False, "Expected state_vector to have 'target_is_hostile' set to False after setting target"
+        assert with_target_state_vector['has_target'] == True, "Expected state_vector to have 'has_target' set to True after setting target"
+
+        assert closer_target_state == 'tracking', "Expected focus state to be 'tracking' after moving target closer" # type: ignore
+        assert closer_target_state_vector['target_in_fov'] == True, "Expected state_vector to have 'target_in_fov' set to True after moving target closer"
+        assert closer_target_state_vector['target_is_hostile'] == False, "Expected state_vector to have 'target_is_hostile' set to False after moving target closer"
+        assert closer_target_state_vector['has_target'] == True, "Expected state_vector to have 'has_target' set to True after moving target closer"
+
+        assert closest_target_state == 'targeting', "Expected focus state to be 'targeting' after moving target into hostile range" # type: ignore
+        assert closest_target_state_vector['target_in_fov'] == True, "Expected state_vector to have 'target_in_fov' set to True after moving target into hostile range"
+        assert closest_target_state_vector['target_is_hostile'] == True, "Expected state_vector to have 'target_is_hostile' set to True after moving target into hostile range"
+        assert closest_target_state_vector['has_target'] == True, "Expected state_vector to have 'has_target' set to True after moving target into hostile range"
+
+        assert final_target == targetable_target, "Expected final target to be the targetable_target after setting target"
+        assert final_targeter_state == 'searching', "Expected focus state to be 'searching' after changing target to targetable entity" # type: ignore
+        assert target_targeter == targeter, "Expected targetable_target's targeter to be the targeting_entity"
+        assert cleared_target == None, "Expected target to be None after clearing target"
+        assert cleared_targeter_state == 'idle', "Expected focus state to be 'idle' after clearing target" # type: ignore
+
+        assert acquired_target == targetable_target, "Expected acquired target to be the targetable_target after acquiring target"
+        assert acquired_targeter_state == 'tracking', "Expected focus state to be 'tracking' after acquiring a non-hostile target" # type: ignore
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    # Atavise
+    finally:
+        pass
 
 def test_entity_combat_entity():
     pytest.skip()

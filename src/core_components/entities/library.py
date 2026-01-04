@@ -134,7 +134,8 @@ class TargetingSubState(BaseGameSubState):
 class CombatSubState(BaseGameSubState):
     """The CombatSubState is a class that defines and runs the 'combat' state machine for a Game Entity.
     This state machine tracks whether an Entity is engaged in combat, attacking, disengaged, or peaceful.
-    It manages the 'in_melee_range' state bit in the state_vector."""
+    It manages the 'in_melee_range' state bit in the state_vector. An entity can have more than one CombatSubState
+    to represent different combat types (melee, missile, spell)."""
 
     range_threshold: int = 1  # Distance threshold for combat range
     combat_type: str = "melee"  # Type of combat: 'melee', 'missile', 'spell'
@@ -210,6 +211,7 @@ class TargetingEntity(BaseGameEntity):
     focus: TargetingSubState
     _fov_radius: int = 6
     _visible_tiles: np.ndarray | None = None
+    _initial_threat_level: int = 10
     _threat_level: int = 10
     _substates_manifest = (
         ("spawn", BaseGameSubState),
@@ -242,11 +244,12 @@ class TargetingEntity(BaseGameEntity):
 
     @property
     def target_in_fov(self) -> bool:
-        if self.store:
-            blocking_tiles = self.store.map.active.blocks_vision if self.store.map and self.store.map.active else None # type: ignore
+        blocking_tiles = None
+        if self.store and self.store.map and self.target:  # type: ignore Assume store is GameStore
+            blocking_tiles = self.store.map.blocks_vision  # type: ignore
             
             # UPDATE ENTITY FOV
-            if blocking_tiles and self.location is not None:
+            if isinstance(blocking_tiles, np.ndarray) and self.location is not None:
                 self._visible_tiles = compute_fov(~blocking_tiles, (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
 
                 if self.target and self.target.location is not None:
@@ -267,18 +270,25 @@ class TargetingEntity(BaseGameEntity):
         return 9999
     
     def set_target(self, target: TargetableEntity) -> None:
+        self.threat_level = self._initial_threat_level
         self.target = target
         target.set_targeter(self)
-        
+        self.update()
+
     def clear_target(self) -> None:
         if self.target:
             self.target.clear_targeter()
         self.target = None
+        self.threat_level = self._initial_threat_level
+        self.update()
 
     def acquire_target(self) -> bool:
-        visible_targets = [entity for entity in self.store.live_entities if self._visible_tiles[entity.location.x, entity.location.y]]  # type: ignore
-        distances = []
+        visible_targets: List[TargetableEntity] = []
+        distances: List[Tuple[int, TargetableEntity]] = []
 
+        if self.store and self.store.portfolio and isinstance(self._visible_tiles, np.ndarray):  # type: ignore Assume store is GameStore
+            visible_targets = [entity for entity in self.store.portfolio.live_actors if entity and self._visible_tiles[entity.location.x, entity.location.y]]  # type: ignore Assume live_actors is List[Character]
+    
         if visible_targets:
             for entity in visible_targets:
                 self.set_target(entity)
@@ -294,15 +304,17 @@ class TargetingEntity(BaseGameEntity):
             return False
 
     def assess_threat(self) -> None:
+        if self.distance_to_target > 8:
+            self.threat_level = self._initial_threat_level
         if self.distance_to_target <= 8:
-            self.threat_level += 10
+            self.threat_level = self._initial_threat_level + 10
         if self.distance_to_target <= 5:
-            self.threat_level += 10
+            self.threat_level = self._initial_threat_level + 20
         if self.distance_to_target <= 2:
-            self.threat_level += 10
+            self.threat_level = self._initial_threat_level + 30
         if self.distance_to_target == 1:
-            self.threat_level += 10
-        if self.target:
+            self.threat_level = self._initial_threat_level + 40
+        if self.target and hasattr(self.target, 'target'):
             if self.target.target is self: # type: ignore
                 self.threat_level = self.threat_level * 2
     
@@ -358,6 +370,10 @@ class CombatEntity(TargetableEntity, TargetingEntity):
 
 
 class MobileEntity(BaseGameEntity):
+    """A Mobile Entity is any game object that can move around the map. It has a 'collision' substate that is an
+    instance of CollisionSubState that manages its collision states. A Mobile Entity can 'move' and has 'speed' and 'destination' properties
+    to control its movement capabilities."""
+
     speed: int | None = 0
     destination: TileCoordinate | None = None
     collision: CollisionSubState
@@ -393,7 +409,7 @@ class MobileEntity(BaseGameEntity):
     def move(self) -> None:
         self.location = self.destination
         self.destination = None
-        
+
 
 class Character(MobileEntity, CombatEntity):
 
