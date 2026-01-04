@@ -2,10 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from turtle import color
-from typing import List, Optional, Tuple, Type, TYPE_CHECKING
-from transitions import Machine
-from type_protocols import *
+from typing import List, Tuple, TYPE_CHECKING
+import numpy as np
 import tcod as libtcodpy
 from tcod.map import compute_fov
 
@@ -14,12 +12,50 @@ from core_components.entities.attributes import *
 if TYPE_CHECKING:
     from core_components.loops import BaseLoopHandler
     from core_components.store import GameStore
+    from core_components.loops.handlers import MobHandler
 
-from core_components.entities.types import *
-from core_components.loops.handlers import MobHandler
 from core_components.maps.tiles import TileCoordinate
 from core_components.entities.base import BaseGameSubState, BaseGameEntity
 
+
+class CollisionSubState(BaseGameSubState):
+    """The CollisionSubState is a class that defines and runs the 'collision' state machine for a Game Entity.
+    This state machine tracks whether an Entity is colliding with another object or not. It manages the 
+    'entity_collision', 'terrain_collision', 'boundary_collision' state bits in the state_vector."""
+
+    _state_bits = ('in_entity_collision', 'in_terrain_collision', 'in_boundary_collision')
+    _states = ( {'name':'colliding_with_entity', 'on_enter': ['update']},
+                {'name':'colliding_with_terrain', 'on_enter': ['update']}, 
+                {'name':'colliding_with_boundary', 'on_enter': ['update']}, 
+                {'name':'not_colliding', 'on_enter': ['update']},
+                {'name':'unknown', 'on_enter': ['update']},)
+    _transitions = (
+            {'trigger':'update', 'source':['not_colliding', 'unknown', 'colliding_with_terrain', 'colliding_with_boundary'], 'dest':'colliding_with_entity', 'conditions':['is_on_map', 'is_colliding_with_entity']},
+            {'trigger':'update', 'source':['not_colliding', 'unknown', 'colliding_with_entity', 'colliding_with_boundary'], 'dest':'colliding_with_terrain', 'conditions':['is_on_map', 'is_colliding_with_terrain']},
+            {'trigger':'update', 'source':['not_colliding', 'unknown', 'colliding_with_entity', 'colliding_with_terrain'], 'dest':'colliding_with_boundary', 'conditions':['is_on_map', 'is_colliding_with_boundary']},
+            {'trigger':'update', 'source':['unknown', 'colliding_with_entity', 'colliding_with_terrain', 'colliding_with_boundary'], 'dest':'not_colliding', 'conditions':['is_on_map', 'is_not_colliding']},
+            {'trigger':'update', 'source':['not_colliding', 'colliding_with_entity', 'colliding_with_terrain', 'colliding_with_boundary'], 'dest':'unknown', 'conditions':['is_not_on_map']})
+    _initial_state = 'not_colliding'
+    
+    def set_bits(self) -> None:
+        self.store.state_vector['in_entity_collision'] = self.store.destination_is_blocking_entity  # type: ignore
+        self.store.state_vector['in_terrain_collision'] = self.store.destination_is_blocking_terrain  # type: ignore
+        self.store.state_vector['in_boundary_collision'] = self.store.destination_is_map_boundary  # type: ignore
+        
+    def is_colliding_with_entity(self) -> bool:
+        return self.store.state_vector['in_entity_collision']  # type: ignore
+
+    def is_colliding_with_terrain(self) -> bool:
+        return self.store.state_vector['in_terrain_collision']  # type: ignore
+
+    def is_colliding_with_boundary(self) -> bool:
+        return self.store.state_vector['in_boundary_collision']  # type: ignore
+
+    def is_not_colliding(self) -> bool:
+        return not (self.store.state_vector['in_entity_collision'] or  # type: ignore
+                    self.store.state_vector['in_terrain_collision'] or  # type: ignore
+                    self.store.state_vector['in_boundary_collision'])  # type: ignore
+    
 
 class TargetedSubState(BaseGameSubState):
     """The TargetedSubState is a class that defines and runs the 'perception' state machine for a Game Entity.
@@ -138,7 +174,7 @@ class TargetableEntity(BaseGameEntity):
     It has a 'perception' substate that is an instance of TargetedSubState that manages its targeted states.
     A Targetable Entity can be damaged. It has a 'take_damage' method to reduce its hit points when damaged."""
 
-    targeter: StatefulObject | None = None
+    targeter: TargetingEntity | None = None
     perception: TargetedSubState
     _substates_manifest = (
         ("spawn", BaseGameSubState),
@@ -153,6 +189,12 @@ class TargetableEntity(BaseGameEntity):
                  color: Tuple[int, int, int]=(0,0,0)) -> None:
         super().__init__(store=store, location=location, name=name, symbol=symbol, color=color)
 
+    def set_targeter(self, targeter: TargetingEntity) -> None:
+        self.targeter = targeter
+    
+    def clear_targeter(self) -> None:
+        self.targeter = None
+
     def take_damage(self, damage: int) -> None:
         if self.hp:
             self.hp -= damage
@@ -164,7 +206,7 @@ class TargetingEntity(BaseGameEntity):
     that is an instance of TargetingSubState that manages its targeting states. A Targeting Entity can assess 
     threat levels and has a 'threat_level' property to represent its current threat assessment."""
 
-    target: BaseGameEntity | None = None
+    target:TargetableEntity | None = None
     focus: TargetingSubState
     _fov_radius: int = 6
     _visible_tiles: np.ndarray | None = None
@@ -200,36 +242,19 @@ class TargetingEntity(BaseGameEntity):
 
     @property
     def target_in_fov(self) -> bool:
-            if self.store:
-                blocking_tiles = self.store.map.active.blocks_vision if self.store.map and self.store.map.active else None # type: ignore
-               
-                # UPDATE ENTITY FOV
-                if blocking_tiles and self.location is not None:
-                    self._visible_tiles = compute_fov( ~blocking_tiles, (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
+        if self.store:
+            blocking_tiles = self.store.map.active.blocks_vision if self.store.map and self.store.map.active else None # type: ignore
+            
+            # UPDATE ENTITY FOV
+            if blocking_tiles and self.location is not None:
+                self._visible_tiles = compute_fov(~blocking_tiles, (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
 
-                    if self.target and self.target.location is not None:
-                        tx, ty = self.target.location.x, self.target.location.y
-                        if self._visible_tiles[tx, ty]:
-                            return True
+                if self.target and self.target.location is not None:
+                    tx, ty = self.target.location.x, self.target.location.y
+                    if self._visible_tiles[tx, ty]:
+                        return True
 
-                    else:
-                        visible_targets = [entity for entity in self.store.live_entities if self._visible_tiles[entity.location.x, entity.location.y]]  # type: ignore
-                        distances = []
-
-                        if visible_targets:
-                            for entity in visible_targets:
-                                self.target = entity
-                                distance = self.distance_to_target
-                                distances.append((distance, entity))
-                        
-                        if distances:
-                            distances.sort(key=lambda x: x[0])
-                            self.target = distances[0][1]
-                            return True
-                        else:
-                            self.target = None
-                            return False
-            return False
+        return False
 
     @property
     def distance_to_target(self) -> int:
@@ -240,7 +265,34 @@ class TargetingEntity(BaseGameEntity):
             return max(abs(dx), abs(dy))  # Using Chebyshev distance for grid-based movement
         
         return 9999
-      
+    
+    def set_target(self, target: TargetableEntity) -> None:
+        self.target = target
+        target.set_targeter(self)
+        
+    def clear_target(self) -> None:
+        if self.target:
+            self.target.clear_targeter()
+        self.target = None
+
+    def acquire_target(self) -> bool:
+        visible_targets = [entity for entity in self.store.live_entities if self._visible_tiles[entity.location.x, entity.location.y]]  # type: ignore
+        distances = []
+
+        if visible_targets:
+            for entity in visible_targets:
+                self.set_target(entity)
+                distance = self.distance_to_target
+                distances.append((distance, entity))
+        
+        if distances:
+            distances.sort(key=lambda x: x[0])
+            self.set_target(distances[0][1])
+            return True
+        else:
+            self.clear_target()
+            return False
+
     def assess_threat(self) -> None:
         if self.distance_to_target <= 8:
             self.threat_level += 10
@@ -263,7 +315,7 @@ class CombatEntity(TargetableEntity, TargetingEntity):
     """A Combat Entity is any game object that can both target and be targeted by other entities and deal damage.
     It has both 'focus' and 'perception' substates that are instances of TargetingSubState and TargetedSubState. 
     It has a 'combat' substate that is an instance of CombatSubState to manage its combat states. A Combat Entity has
-    'attack' and 'defense' properties to calculate damage dealt and mitigated during combat."""
+    'attack' and 'defense' methods to calculate damage dealt and mitigated during combat."""
 
     combat: CombatSubState
     _attack_power: int = 10
@@ -292,15 +344,9 @@ class CombatEntity(TargetableEntity, TargetingEntity):
     def defense_power(self, value: int) -> None:
         self._defense_power = value
 
-    @property
     def attack(self) -> int:
-        damage_delivered = 0
-        if self.combat.is_attacking(): #type: ignore
-            damage_delivered = self._attack_power
+        return self._attack_power #TODO: add state-based modifiers
     
-        return damage_delivered
-    
-    @property
     def defend(self) -> int:
         damage_mitigated = 0
         if self.combat.is_melee_ready(): #type: ignore
@@ -314,11 +360,40 @@ class CombatEntity(TargetableEntity, TargetingEntity):
 class MobileEntity(BaseGameEntity):
     speed: int | None = 0
     destination: TileCoordinate | None = None
+    collision: CollisionSubState
+    _substates_manifest = (
+        ("spawn", BaseGameSubState),
+        ("collision", CollisionSubState),
+    )
 
+    @property
+    def destination_is_blocking_entity(self) -> bool:
+        if self.store and self.store.map and self.store.portfolio: # type: ignore Assume store is GameStore
+            for entity in self.store.portfolio.live_actors: # type: ignore Assume live_actors is List[Character]
+                if entity.location == self.destination and entity.blocks_movement:
+                    return True
+        return False
+    
+    @property
+    def destination_is_blocking_terrain(self) -> bool:
+        if self.store and self.store.map and self.destination: # type: ignore Assume store is GameStore
+            return self.store.map.is_blocked(self.destination)  # type: ignore
+        return False
+    
+    @property
+    def destination_is_map_boundary(self) -> bool:
+        if self.store and self.store.map and self.destination: # type: ignore Assume store is GameStore
+            map_width = self.store.map.grid.width  # type: ignore
+            map_height = self.store.map.grid.height  # type: ignore
+            if self.destination:
+                if self.destination.x < 0 or self.destination.x >= map_width or self.destination.y < 0 or self.destination.y >= map_height:
+                    return True
+        return False    
+    
     def move(self) -> None:
-        if self.destination is not None:
-            self.location = self.destination
-
+        self.location = self.destination
+        self.destination = None
+        
 
 class Character(MobileEntity, CombatEntity):
 
@@ -383,6 +458,9 @@ class AICharacter(Character):
     def ai(self) -> BaseLoopHandler | None:
         return self._ai
 
+    @ai.setter
+    def ai(self, value: BaseLoopHandler | None) -> None:
+        self._ai = value
 
     def die(self) -> None:
         super().die()
@@ -392,13 +470,19 @@ class AICharacter(Character):
 class MobCharacter(AICharacter):
     def __init__(   self,
                     *,
-                store: GameStore | None = None,
-                location: TileCoordinate | None = None,
-                name: str = "<Unnamed>",
-                symbol: str = '?',
-                color: Tuple[int, int, int]=(255, 255, 255),
-                 ) -> None:
+                    store: GameStore | None = None,
+                    location: TileCoordinate | None = None,
+                    name: str = "<Unnamed>",
+                    symbol: str = '?',
+                    color: Tuple[int, int, int]=(255, 255, 255),
+                    ) -> None:
         
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-        self._ai = MobHandler(self)
 
+    @property
+    def ai(self) -> BaseLoopHandler | None:
+        return self._ai
+    
+    @ai.setter
+    def ai(self, value: MobHandler | None) -> None:   # type: ignore
+        self._ai = value

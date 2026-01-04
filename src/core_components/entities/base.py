@@ -45,7 +45,8 @@ class BaseParentState:
     def __init__(self):
         self.substates = []
         self.state_vector = {}
-    
+        self.machine = Machine(model=self, states=[], transitions=[])
+        
         for name, substate in self._substates_manifest:        
             self._add_substate(substate(name=name, store=self))
 

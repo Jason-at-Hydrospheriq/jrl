@@ -8,14 +8,15 @@ import tcod as libtcodpy
 from tcod.map import compute_fov
 
 from type_protocols import *
-from core_components.loops.types import *
+from core_components.loops.custom_types import *
 from core_components.maps.tiles.base import TileCoordinate
 from core_components.loops.base import BaseGameAction
+from core_components.entities.library import Character
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
     from core_components.loops.handlers import GameLoopHandler
-    from core_components.entities.library import Charactor, CombatEntity, MixinBaseMobileEntity, TargetableEntity, BaseTargetingEntity
+    from core_components.entities.library import Charactor, CombatEntity, MobileEntity, TargetableEntity, TargetingEntity
 
 
 class NoAction(BaseGameAction):
@@ -24,58 +25,58 @@ class NoAction(BaseGameAction):
         pass
 
 
-class FOVUpdateAction(BaseGameAction):
+# class FOVUpdateAction(BaseGameAction):
 
-        def perform(self) -> None:
-            self.transformer.handle(None) # type: ignore
-            if self.store:
-                """Recompute the visible area based on the players point of view."""
-                tile_blocks_vision = self.store.map.active.blocks_vision if self.store.map and self.store.map.active else None
-                player = self.store.portfolio.player
-                mobs = self.store.portfolio.live_ai_actors
-                player_visible_tiles = np.full((self.store.map.active.grid.width, self.store.map.active.grid.height), False, order="F")            
+#         def perform(self) -> None:
+#             self.transformer.handle(None) # type: ignore
+#             if self.store:
+#                 """Recompute the visible area based on the players point of view."""
+#                 tile_blocks_vision = self.store.map.active.blocks_vision if self.store.map and self.store.map.active else None
+#                 player = self.store.portfolio.player
+#                 mobs = self.store.portfolio.live_ai_actors
+#                 player_visible_tiles = np.full((self.store.map.active.grid.width, self.store.map.active.grid.height), False, order="F")            
 
-                # UPDATE PLAYER FOV
-                if player and tile_blocks_vision is not None:
-                    player_visible_tiles = compute_fov( ~tile_blocks_vision, (player.location.x, player.location.y), radius=player.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
-                    self.store.map.active.set_store_bits('visible', player_visible_tiles)
+#                 # UPDATE PLAYER FOV
+#                 if player and tile_blocks_vision is not None:
+#                     player_visible_tiles = compute_fov( ~tile_blocks_vision, (player.location.x, player.location.y), radius=player.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
+#                     self.store.map.active.set_store_bits('visible', player_visible_tiles)
 
-                    # If a tile is "visible" it should be added to "explored".
-                    if player_visible_tiles is not None:
-                        prior_seen_tiles = self.store.map.active.get_store_bits('seen')
-                        newly_seen_tiles = np.logical_or(prior_seen_tiles, player_visible_tiles)
-                        self.store.map.active.set_store_bits('seen', newly_seen_tiles)
+#                     # If a tile is "visible" it should be added to "explored".
+#                     if player_visible_tiles is not None:
+#                         prior_seen_tiles = self.store.map.active.get_store_bits('seen')
+#                         newly_seen_tiles = np.logical_or(prior_seen_tiles, player_visible_tiles)
+#                         self.store.map.active.set_store_bits('seen', newly_seen_tiles)
                 
-                # UPDATE MOB FOV AND SPOTTING
-                if len(mobs) > 0 and player and tile_blocks_vision is not None:
-                    for mob in mobs:
-                        mob_visible_tiles = compute_fov( ~tile_blocks_vision, (mob.location.x, mob.location.y), radius=mob.fov_radius, algorithm=libtcodpy.FOV_SHADOW)
+#                 # UPDATE MOB FOV AND SPOTTING
+#                 if len(mobs) > 0 and player and tile_blocks_vision is not None:
+#                     for mob in mobs:
+#                         mob_visible_tiles = compute_fov( ~tile_blocks_vision, (mob.location.x, mob.location.y), radius=mob.fov_radius, algorithm=libtcodpy.FOV_SHADOW)
                         
-                        if player_visible_tiles[mob.location.x, mob.location.y]:
-                            mob.is_spotted = True
+#                         if player_visible_tiles[mob.location.x, mob.location.y]:
+#                             mob.is_spotted = True
                         
-                        elif not player_visible_tiles[mob.location.x, mob.location.y]:
-                            mob.is_spotted = False
+#                         elif not player_visible_tiles[mob.location.x, mob.location.y]:
+#                             mob.is_spotted = False
 
-                        if mob_visible_tiles[player.location.x, player.location.y]:
-                            mob.is_spotting = True
-                            self.store.log.add(text=f"You have been spotted!")
-                            player.is_spotted = True
+#                         if mob_visible_tiles[player.location.x, player.location.y]:
+#                             mob.is_spotting = True
+#                             self.store.log.add(text=f"You have been spotted!")
+#                             player.is_spotted = True
 
-                        elif not mob_visible_tiles[player.location.x, player.location.y]:
-                            mob.is_spotting = False
+#                         elif not mob_visible_tiles[player.location.x, player.location.y]:
+#                             mob.is_spotting = False
                         
-                    for mob in mobs:
-                        if mob.is_spotted:
-                            player.is_spotting = True
+#                     for mob in mobs:
+#                         if mob.is_spotted:
+#                             player.is_spotting = True
 
 
 class EntityActionOnTarget(BaseGameAction):
-    entity: Charactor | None = None
-    target: Charactor | None = None
+    entity: Character | None = None
+    target: Character | None = None
 
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Charactor | None = None, 
-                 target: Charactor | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
+                 target: Character | None = None) -> None:
         super().__init__(store, handler)
 
         self.entity = entity
@@ -87,7 +88,7 @@ class EntityActionOnTarget(BaseGameAction):
 
 class EntityActionOnDestination(BaseGameAction):
 
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: MixinBaseMobileEntity | None = None, 
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: MobileEntity | None = None, 
                  destination: TileCoordinate | None = None) -> None:
         super().__init__(store, handler)
 
@@ -100,29 +101,27 @@ class EntityActionOnDestination(BaseGameAction):
 
 class EntityAcquireTargetAction(EntityActionOnTarget):
 
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Charactor | None = None, 
-                 target: Charactor | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
+                 target: Character | None = None) -> None:
         super().__init__(store, handler, entity, target)
 
     def perform(self) -> None:
         self.transformer.handle(None) # type: ignore
         if self.entity and self.store and self.target is not None:
-            if isinstance(self.target, Charactor):
-                self.entity.acquire_target(self.target)
-                self.entity.is_targeting = True
-                self.target.is_targeted = True
-                self.target.targeter = self.entity
-                self.store.log.add(text=f"{self.entity.name} has engaged the {self.target.name}.")
+            if isinstance(self.target, Character) and isinstance(self.entity, Character):
+                self.entity.set_target(self.target)
+                self.target.set_targeter(self.entity)
+                self.store.log.add(text=f"{self.entity.name} is {self.entity.focus.state} the {self.target.name}.")
  
 
 class EntityCollisionAction(EntityActionOnTarget):
 
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Charactor | None = None, 
-                 target: Charactor | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
+                 target: Character | None = None) -> None:
         super().__init__(store, handler, entity, target)
 
     def perform(self) -> None:
-        entity_can_target = issubclass(self.entity.__class__, BaseTargetingEntity) if self.entity else False
+        entity_can_target = issubclass(self.entity.__class__, TargetingEntity) if self.entity else False
         entity_can_melee = issubclass(self.entity.__class__, CombatEntity) if self.entity else False
         target_can_be_targeted = issubclass(self.target.__class__, TargetableEntity) if self.target else False
         target_can_melee = issubclass(self.target.__class__, CombatEntity) if self.target else False
@@ -161,8 +160,8 @@ class EntityMoveAction(EntityActionOnDestination):
 
 
 class EntityMeleeAction(EntityActionOnTarget):
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Charactor | None = None, 
-                 target: Charactor | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
+                 target: Character | None = None) -> None:
         super().__init__(store, handler, entity, target)
 
     def perform(self) -> None:
@@ -182,7 +181,7 @@ class EntityMeleeAction(EntityActionOnTarget):
                 attack_power = self.entity.combat.attack_power # type: ignore
                 defense = self.target.combat.defense # type: ignore
                 
-                if isinstance(self.target, Charactor): # Attack only mortal entities
+                if isinstance(self.target, Character): # Attack only mortal entities
                     defense = 1  # Basic defense for non-combat entities
                     damage = max(0, attack_power - defense)
                     self.target.take_damage(damage)
@@ -199,8 +198,8 @@ class EntityMeleeAction(EntityActionOnTarget):
 class EntityDeathAction(EntityActionOnTarget):
         
 
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Charactor | None = None, 
-                 target: Charactor | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
+                 target: Character | None = None) -> None:
         super().__init__(store, handler, entity, target)
 
     def perform(self) -> None:

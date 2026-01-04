@@ -413,7 +413,6 @@ class GraphicTileMap(Protocol):
         self.areas.clear()
         self.paths.clear()
 
-    def object_collision(self, location: TileCoordinate) -> bool:
-        isblocked = False
-        isblocked = bool(self.tiles['blocks_movement'][location.x, location.y])
-        return isblocked
+    def is_blocked(self, location: TileCoordinate) -> bool:
+        return bool(self.tiles['blocks_movement'][location.x, location.y])
+    

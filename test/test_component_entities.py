@@ -5,9 +5,10 @@ import numpy as np
 from transitions import Machine 
 
 from core_components.entities.base  import BaseGameSubState, BaseGameEntity, BaseParentState
-from core_components.entities.library import TargetedSubState, TargetingSubState, CombatSubState
-from core_components.entities.types import GameEntity, EntityParentState
+from core_components.entities.library import CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity
+from core_components.entities.custom_types import GameEntity, EntityParentState
 from core_components.maps.tiles.base import TileCoordinate
+from core_components.maps.tilemaps.library import DefaultTileMap
 from core_components.store import GameStore
 
 class DummyGameStore:
@@ -20,6 +21,13 @@ class DummyGameStore:
     threat_level: int = 0
     distance_to_target: int = 10
     focus: TargetingSubState | None = None
+    destination_is_blocking_entity: bool = False
+    destination_is_blocking_terrain: bool = False
+    destination_is_map_boundary: bool = False
+    map: DefaultTileMap | None = None
+
+class DummyPortfolio:
+    live_actors: list[BaseGameEntity] = [BaseGameEntity(name='existing_entity')]
 
 def test_entity_base_game_substate():
     try:
@@ -52,7 +60,7 @@ def test_entity_base_game_substate():
     # Atavise
     finally:
         pass
-
+    
 def test_entity_base_game_entity():
     try:
         # Arrange
@@ -89,6 +97,59 @@ def test_entity_base_game_entity():
     except Exception as e:
         pytest.fail(f"Test failed due to unexpected error: {e}")
     
+    # Atavise
+    finally:
+        pass
+
+def test_entity_collision_substate():
+    try:
+        # Arrange
+        store = DummyGameStore()
+        store.state_vector = {'on_map': False}
+        substate = CollisionSubState(store=store, name='collision_test') # type: ignore
+
+        # Act
+        substate.set_bits()
+        substate.update() # type: ignore
+        actual_none_state = substate.state # type: ignore
+
+        store.location = TileCoordinate.from_tuple((0,0)) # type: ignore
+        substate.store.state_vector['on_map'] = True # type: ignore simulate basegamesubstate update
+        substate.set_bits()
+        substate.update() # type: ignore
+        actual_with_location_state = substate.state # type: ignore
+        actual_is_on_map_location = substate.is_on_map() # Expect True
+
+        store.destination_is_blocking_entity = True
+        substate.set_bits()
+        substate.update() # type: ignore
+        actual_with_entity_collision_state = substate.state # type: ignore
+
+        store.destination_is_blocking_entity = False
+        store.destination_is_blocking_terrain = True
+        substate.set_bits()
+        substate.update() # type: ignore
+        actual_with_terrain_collision_state = substate.state # type: ignore
+
+        store.destination_is_blocking_terrain = False
+        store.destination_is_map_boundary = True
+        substate.set_bits()
+        substate.update() # type: ignore
+        actual_with_boundary_collision_state = substate.state # type: ignore
+
+        # Assert
+        assert actual_none_state == 'unknown', "Expected state to be 'unknown' when no location is set"
+        assert actual_with_location_state == 'not_colliding', "Expected state to be 'not_colliding' when location is set and no collisions"
+        assert actual_is_on_map_location == True, "Expected is_on_map to be true when location is set"
+        assert actual_with_entity_collision_state == 'colliding_with_entity', "Expected state to be 'colliding_with_entity' when destination is blocking entity"
+        assert actual_with_terrain_collision_state == 'colliding_with_terrain', "Expected state to be 'colliding_with_terrain' when destination is blocking terrain"
+        assert actual_with_boundary_collision_state == 'colliding_with_boundary', "Expected state to be 'colliding_with_boundary' when destination is blocking boundary"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+
     # Atavise
     finally:
         pass
@@ -296,7 +357,102 @@ def test_entity_combat_substate():
         pass
 
 def test_entity_mobile_entity():
-    pytest.skip()
+    try:
+    # Arrange
+        store = GameStore()
+        store.map = DefaultTileMap()
+        store.portfolio = DummyPortfolio() # type: ignore
+        if store.portfolio:
+            store.portfolio.live_actors[0].location = TileCoordinate.from_tuple((0,1), parent_map_size=store.map.grid.size) # type: ignore
+
+        tile_layout = store.map.get_tile_layout('wall')
+        if tile_layout is not None:
+            tile_layout[1,1] = True
+        store.map.set_tiles(tile_layout, graphic_name='wall')
+
+        # Act 
+        entity = MobileEntity(store=store, name='mobile_entity')
+        entity.blocks_movement = True
+        initial_state_vector = entity.state_vector.copy()
+        initial_location = entity.location
+        initial_in_play_state = entity.spawn.is_in_play() # type: ignore
+        initial_collision_state = entity.collision.state # type: ignore
+
+        entity.location = TileCoordinate.from_tuple((0,0), parent_map_size=store.map.grid.size)
+        entity.update()
+        set_location = entity.location
+        set_location_in_play_state = entity.spawn.is_in_play() # type: ignore
+        set_location_state_vector = entity.state_vector.copy()
+        set_location_collision_state = entity.collision.state # type: ignore
+
+        entity.destination = TileCoordinate.from_tuple((-1,-1), parent_map_size=store.map.grid.size)
+        entity.update()
+        offmap_state_vector = entity.state_vector.copy()
+        offmap_collision_state = entity.collision.state # type: ignore
+
+        entity.destination = TileCoordinate.from_tuple((1,1), parent_map_size=store.map.grid.size)
+        entity.update()
+        blocking_terrain_state_vector = entity.state_vector.copy()
+        blocking_terrain_collision_state = entity.collision.state # type: ignore
+
+        entity.destination = TileCoordinate.from_tuple((0,1), parent_map_size=store.map.grid.size)
+        entity.update()
+        blocking_entity_state_vector = entity.state_vector.copy()
+        blocking_entity_collision_state = entity.collision.state # type: ignore
+
+        entity.destination = TileCoordinate.from_tuple((1,0), parent_map_size=store.map.grid.size)
+        entity.update()
+        no_blocker_state_vector = entity.state_vector.copy()
+        no_blocker_collision_state = entity.collision.state # type: ignore
+
+        entity.move()
+        entity.update()
+        final_location = entity.location
+
+        # Assert
+        assert isinstance(entity, MobileEntity), "Expected entity to be instance of MobileEntity"
+        assert isinstance(entity, BaseGameEntity), "Expected entity to be instance of BaseGameEntity"
+        assert isinstance(entity, BaseParentState), "Expected entity be an instance of BaseParentState"
+        assert isinstance(entity, GameEntity), "Expected entity to duck type to GameEntity"
+        assert isinstance(entity, EntityParentState), "Expected entity to duck type to EntityParentState"
+
+        assert entity.name == 'mobile_entity'
+        assert initial_state_vector == {'on_map': False, 'in_boundary_collision': False, 'in_entity_collision': False, 
+                                       'in_terrain_collision': False}, "Expected initial state_vector to have 'on_map' set to False"
+        assert len(entity._substates_manifest) == 2, "Expected two substates in _substates_manifest"
+        assert isinstance(entity.substates[0], BaseGameSubState), "Expected first substate to be instance of BaseGameSubState"
+        assert initial_location == None, "Expected initial location to be None"
+        assert entity.blocks_movement == True, "Expected blocks_movement to be True by default"
+        assert initial_in_play_state == False, "Expected spawn to be not in play initially" # type: ignore
+        assert initial_collision_state == 'unknown', "Expected collision state to be 'unknown' initially" # type: ignore
+
+        assert isinstance(set_location, TileCoordinate), "Expected location to be instance of TileCoordinate"
+        assert set_location_state_vector['on_map'] == True, "Expected state_vector to have 'on_map' set to True after update"
+        assert set_location_in_play_state == True, "Expected spawn to be in play after update" # type: ignore
+        assert set_location_collision_state == 'not_colliding', "Expected collision state to be 'not_colliding' after update" # type: ignore
+
+        assert offmap_state_vector['in_boundary_collision'] == True, "Expected state_vector to have 'in_boundary_collision' set to True after moving off map"
+        assert offmap_collision_state == 'colliding_with_boundary', "Expected collision state to be 'colliding_with_boundary' after moving off map" # type: ignore
+        assert blocking_terrain_state_vector['in_terrain_collision'] == True, "Expected state_vector to have 'in_terrain_collision' set to True after moving into terrain"
+        assert blocking_terrain_collision_state == 'colliding_with_terrain', "Expected collision state to be 'colliding_with_terrain' after moving into terrain" # type: ignore
+        assert blocking_entity_state_vector['in_entity_collision'] == True, "Expected state_vector to have 'in_entity_collision' set to True after moving into entity"
+        assert blocking_entity_collision_state == 'colliding_with_entity', "Expected collision state to be 'colliding_with_entity' after moving into entity" # type: ignore
+        assert no_blocker_state_vector['in_entity_collision'] == False, "Expected state_vector to have 'in_entity_collision' set to False after moving into free space"
+        assert no_blocker_state_vector['in_terrain_collision'] == False, "Expected state_vector to have 'in_terrain_collision' set to False after moving into free space"
+        assert no_blocker_state_vector['in_boundary_collision'] == False, "Expected state_vector to have 'in_boundary_collision' set to False after moving into free space"
+        assert no_blocker_collision_state == 'not_colliding', "Expected collision state to be 'not_colliding' after moving into free space" # type: ignore
+
+        assert final_location == TileCoordinate.from_tuple((1,0), parent_map_size=store.map.grid.size), "Expected final location to be (1,0) after move"
+        assert entity.destination == None, "Expected destination to be None after move"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    finally:
+        pass
 
 def test_entity_targetable_entity():
     pytest.skip()

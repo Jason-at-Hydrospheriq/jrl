@@ -5,7 +5,7 @@ from __future__ import annotations
 from queue import Queue
 from typing import TYPE_CHECKING
 import tcod
-from type_protocols import *
+from type_protocols import StateActionObject, StateStoreObject, StateTransformer
 from transitions import Machine
 
 if TYPE_CHECKING:

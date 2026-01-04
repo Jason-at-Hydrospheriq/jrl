@@ -2,10 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import List, Tuple
 from transitions import Machine
-
-# from core_components import portfolio, atlas, ui
 
 from core_components import Portfolio
 from core_components import Atlas

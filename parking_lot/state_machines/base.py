@@ -10,10 +10,10 @@ if TYPE_CHECKING:
     from core_components.store import GameStore
     from core_components.entities.library import AICharactor, BaseTargetableEntity
 
-from core_components.loops.events import CharactorEvent, EntityEvent, AIEvent
+from core_components.loops.events import CharacterEvent, EntityEvent, AIEvent
 
 AE = TypeVar('AE', bound=AIEvent)
-EE = TypeVar('EE', bound=CharactorEvent)
+EE = TypeVar('EE', bound=CharacterEvent)
 
 # A typed dictionary for AI bots
 class EntityStateTableDict(TypedDict):
