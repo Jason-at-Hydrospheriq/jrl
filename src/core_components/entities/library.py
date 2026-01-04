@@ -6,6 +6,8 @@ from turtle import color
 from typing import List, Optional, Tuple, Type, TYPE_CHECKING
 from transitions import Machine
 from type_protocols import *
+import tcod as libtcodpy
+from tcod.map import compute_fov
 
 from core_components.entities.attributes import *
 
@@ -20,6 +22,10 @@ from core_components.entities.base import BaseGameSubState, BaseGameEntity
 
 
 class TargetedSubState(BaseGameSubState):
+    """The TargetedSubState is a class that defines and runs the 'perception' state machine for a Game Entity.
+    This state machine tracks whether an Entity is targeted by another entity. It manages the 'is_target' state
+    bit in the state_vector."""
+
     _state_bits = ('is_target',)
     _states = ({'name':'targeted', 'on_enter': ['update']}, 
                  {'name':'not_targeted', 'on_enter': ['update']},
@@ -42,7 +48,11 @@ class TargetedSubState(BaseGameSubState):
 
 
 class TargetingSubState(BaseGameSubState):
-    threat_level_threshold: int = 40
+    """The TargetingSubState is a class that defines and runs the 'focus' state machine for a Game Entity.
+    This state machine tracks whether an Entity has a target and the status of that target. It manages the 
+    'target_in_fov', 'target_is_hostile', and 'has_target' state bits in the state_vector."""
+    
+    threat_level_threshold: int = 60
 
     _state_bits = ('target_in_fov', 'target_is_hostile', 'has_target')
     _states = ({'name':'stopped', 'on_enter':['update']},
@@ -86,30 +96,35 @@ class TargetingSubState(BaseGameSubState):
 
 
 class CombatSubState(BaseGameSubState):
-   
-    _state_bits = ('in_melee_range',) # , 'in_missile_range', 'in_spell_range')
-    _states = ({'name':'engaged', 'on_enter':['update']},
-                         {'name': 'melee_ready', 'on_enter':['update']},
-                         {'name':'disengaged', 'on_enter':['update']},
-                            {'name':'idle', 'on_enter':['update']},
-                         {'name':'unknown', 'on_enter':['update']})
+    """The CombatSubState is a class that defines and runs the 'combat' state machine for a Game Entity.
+    This state machine tracks whether an Entity is engaged in combat, attacking, disengaged, or peaceful.
+    It manages the 'in_melee_range' state bit in the state_vector."""
+
+    range_threshold: int = 1  # Distance threshold for combat range
+    combat_type: str = "melee"  # Type of combat: 'melee', 'missile', 'spell'
+
+    _state_bits = (f'in_{combat_type}_range',) 
+    _states = ( {'name': 'engaged', 'on_enter':['update']},
+                {'name': 'fighting', 'on_enter':['update']},
+                {'name': 'disengaged', 'on_enter':['update']},
+                {'name': 'peaceful', 'on_enter':['update']},
+                {'name': 'unknown', 'on_enter':['update']})
     _transitions = (
-            {'trigger':'update', 'source':['unknown', 'idle', 'disengaged', 'melee_ready'], 'dest':'engaged', 'conditions':['is_on_map', 'is_targeting', 'is_out_of_range']},
-            {'trigger':'update', 'source':['unknown', 'idle', 'engaged', 'disengaged'], 'dest':'melee_ready', 'conditions':['is_on_map', 'is_targeting', 'is_in_melee_range']},
-            {'trigger':'update', 'source':['unknown', 'disengaged', 'engaged', 'melee_ready'], 'dest':'idle', 'conditions':['is_on_map', 'is_not_targeting', 'is_out_of_range']},
-            {'trigger':'update', 'source':['unknown', 'idle', 'engaged', 'melee_ready'], 'dest':'disengaged', 'conditions':['is_on_map', 'is_not_targeting', 'is_in_melee_range']},
-            {'trigger':'update', 'source':['idle', 'engaged', 'disengaged', 'melee_ready'], 'dest':'unknown', 'conditions':['is_not_on_map']},)
-    
+            {'trigger':'update', 'source':['unknown', 'peaceful', 'disengaged', 'fighting'], 'dest':'engaged', 'conditions':['is_on_map', 'is_targeting', 'is_out_of_range']},
+            {'trigger':'update', 'source':['unknown', 'peaceful', 'engaged', 'disengaged'], 'dest':'fighting', 'conditions':['is_on_map', 'is_targeting', 'is_in_range']},
+            {'trigger':'update', 'source':['unknown', 'disengaged', 'engaged', 'fighting'], 'dest':'peaceful', 'conditions':['is_on_map', 'is_not_targeting', 'is_out_of_range']},
+            {'trigger':'update', 'source':['unknown', 'peaceful', 'engaged', 'fighting'], 'dest':'disengaged', 'conditions':['is_on_map', 'is_not_targeting', 'is_in_range']},
+            {'trigger':'update', 'source':['peaceful', 'engaged', 'disengaged', 'fighting'], 'dest':'unknown', 'conditions':['is_not_on_map']},)
     _initial_state = 'disengaged'
 
     def set_bits(self) -> None: # Interprets distance to target and targeting status into state bits
-        self.store.state_vector['in_melee_range'] = self.store.distance_to_target <= 1  # type: ignore
+        self.store.state_vector[f'in_{self.combat_type}_range'] = self.store.distance_to_target <= self.range_threshold  # type: ignore
     
-    def is_in_melee_range(self) -> bool:
-        return self.store.state_vector['in_melee_range']  # type: ignore
+    def is_in_range(self) -> bool:
+        return self.store.state_vector[f'in_{self.combat_type}_range']  # type: ignore
     
     def is_out_of_range(self) -> bool:
-        return not (self.is_in_melee_range()) # or self.is_in_missile_range() or self.is_in_spell_range())
+        return not (self.is_in_range()) # or self.is_in_missile_range() or self.is_in_spell_range())
     
     def is_targeting(self) -> bool:
         return self.store.focus.is_targeting()  # type: ignore 
@@ -119,12 +134,15 @@ class CombatSubState(BaseGameSubState):
   
     
 class TargetableEntity(BaseGameEntity):
+    """A Targetable Entity is any game object that can become the focus of a TargetingEntity.
+    It has a 'perception' substate that is an instance of TargetedSubState that manages its targeted states.
+    A Targetable Entity can be damaged. It has a 'take_damage' method to reduce its hit points when damaged."""
+
     targeter: StatefulObject | None = None
     perception: TargetedSubState
     _substates_manifest = (
         ("spawn", BaseGameSubState),
-        ("perception", TargetedSubState),
-    )
+        ("perception", TargetedSubState))
     
     def __init__(self,
                  store: GameStore | None = None,
@@ -135,17 +153,25 @@ class TargetableEntity(BaseGameEntity):
                  color: Tuple[int, int, int]=(0,0,0)) -> None:
         super().__init__(store=store, location=location, name=name, symbol=symbol, color=color)
 
+    def take_damage(self, damage: int) -> None:
+        if self.hp:
+            self.hp -= damage
+            self.hp = max(self.hp, 0)
+
 
 class TargetingEntity(BaseGameEntity):
+    """A Targeting Entity is any game object that can focus on a TargetableEntity. It has a 'focus' substate 
+    that is an instance of TargetingSubState that manages its targeting states. A Targeting Entity can assess 
+    threat levels and has a 'threat_level' property to represent its current threat assessment."""
+
     target: BaseGameEntity | None = None
-    fov_radius: int = 0
     focus: TargetingSubState
-    _visible = False
-    _threat_level: int = 0
+    _fov_radius: int = 6
+    _visible_tiles: np.ndarray | None = None
+    _threat_level: int = 10
     _substates_manifest = (
         ("spawn", BaseGameSubState),
-        ("focus", TargetingSubState),
-    )
+        ("focus", TargetingSubState))
 
     def __init__(self,
                  store: GameStore | None = None,
@@ -160,31 +186,51 @@ class TargetingEntity(BaseGameEntity):
     def threat_level(self) -> int:
         return self._threat_level
     
+    @threat_level.setter
+    def threat_level(self, value: int) -> None:
+        self._threat_level = value
+
+    @property
+    def fov_radius(self) -> int:
+        return self._fov_radius
+    
+    @fov_radius.setter
+    def fov_radius(self, value: int) -> None:
+        self._fov_radius = value
+
     @property
     def target_in_fov(self) -> bool:
-        if self.target:
-            return self.target._visible # type: ignore
-        return False
-    
-    def assess_target(self, target: BaseGameEntity) -> None:
-        pass  # Placeholder for threat assessment logic
-       
-    def set_target(self, *, target: BaseGameEntity) -> None:
-        self.target = target  # type: ignore            
+            if self.store:
+                blocking_tiles = self.store.map.active.blocks_vision if self.store.map and self.store.map.active else None # type: ignore
+               
+                # UPDATE ENTITY FOV
+                if blocking_tiles and self.location is not None:
+                    self._visible_tiles = compute_fov( ~blocking_tiles, (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
 
-    
-class CombatEntity(TargetableEntity, TargetingEntity):
-    combat: CombatSubState
-    attack_power: int = 10
-    defense_power: int = 5
+                    if self.target and self.target.location is not None:
+                        tx, ty = self.target.location.x, self.target.location.y
+                        if self._visible_tiles[tx, ty]:
+                            return True
 
-    _substates_manifest = (
-        ("spawn", BaseGameSubState),
-        ("combat", CombatSubState),
-        ("perception", TargetedSubState),
-        ("focus", TargetingSubState),
-    )
-    
+                    else:
+                        visible_targets = [entity for entity in self.store.live_entities if self._visible_tiles[entity.location.x, entity.location.y]]  # type: ignore
+                        distances = []
+
+                        if visible_targets:
+                            for entity in visible_targets:
+                                self.target = entity
+                                distance = self.distance_to_target
+                                distances.append((distance, entity))
+                        
+                        if distances:
+                            distances.sort(key=lambda x: x[0])
+                            self.target = distances[0][1]
+                            return True
+                        else:
+                            self.target = None
+                            return False
+            return False
+
     @property
     def distance_to_target(self) -> int:
 
@@ -194,19 +240,75 @@ class CombatEntity(TargetableEntity, TargetingEntity):
             return max(abs(dx), abs(dy))  # Using Chebyshev distance for grid-based movement
         
         return 9999
+      
+    def assess_threat(self) -> None:
+        if self.distance_to_target <= 8:
+            self.threat_level += 10
+        if self.distance_to_target <= 5:
+            self.threat_level += 10
+        if self.distance_to_target <= 2:
+            self.threat_level += 10
+        if self.distance_to_target == 1:
+            self.threat_level += 10
+        if self.target:
+            if self.target.target is self: # type: ignore
+                self.threat_level = self.threat_level * 2
     
+    def update(self) -> None:
+        self.assess_threat()
+        super().update()
+
+
+class CombatEntity(TargetableEntity, TargetingEntity):
+    """A Combat Entity is any game object that can both target and be targeted by other entities and deal damage.
+    It has both 'focus' and 'perception' substates that are instances of TargetingSubState and TargetedSubState. 
+    It has a 'combat' substate that is an instance of CombatSubState to manage its combat states. A Combat Entity has
+    'attack' and 'defense' properties to calculate damage dealt and mitigated during combat."""
+
+    combat: CombatSubState
+    _attack_power: int = 10
+    _defense_power: int = 5
+
+    _substates_manifest = (
+        ("spawn", BaseGameSubState),
+        ("perception", TargetedSubState),
+        ("focus", TargetingSubState),
+        ("combat", CombatSubState),
+    )
+    
+    @property
+    def attack_power(self) -> int:
+        return self._attack_power
+    
+    @attack_power.setter
+    def attack_power(self, value: int) -> None:
+        self._attack_power = value
+   
+    @property
+    def defense_power(self) -> int:
+        return self._defense_power
+
+    @defense_power.setter
+    def defense_power(self, value: int) -> None:
+        self._defense_power = value
+
     @property
     def attack(self) -> int:
-        damage = 0
-        if self.combat.is_melee_ready(): #type: ignore
-            damage = self.attack_power - self.target.defense  # type: ignore
-            damage = max(0, damage)
+        damage_delivered = 0
+        if self.combat.is_attacking(): #type: ignore
+            damage_delivered = self._attack_power
     
-        return damage
+        return damage_delivered
     
     @property
-    def defense(self) -> int:
-        return self.defense_power
+    def defend(self) -> int:
+        damage_mitigated = 0
+        if self.combat.is_melee_ready(): #type: ignore
+            damage_mitigated = self._defense_power
+        if self.combat.is_not_melee_ready(): #type: ignore
+            damage_mitigated = self._defense_power // 2
+
+        return damage_mitigated
 
 
 class MobileEntity(BaseGameEntity):
@@ -218,7 +320,7 @@ class MobileEntity(BaseGameEntity):
             self.location = self.destination
 
 
-class Charactor(MobileEntity, CombatEntity):
+class Character(MobileEntity, CombatEntity):
 
     def __init__(   self,
                     *,
@@ -227,23 +329,22 @@ class Charactor(MobileEntity, CombatEntity):
                     symbol: str = "?",
                     color: Tuple[int, int, int],
                     name: str = "<Unnamed>",
-                    fov_radius: int = 4
                     ) -> None:
         
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
         
         self.blocks_movement = True
-        self.fov_radius = fov_radius
-        self.targetable = True
+        self.takes_damage = True
         
     def die(self) -> None:
         self.blocks_movement = False
+        self.takes_damage = False
         self.name = f"remains of {self.name}"
         self.symbol = "%"
         self.color = (191, 0, 0)
 
 
-class PlayerCharactor(Charactor):
+class PlayerCharacter(Character):
     def __init__(   self,
                 *,
                 store: GameStore | None = None,
@@ -254,12 +355,12 @@ class PlayerCharactor(Charactor):
 
                 ) -> None:
 
-        fov_radius = 6
+        self.fov_radius = 6
 
-        super().__init__(store=store, location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius)
+        super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
 
 
-class AICharactor(Charactor):
+class AICharacter(Character):
     path: List[TileCoordinate] = []
     _ai: BaseLoopHandler | None = None
     
@@ -288,7 +389,7 @@ class AICharactor(Charactor):
         self._ai = None
 
 
-class MobCharactor(AICharactor):
+class MobCharacter(AICharacter):
     def __init__(   self,
                     *,
                 store: GameStore | None = None,
@@ -301,289 +402,3 @@ class MobCharactor(AICharactor):
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
         self._ai = MobHandler(self)
 
-
-# class BaseGameEntity:
-#     """
-#     store: StatefulObject | None
-#     machine: Machine
-#     location: TileCoordinate | None
-
-#     name: str
-#     symbol: str
-#     color: Tuple[int, int, int] # Do this like the maps. Numpy datatypes mapped to state.
-
-#     def __init__(self,
-#                  store: GameStore,
-#                  *,                 
-#                  location: Tuple[int, int] | TileCoordinate | None = None,
-#                  name: str="<Unnamed>", 
-#                  symbol: str=' ', 
-#                  color: Tuple[int, int, int]=(0,0,0)) -> None:
-            
-#         self.store = store
-#         parent_map_size = store.map.grid.size
-
-#         if isinstance(location, tuple):
-#             self.location = TileCoordinate.from_tuple(location, parent_map_size=parent_map_size)
-#         else:
-#             self.location = location
-
-#         self.symbol = symbol
-#         self.color = color
-#         self.name = name
-
-#         states = ['noticed', 'unnoticed']
-#         transitions = [
-#                         {'trigger': 'spot', 'source': 'unnoticed', 'dest': 'noticed'},
-#                         {'trigger': 'unspot', 'source': 'noticed', 'dest': 'unnoticed'}
-#                             ]
-#         self.machine = Machine(model=self, states=states, transitions=transitions, initial='unnoticed')
-
-
-# class BaseTargetingEntity(BaseGameEntity):
-#     target: GameEntity | None = None
-#     target_color: Tuple[int, int, int] | None = None
-
-#     def __init__(self,
-#                  store: GameStore,
-#                  *,                 
-#                  location: Tuple[int, int] | TileCoordinate | None = None,
-#                  name: str="<Unnamed>", 
-#                  symbol: str=' ', 
-#                  color: Tuple[int, int, int]=(0,0,0)) -> None:
-        
-#         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-        
-#         self.machine.add_states(['targeting', 'not_targeting'])
-#         self.machine.add_transition('acquire_target', 'not_targeting', 'targeting')
-#         self.machine.add_transition('clear_target', 'targeting', 'not_targeting')
-
-#     def acquire_target(self, target: BaseTargetableEntity) -> None:
-#         if self.is_targeting:
-#             self.clear_target()
-   
-#         self.target_color = target.color  # Store original color
-#         target.targeter = self
-#         target.mark() # type: ignore
-#         self.target = target
-#         self.target.color = (255, 0, 0)  # Change color to indicate targeting
-
-#     def clear_target(self) -> None:
-#         if isinstance(self.target, BaseTargetableEntity):
-#             if self.target and self.target_color is not None:
-#                 self.target.color = self.target_color  # Restore original color
-#                 self.target.targeter = None
-#                 self.target.unmark() # type: ignore 
-
-#         self.target = None
-#         self.is_targeting = False
-
-
-# class BaseTargetableEntity(BaseGameEntity):
-#     targeter: BaseTargetingEntity | None = None
-
-#     def __init__(self,
-#                  store: GameStore,
-#                  *,                 
-#                  location: Tuple[int, int] | TileCoordinate | None = None,
-#                  name: str="<Unnamed>", 
-#                  symbol: str=' ', 
-#                  color: Tuple[int, int, int]=(0,0,0)) -> None:
-        
-#         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-
-#         self.machine.add_states(['targeted', 'not_targeted'])
-#         self.machine.add_transition('mark', 'not_targeted', 'targeted')
-#         self.machine.add_transition('unmark', 'targeted', 'not_targeted')
-
-
-# class BaseMortalEntity(BaseGameEntity):
-#     physical: PhysicalStats | None = None
-#     is_near_death: bool = False # Health is critically low
-#     is_alive: bool = True # Entity is alive
-#     near_death_threshold: int = 3  # Health threshold to be considered near death
-
-#     def __init__(self,
-#                  store: GameStore,
-#                  *,                 
-#                  location: Tuple[int, int] | TileCoordinate | None = None,
-#                  name: str="<Unnamed>", 
-#                  symbol: str=' ', 
-#                  color: Tuple[int, int, int]=(0,0,0)) -> None:
-        
-#         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-
-#         self.machine.add_states(['alive', 'dead', 'near_death', 'healthy'])
-#         self.machine.add_transition('take_damage', 'alive', 'dead', conditions=['is_dead'])
-#         self.machine.add_transition('take_damage', 'alive', 'near_death', conditions=['is_near_death'])
-#         self.machine.add_transition('take_damage', 'alive', 'healthy', unless=['is_near_death', 'is_dead']
-#         )
-    
-#     def take_damage(self, damage: int) -> None:
-#         if self.physical:
-#             self.physical.hp -= damage
-
-#             if self.physical.hp <= self.near_death_threshold:
-#                 self.is_near_death = True
-
-#             if self.physical.hp <= 0:
-#                 self.is_alive = False
-
-#     def die(self) -> None:
-#         raise NotImplementedError()
-
-
-# class CombatEntity(BaseTargetingEntity):
-#     combat: CombatStats | None
-#     is_in_combat: bool = False
-
-#     melee_range_threshold: int = 1  # Distance threshold for melee range
-#     missile_range_threshold: int = 5  # Distance threshold for missile range
-#     spell_range_threshold: int = 3  # Distance threshold for spell range
-
-#     def __init__(   self, 
-#                     *, 
-#                     location: TileCoordinate | None = None,
-#                     symbol: str=' ', 
-#                     color: Tuple[int, int, int]=(0,0,0), 
-#                     name: str="<Unnamed>", 
-#                     combat: CombatStats | None = None,
-#                  ) -> None:
-        
-#         super().__init__(location=location, symbol=symbol, color=color, name=name)
-#         self.combat = combat
-
-#     @property
-#     def is_target_in_melee_range(self) -> bool:
-#         distance = self.distance_to_target()
-#         if self.target is None:
-#             return False
-#         if self.target and distance is not None:
-#             return distance <= self.melee_range_threshold
-#         return False
-    
-#     @property
-#     def is_target_in_missile_range(self) -> bool:
-#         distance = self.distance_to_target()
-#         if self.target is None:
-#             return False
-#         if self.target and distance is not None:
-#             return distance <= self.missile_range_threshold
-#         return False
-    
-#     @property
-#     def is_target_in_spell_range(self) -> bool:
-#         distance = self.distance_to_target()
-#         if self.target is None:
-#             return False
-#         if self.target and distance is not None:
-#             return distance <= self.spell_range_threshold
-#         return False
-    
-#     def acquire_target(self, target: BaseTargetableEntity) -> None:
-#         if isinstance(target, CombatEntity):
-#             combat_status = (self.is_in_combat, target.is_in_combat)
-#             match combat_status: # Update combat state based on both entity and target status
-#                 case (True, True): # Both are in combat
-#                     pass
-#                 case (True, False): # Entity is in combat, target is not in combat. Target is surprised.
-#                     self.is_in_combat = False
-#                 case (False, True): # Entity is not in combat, target is in combat. Entity is surprised.
-#                     self.is_in_combat = True
-#                 case (False, False): # Neither are in combat
-#                     pass
-#         super().acquire_target(target)
-
-#     def distance_to_target(self) -> Optional[int]:
-#         if self.target is None:
-#             return None
-#         dx = self.target.location.x - self.location.x
-#         dy = self.target.location.y - self.location.y
-#         return max(abs(dx), abs(dy))  # Using Chebyshev distance for grid-based movement
-    
-#     def attack(self) -> int:
-#         return self.combat.attack_power - self.target.combat.defense  # type: ignore
-    
-
-# class AIEntity(BaseGameEntity):
-#     _ai: BaseHandler | None = None
-#     is_in_missile_range: bool = False
-#     is_in_melee_range: bool = False
-#     is_in_spell_range: bool = False
-
-#     def __init__(   self, 
-#                     *, 
-#                     location: TileCoordinate | None = None,
-#                     symbol: str=' ', 
-#                     color: Tuple[int, int, int]=(0,0,0), 
-#                     name: str="<Unnamed>", 
-#                     ai_cls: BaseHandler | None = None,
-#                  ) -> None:
-        
-#         super().__init__(location=location, symbol=symbol, color=color, name=name)
-
-#         if ai_cls:
-#             self._ai = ai_cls
-
-#     @property
-#     def ai(self) -> BaseHandler | None:
-#         return self._ai
-    
-
-
-
-
-# class AICharactor(Charactor, AIEntity):
-#     path: List[TileCoordinate] = []
-    
-#     def __init__(   self,
-#                     *,
-#                     location: TileCoordinate | None = None,
-#                     symbol: str = "?",
-#                     color: Tuple[int, int, int],
-#                     name: str = "<Unnamed>",
-#                     fov_radius: int = 4,
-#                     physical: PhysicalStats | None = None,
-#                     combat: CombatStats | None = None,
-#                     ai_cls:BaseHandler | None = None,
-#                     ) -> None:
-        
-#         Charactor.__init__(self, location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat)
-#         AIEntity.__init__(self, location=location, symbol=symbol, color=color, name=name, ai_cls=ai_cls) 
-
-
-#     def die(self) -> None:
-#         super().die()
-#         self._ai = None
-
-
-# class NonPlayerCharactor(AICharactor):
-#     def __init__(   self,
-#                 *,
-#                 location: TileCoordinate | None = None,
-#                 symbol: str = "?",
-#                 color: Tuple[int, int, int],
-#                 name: str = "<Unnamed>",
-#                 fov_radius: int = 4,
-#                 physical: PhysicalStats | None = None,
-#                 combat: CombatStats | None = None,
-#                 ai_cls: BaseHandler | None = None,
-#                 ) -> None:
-        
-#         super().__init__(location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat, ai_cls=ai_cls)
-
-
-# class MobCharactor(AICharactor):
-#     def __init__(   self,
-#                 *,
-#                 location: TileCoordinate | None = None,
-#                 symbol: str = "?",
-#                 color: Tuple[int, int, int],
-#                 name: str = "<Unnamed>",
-#                 fov_radius: int = 4,
-#                 physical: PhysicalStats | None = None,
-#                 combat: CombatStats | None = None
-#                 ) -> None:
-        
-#         super().__init__(location=location, symbol=symbol, color=color, name=name, fov_radius=fov_radius, physical=physical, combat=combat)
-#         self._ai = MobHandler(self)

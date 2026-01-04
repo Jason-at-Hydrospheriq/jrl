@@ -96,6 +96,9 @@ class BaseGameEntity(BaseParentState):
     machine: Machine
     location: TileCoordinate | None
     blocks_movement: bool | None
+    takes_damage: bool | None
+    _hp: int | None
+    _max_hp: int | None
     name: str
     symbol: str
     color: Tuple[int, int, int] # Do this like the maps. Numpy datatypes mapped to state.
@@ -122,7 +125,30 @@ class BaseGameEntity(BaseParentState):
             self.location = location
             
         self.blocks_movement = True
+        self.takes_damage = True
         self.symbol = symbol
         self.color = color
         self.name = name
         self.update()
+    
+    @property
+    def hp(self) -> int | None:
+        if self.takes_damage:
+            return self._hp
+        return None
+    
+    @hp.setter
+    def hp(self, value: int | None) -> None:
+        if self.takes_damage:
+            self._hp = value
+
+    @property
+    def max_hp(self) -> int | None:
+        if self.takes_damage:
+            return self._max_hp
+        return None
+    
+    @max_hp.setter
+    def max_hp(self, value: int | None) -> None:
+        if self.takes_damage:
+            self._max_hp = value

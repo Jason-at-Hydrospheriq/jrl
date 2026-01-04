@@ -23,17 +23,17 @@ class Portfolio:
     spawn: Callable
 
     PARENT_MAP_SIZE = DEFAULT_MANIFEST['dimensions']['grid_size']
-    PLAYER = PlayerCharactor(   name="Player", 
+    PLAYER = PlayerCharacter(   name="Player", 
                                 symbol=chr(64), 
                                 color=(130, 200, 255),
                                 location=TileCoordinate(TileTuple(([0], [0])), 
                                                     parent_map_size=PARENT_MAP_SIZE))
-    ORC = MobCharactor( name="Orc", 
+    ORC = MobCharacter( name="Orc", 
                         symbol=chr(65), 
                         color=(63, 127, 63),
                         location=TileCoordinate(TileTuple(([0], [0])), 
                                                 parent_map_size=PARENT_MAP_SIZE))
-    TROLL = MobCharactor(   name="Troll", 
+    TROLL = MobCharacter(   name="Troll", 
                             symbol=chr(65), 
                             color=(0, 127, 0), 
                             location=TileCoordinate(TileTuple(([0], [0])), 
@@ -51,13 +51,13 @@ class Portfolio:
         return [entity.location for entity in self.entities if hasattr(entity, 'location')]
 
     @property
-    def player(self) -> Charactor | None:
+    def player(self) -> Character | None:
         for entity in self.entities:
-            if isinstance(entity, PlayerCharactor):
+            if isinstance(entity, PlayerCharacter):
                 return entity
       
     @player.setter
-    def player(self, new_player: Charactor) -> None:
+    def player(self, new_player: Character) -> None:
         if self.player is not None:
             self.entities.remove(self.player)
     
@@ -84,8 +84,8 @@ class Portfolio:
         return [entity for entity in potential_actors if entity.is_alive] #type: ignore
     
     @property
-    def live_ai_actors(self) -> List[AICharactor]:
-        return [entity for entity in self.live_actors if isinstance(entity, AICharactor)]
+    def live_ai_actors(self) -> List[AICharacter]:
+        return [entity for entity in self.live_actors if isinstance(entity, AICharacter)]
 
     def entity_collision(self, entity) -> BaseGameEntity | None:
         """Check if the given entity's destination collides with any other entity that blocks movement."""
