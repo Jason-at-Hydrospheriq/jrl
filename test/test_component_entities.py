@@ -1,15 +1,17 @@
 import pytest
 from sys import path
+
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 from transitions import Machine 
 
 from core_components.entities.base  import BaseGameSubState, BaseGameEntity, BaseParentState
-from core_components.entities.library import CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity
+from core_components.entities.library import CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character, AICharacter
 from core_components.entities.custom_types import GameEntity, EntityParentState
 from core_components.maps.tiles.base import TileCoordinate
 from core_components.maps.tilemaps.library import DefaultTileMap
 from core_components.store import GameStore
+from core_components.loops.base import BaseLoopHandler
 
 class DummyGameStore:
     location: None = None
@@ -495,6 +497,10 @@ def test_entity_targetable_entity():
         assert isinstance(target, GameEntity), "Expected target to duck type to GameEntity"
         assert isinstance(target, EntityParentState), "Expected target to duck type to EntityParentState"
 
+        assert len(target._substates_manifest) == 2, "Expected two substates in _substates_manifest"
+        assert isinstance(target.substates[0], BaseGameSubState), "Expected first substate to be instance of BaseGameSubState"
+        assert isinstance(target.substates[1], TargetedSubState), "Expected second substate to be instance of TargetedSubState"
+
         assert initial_targeter == None, "Expected initial targeter to be None"
         assert initial_target_state == 'unknown', "Expected initial perception state to be 'unknown'" # type: ignore
         assert initial_target_state_vector == {'on_map': False, 'is_target': False}, "Expected initial state_vector to have 'on_map' set to False and 'is_target' set to False"
@@ -589,6 +595,10 @@ def test_entity_targeting_entity():
         assert isinstance(targeter, GameEntity), "Expected target to duck type to GameEntity"
         assert isinstance(targeter, EntityParentState), "Expected target to duck type to EntityParentState"
 
+        assert len(targeter._substates_manifest) == 2, "Expected two substates in _substates_manifest"
+        assert isinstance(targeter.substates[0], BaseGameSubState), "Expected first substate to be instance of BaseGameSubState"
+        assert isinstance(targeter.substates[1], TargetingSubState), "Expected second substate to be instance of TargetingSubState"
+
         assert initial_target == None, "Expected initial target to be None"
         assert initial_targeter_state == 'unknown', "Expected initial focus state to be 'unknown'" # type: ignore
         assert initial_targeter_state_vector == {'on_map': False, 'target_in_fov': False, 'target_is_hostile': False, 'has_target': False}, "Expected initial state_vector to have 'on_map' set to False, 'target_in_fov' set to False, and 'target_is_hostile' set to False"
@@ -630,16 +640,223 @@ def test_entity_targeting_entity():
         pass
 
 def test_entity_combat_entity():
-    pytest.skip()
+    try:
+        # Arrange
+        store = GameStore()
+        store.map = DefaultTileMap()
+        tile_layout = store.map.get_tile_layout('floor')
+        if tile_layout is not None:
+            tile_layout[0:10,0:10] = True
+        store.map.set_tiles(tile_layout, graphic_name='floor')
+        store.portfolio = DummyPortfolio() # type: ignore
+
+        combatant = CombatEntity(store=store, name='combatant_entity')
+        combatant.hp = 100
+        combatant.max_hp = 100
+
+        targetable_target = TargetableEntity(store=store, name='targetable_entity')
+        targetable_target.location = TileCoordinate.from_tuple((10,0))
+        targetable_target.hp = 100
+        targetable_target.max_hp = 100
+
+        store.portfolio.live_actors = [targetable_target] # type: ignore
+
+        # Act
+        initial_target = combatant.target # Expect None
+        initial_focus_state = combatant.focus.state # type: ignore | Expect 'unknown'
+        initial_combat_state = combatant.combat.state # type: ignore | Expect 'unknown'
+        initial_state_vector = combatant.state_vector.copy()
+        initial_combatant_hp = combatant.hp
+        initial_combatant_max_hp = combatant.max_hp
+        initial_target_hp = targetable_target.hp
+        initial_target_max_hp = targetable_target.max_hp
+
+        combatant.location = TileCoordinate.from_tuple((0,0))
+        targetable_target.location = TileCoordinate.from_tuple((5,5))
+        combatant.update()
+        set_location_focus_state = combatant.focus.state # type: ignore | Expect 'idle'
+        set_location_combat_state = combatant.combat.state # type: ignore | Expect 'peaceful'
+        set_location_state_vector = combatant.state_vector.copy()
+
+        combatant.set_target(targetable_target) # type: ignore
+        combatant.update()
+        with_target_focus_state = combatant.focus.state # type: ignore | Expect 'tracking'
+        with_target_combat_state = combatant.combat.state # type: ignore | Expect 'peaceful'
+        with_target_state_vector = combatant.state_vector.copy()
+
+        targetable_target.location = TileCoordinate.from_tuple((1,1))
+        combatant.update()
+        moved_target_focus_state = combatant.focus.state # type: ignore | Expect 'tracking'
+        moved_target_combat_state = combatant.combat.state # type: ignore | Expect 'disengaged'
+        moved_target_state_vector = combatant.state_vector.copy()
+
+        combatant.focus.threat_level_threshold = 40
+        combatant.update()
+        high_threat_focus_state = combatant.focus.state # type: ignore | Expect 'targeting'
+        high_threat_combat_state = combatant.combat.state # type: ignore | Expect 'fighting'
+        high_threat_state_vector = combatant.state_vector.copy()
+
+        targetable_target.take_damage(combatant.attack())
+        combatant.update()
+        post_attack_focus_state = combatant.focus.state # type: ignore | Expect 'targeting'
+        post_attack_combat_state = combatant.combat.state # type: ignore | Expect 'fighting'
+        post_attack_state_vector = combatant.state_vector.copy()
+        post_attack_target_hp = targetable_target.hp
+        post_attack_combatant_hp = combatant.hp
+
+        combatant.take_damage(10 - combatant.defend())
+        combatant.update()
+        post_defense_focus_state = combatant.focus.state # type: ignore | Expect 'targeting'
+        post_defense_combat_state = combatant.combat.state # type: ignore | Expect 'fighting'
+        post_defense_state_vector = combatant.state_vector.copy()
+        post_defense_combatant_hp = combatant.hp
+
+        # Assert
+        assert isinstance(combatant, CombatEntity), "Expected combatant to be instance of CombatEntity"
+        assert isinstance(combatant, BaseGameEntity), "Expected combatant to be instance of BaseGameEntity"
+        assert isinstance(combatant, BaseParentState), "Expected combatant be an instance of BaseParentState"
+        assert isinstance(combatant, GameEntity), "Expected combatant to duck type to GameEntity"
+        assert isinstance(combatant, EntityParentState), "Expected combatant to duck type to EntityParentState"
+
+        assert len(combatant._substates_manifest) == 4, "Expected four substates in _substates_manifest"
+        assert isinstance(combatant.substates[0], BaseGameSubState), "Expected first substate to be instance of BaseGameSubState"
+        assert isinstance(combatant.substates[1], TargetedSubState), "Expected second substate to be instance of TargetedSubState"
+        assert isinstance(combatant.substates[2], TargetingSubState), "Expected third substate to be instance of TargetingSubState"
+        assert isinstance(combatant.substates[3], CombatSubState), "Expected fourth substate to be instance of CombatSubState"
+
+        assert initial_target == None, "Expected initial target to be None"
+        assert initial_focus_state == 'unknown', "Expected initial focus state to be 'unknown'" # type: ignore
+        assert initial_combat_state == 'unknown', "Expected initial combat state to be 'unknown'" # type: ignore
+        assert initial_state_vector == {'on_map': False, 'is_target': False, 'has_target': False, 'target_in_fov': False, 'target_is_hostile': False, 'in_melee_range': False}, "Expected initial state_vector to have 'on_map' set to False, 'has_target' set to False, 'target_in_fov' set to False, and 'target_is_hostile' set to False"
+        assert initial_combatant_hp == 100, "Expected initial combatant hp to be 100"
+        assert initial_combatant_max_hp == 100, "Expected initial combatant max_hp to be 100"
+        assert initial_target_hp == 100, "Expected initial target hp to be 100"
+        assert initial_target_max_hp == 100, "Expected initial target max_hp to be 100"
+
+        assert set_location_focus_state == 'idle', "Expected focus state to be 'idle' after setting location" # type: ignore
+        assert set_location_combat_state == 'peaceful', "Expected combat state to be 'peaceful' after setting location" # type: ignore
+        assert set_location_state_vector['on_map'] == True, "Expected state_vector to have 'on_map' set to True after setting location"
+        
+        assert with_target_focus_state == 'tracking', "Expected focus state to be 'tracking' after setting target" # type: ignore
+        assert with_target_combat_state == 'peaceful', "Expected combat state to be 'peaceful' after setting target" # type: ignore
+        assert with_target_state_vector['has_target'] == True, "Expected state_vector to have 'has_target' set to True after setting target"
+
+        assert moved_target_focus_state == 'tracking', "Expected focus state to be 'tracking' after moving target closer" # type: ignore
+        assert moved_target_combat_state == 'disengaged', "Expected combat state to be 'disengaged' after moving target closer" # type: ignore
+        assert moved_target_state_vector['has_target'] == True, "Expected state_vector to have 'has_target' set to True after moving target closer"
+
+        assert high_threat_focus_state == 'targeting', "Expected focus state to be 'targeting' after raising threat level" # type: ignore
+        assert high_threat_combat_state == 'fighting', "Expected combat state to be 'fighting' after raising threat level" # type: ignore
+        assert high_threat_state_vector['target_is_hostile'] == True, "Expected state_vector to have 'target_is_hostile' set to True after raising threat level"
+        assert high_threat_state_vector['in_melee_range'] == True, "Expected state_vector to have 'in_melee_range' set to True after raising threat level"
+
+        assert post_attack_focus_state == 'targeting', "Expected focus state to remain 'targeting' after attacking" # type: ignore
+        assert post_attack_combat_state == 'fighting', "Expected combat state to remain 'fighting' after attacking" # type: ignore
+        assert post_attack_state_vector['target_is_hostile'] == True, "Expected state_vector to have 'target_is_hostile' remain True after attacking"
+        assert post_attack_state_vector['in_melee_range'] == True, "Expected state_vector to have 'in_melee_range' remain True after attacking"
+        assert post_attack_target_hp == 90, "Expected target hp to be 90 (100 - 10 attack) after taking damage"
+        assert post_attack_combatant_hp == 100, "Expected combatant hp to remain 100 after attacking"
+
+        assert post_defense_focus_state == 'targeting', "Expected focus state to remain 'targeting' after defending" # type: ignore
+        assert post_defense_combat_state == 'fighting', "Expected combat state to remain 'fighting' after defending" # type: ignore
+        assert post_defense_state_vector['target_is_hostile'] == True, "Expected state_vector to have 'target_is_hostile' remain True after defending"
+        assert post_defense_state_vector['in_melee_range'] == True, "Expected state_vector to have 'in_melee_range' remain True after defending"
+        assert post_defense_combatant_hp == 95, "Expected combatant hp to be 95 (100 - 10 attack + 5 defense) after taking damage"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+    
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
 
 def test_entity_character():
-    pytest.skip()
+    try:
+        # Arrange
+        character = Character(name='character_entity', symbol='@', color=(255, 255, 255))
+
+        # Act
+        initial_blocks_movement = character.blocks_movement
+        initial_takes_damage = character.takes_damage
+        initial_symbol = character.symbol
+        initial_color = character.color
+        initial_name = character.name
+
+        character.die()
+
+        after_death_blocks_movement = character.blocks_movement
+        after_death_takes_damage = character.takes_damage
+        after_death_symbol = character.symbol
+        after_death_color = character.color
+        after_death_name = character.name
+
+        # Assert
+        assert isinstance(character, Character), "Expected character to be instance of Character"
+        assert isinstance(character, CombatEntity), "Expected character to be instance of CombatEntity"
+        assert isinstance(character, BaseGameEntity), "Expected character to be instance of BaseGameEntity"
+        assert isinstance(character, BaseParentState), "Expected character be an instance of BaseParentState"
+        assert isinstance(character, GameEntity), "Expected character to duck type to GameEntity"
+        assert isinstance(character, EntityParentState), "Expected character to duck type to EntityParentState"
+
+        assert initial_blocks_movement == True, "Expected blocks_movement to be True initially"
+        assert initial_takes_damage == True, "Expected takes_damage to be True initially"
+        assert initial_symbol == '@', "Expected initial symbol to be '@'"
+        assert initial_color == (255, 255, 255), "Expected initial color to be white"
+        assert initial_name == 'character_entity', "Expected initial name to be 'character_entity'"
+
+        assert after_death_blocks_movement == False, "Expected blocks_movement to be False after death"
+        assert after_death_takes_damage == False, "Expected takes_damage to be False after death"
+        assert after_death_symbol == '%', "Expected symbol to change to '%' after death"
+        assert after_death_color == (191, 0, 0), "Expected color to change to red after death"
+        assert after_death_name == 'remains of character_entity', "Expected name to change to 'remains of character_entity' after death"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    finally:
+        pass
 
 def test_entity_player_character():
     pytest.skip()
 
 def test_entity_ai_character():
-    pytest.skip()
+    try:
+        # Arrange
+        character = AICharacter(name='character_entity', symbol='@', color=(255, 255, 255))
+        character.ai = BaseLoopHandler()  
+        
+        # Act
+        initial_ai = character.ai
+
+        character.die()
+
+        after_death_ai = character.ai
+
+        # Assert
+        assert isinstance(character, AICharacter), "Expected character to be instance of AICharacter"
+        assert isinstance(character, CombatEntity), "Expected character to be instance of CombatEntity"
+        assert isinstance(character, BaseGameEntity), "Expected character to be instance of BaseGameEntity"
+        assert isinstance(character, BaseParentState), "Expected character be an instance of BaseParentState"
+        assert isinstance(character, GameEntity), "Expected character to duck type to GameEntity"
+        assert isinstance(character, EntityParentState), "Expected character to duck type to EntityParentState"
+
+        assert isinstance(initial_ai, BaseLoopHandler), "Expected initial AI to be BaseLoopHandler()"
+        assert after_death_ai == None, "Expected AI to be None after death"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    finally:
+        pass
 
 def test_entity_mob_character():
     pytest.skip()

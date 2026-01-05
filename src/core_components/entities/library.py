@@ -169,7 +169,49 @@ class CombatSubState(BaseGameSubState):
     def is_not_targeting(self) -> bool:
         return not self.store.focus.is_targeting()  # type: ignore
   
+
+class MobileEntity(BaseGameEntity):
+    """A Mobile Entity is any game object that can move around the map. It has a 'collision' substate that is an
+    instance of CollisionSubState that manages its collision states. A Mobile Entity can 'move' and has 'speed' and 'destination' properties
+    to control its movement capabilities."""
+
+    speed: int | None = 0
+    destination: TileCoordinate | None = None
+    collision: CollisionSubState
+    _substates_manifest = (
+        ("spawn", BaseGameSubState),
+        ("collision", CollisionSubState),
+    )
+
+    @property
+    def destination_is_blocking_entity(self) -> bool:
+        if self.store and self.store.map and self.store.portfolio: # type: ignore Assume store is GameStore
+            for entity in self.store.portfolio.live_actors: # type: ignore Assume live_actors is List[Character]
+                if entity.location == self.destination and entity.blocks_movement:
+                    return True
+        return False
     
+    @property
+    def destination_is_blocking_terrain(self) -> bool:
+        if self.store and self.store.map and self.destination: # type: ignore Assume store is GameStore
+            return self.store.map.is_blocked(self.destination)  # type: ignore
+        return False
+    
+    @property
+    def destination_is_map_boundary(self) -> bool:
+        if self.store and self.store.map and self.destination: # type: ignore Assume store is GameStore
+            map_width = self.store.map.grid.width  # type: ignore
+            map_height = self.store.map.grid.height  # type: ignore
+            if self.destination:
+                if self.destination.x < 0 or self.destination.x >= map_width or self.destination.y < 0 or self.destination.y >= map_height:
+                    return True
+        return False    
+    
+    def move(self) -> None:
+        self.location = self.destination
+        self.destination = None
+
+   
 class TargetableEntity(BaseGameEntity):
     """A Targetable Entity is any game object that can become the focus of a TargetingEntity.
     It has a 'perception' substate that is an instance of TargetedSubState that manages its targeted states.
@@ -361,54 +403,19 @@ class CombatEntity(TargetableEntity, TargetingEntity):
     
     def defend(self) -> int:
         damage_mitigated = 0
-        if self.combat.is_melee_ready(): #type: ignore
-            damage_mitigated = self._defense_power
-        if self.combat.is_not_melee_ready(): #type: ignore
-            damage_mitigated = self._defense_power // 2
+        match self.combat.state:  # type: ignore
+            case 'engaged':
+                damage_mitigated = self._defense_power // 2
+            case 'fighting':
+                damage_mitigated = self._defense_power
+            case 'disengaged':
+                damage_mitigated = self._defense_power // 4
+            case 'peaceful':
+                damage_mitigated = 0
+            case _:
+                damage_mitigated = 0
 
-        return damage_mitigated
-
-
-class MobileEntity(BaseGameEntity):
-    """A Mobile Entity is any game object that can move around the map. It has a 'collision' substate that is an
-    instance of CollisionSubState that manages its collision states. A Mobile Entity can 'move' and has 'speed' and 'destination' properties
-    to control its movement capabilities."""
-
-    speed: int | None = 0
-    destination: TileCoordinate | None = None
-    collision: CollisionSubState
-    _substates_manifest = (
-        ("spawn", BaseGameSubState),
-        ("collision", CollisionSubState),
-    )
-
-    @property
-    def destination_is_blocking_entity(self) -> bool:
-        if self.store and self.store.map and self.store.portfolio: # type: ignore Assume store is GameStore
-            for entity in self.store.portfolio.live_actors: # type: ignore Assume live_actors is List[Character]
-                if entity.location == self.destination and entity.blocks_movement:
-                    return True
-        return False
-    
-    @property
-    def destination_is_blocking_terrain(self) -> bool:
-        if self.store and self.store.map and self.destination: # type: ignore Assume store is GameStore
-            return self.store.map.is_blocked(self.destination)  # type: ignore
-        return False
-    
-    @property
-    def destination_is_map_boundary(self) -> bool:
-        if self.store and self.store.map and self.destination: # type: ignore Assume store is GameStore
-            map_width = self.store.map.grid.width  # type: ignore
-            map_height = self.store.map.grid.height  # type: ignore
-            if self.destination:
-                if self.destination.x < 0 or self.destination.x >= map_width or self.destination.y < 0 or self.destination.y >= map_height:
-                    return True
-        return False    
-    
-    def move(self) -> None:
-        self.location = self.destination
-        self.destination = None
+        return damage_mitigated 
 
 
 class Character(MobileEntity, CombatEntity):
