@@ -1,7 +1,6 @@
 import pytest
 from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
-import numpy as np
 from transitions import Machine 
 
 from core_components.entities.base  import BaseGameSubState, BaseGameEntity, BaseParentState
@@ -10,7 +9,7 @@ from core_components.entities.custom_types import GameEntity, EntityParentState
 from core_components.maps.tiles.base import TileCoordinate
 from core_components.maps.tilemaps.library import DefaultTileMap
 from core_components.store import GameStore
-from core_components.loops.base import BaseLoopHandler
+from core_components.loops.base import BaseGameTransformer
 
 class DummyGameStore:
     location: None = None
@@ -865,7 +864,7 @@ def test_entity_ai_character():
     try:
         # Arrange
         character = AICharacter(name='character_entity', symbol='@', color=(255, 255, 255))
-        character.ai = BaseLoopHandler()  
+        character.ai = BaseGameTransformer()  
         
         # Act
         initial_ai = character.ai
@@ -882,7 +881,7 @@ def test_entity_ai_character():
         assert isinstance(character, GameEntity), "Expected character to duck type to GameEntity"
         assert isinstance(character, EntityParentState), "Expected character to duck type to EntityParentState"
 
-        assert isinstance(initial_ai, BaseLoopHandler), "Expected initial AI to be BaseLoopHandler()"
+        assert isinstance(initial_ai, BaseGameTransformer), "Expected initial AI to be BaseLoopHandler()"
         assert after_death_ai == None, "Expected AI to be None after death"
 
     except AssertionError as e:

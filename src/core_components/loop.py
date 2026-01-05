@@ -19,7 +19,7 @@ class GameLoop:
     The GameLoop manages the main game loop, processing events and actions in separate threads. It has a list of managed threads and provides an API for starting and stopping the loop. 
     It uses a GameLoopHandler to handle the transformation and dispatching of events and actions.
 
-    Duck Types: StatefulObject
+    Duck Types: StatefulObject, StoredStateObject
     """
     store: GameStore | None
     machine: Machine

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from type_protocols import *
+from protocols import *
 from typing import Protocol, Tuple, runtime_checkable
 import numpy as np
 

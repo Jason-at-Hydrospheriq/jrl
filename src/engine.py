@@ -7,14 +7,14 @@ from transitions import Machine
 from core_components.store import GameStore
 from core_components.display import Display
 from core_components.loop import GameLoop
-from type_protocols import StateStoreObject
+from protocols import StoredStateObject
 
 class GameEngine:
     """
     The Game updates the game state in the main loop. It is has States that it passes to the Game AI. 
     The GameAI converts states to a sequence of actions that the Game performs in the main game loop.
 
-    Duck Types: StatefulObject, StateReferenceObject
+    Duck Types: StatefulObject, StoredStateObject
     """
     machine: Machine
     loop: GameLoop | None
@@ -52,7 +52,7 @@ class GameEngine:
         if not self.loop:
             self.loop = GameLoop()
 
-        # Propagate the store to all StateStoreObjects
+        # Propagate the store to all StoredStateObjects
         stores = self._get_all_stores(self)
         for store in self._get_all_stores(self.store):
             stores.append(store)
@@ -112,15 +112,15 @@ class GameEngine:
 
         print(f"Game is {self.state}.") # type: ignore
     
-    def _get_store_components(self, obj: object) -> list[StateStoreObject]:
+    def _get_store_components(self, obj: object) -> list[StoredStateObject]:
         found_stores = []
         for attribute in dir(obj):
             y = getattr(obj, attribute)
-            if isinstance(y, StateStoreObject):
+            if isinstance(y, StoredStateObject):
                 found_stores.append(y)
         return found_stores
 
-    def _get_all_stores(self, obj: object) -> list[StateStoreObject]:
+    def _get_all_stores(self, obj: object) -> list[StoredStateObject]:
         found_stores = []
         x = obj
         while self._get_store_components(x):   

@@ -1,173 +1,211 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import tcod
 
 from core_components.entities.library import BaseGameEntity, Character, AICharacter
+from core_components.loops.base import BaseGameEvent
+from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
+from core_components.loops.custom_types import StateActionObject, StateHandler
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
-    from core_components.loops.handlers import GameLoopHandler
 
 
-class BaseEvent:
-    state: GameStore | None
-    transformer: object | None
+class SystemEvent(BaseGameEvent):
+    def __init__(self, store: GameStore | None = None, handler: GameLoopHandler | None = None, input_event: tcod.event.Event | None = None) -> None:
+        super().__init__(store, handler)
 
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None) -> None:
-        self.state = state
-        self.transformer = handler
-    
     def trigger(self) -> None:
-        self.transformer.dispatch(self) # type: ignore
+        if self.handler:
+            self.handler.handle(cast(StateActionObject, self))
 
 
-class NonEvent(BaseEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None) -> None:
-        super().__init__(handler, state)
+class InputEvent(BaseGameEvent):
+    _input_event: tcod.event.Event | None
+
+    def __init__(self, store: GameStore | None = None, handler: GameLoopHandler | None = None, input_event: tcod.event.Event | None = None) -> None:
+        super().__init__(store, handler)
+        self._input_event = input_event
+
+    @property
+    def input_event(self) -> tcod.event.Event | None:
+        return self._input_event
+
+    @input_event.setter
+    def input_event(self, value: tcod.event.Event | None) -> None:
+        if value is not None and not isinstance(value, tcod.event.Event):
+            raise TypeError("input_event must be an instance of tcod.event.Event or None")
+        self._input_event = value
 
 
-class SystemEvent(BaseEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None) -> None:
-        super().__init__(handler, state)
+class EntityEvent(BaseGameEvent):
+    _entity: BaseGameEntity | None
+
+    def __init__(self, store: GameStore | None = None, handler: GameLoopHandler | None = None, entity: BaseGameEntity | None = None) -> None:
+        super().__init__(store, handler)
+        self._entity = entity
+
+    @property
+    def entity(self) -> BaseGameEntity | None:
+        return self._entity
+    
+    @entity.setter
+    def entity(self, value: BaseGameEntity | None) -> None:
+        if value is not None and not isinstance(value, BaseGameEntity):
+            raise TypeError("entity must be an instance of BaseGameEntity or None")
+        self._entity = value
 
 
-class InputEvent(BaseEvent):
-    event: tcod.event.Event
+class PlayerCharacterEvent(BaseGameEvent):
+    _entity: Character | None
+    _target: Character | None
+    
+    def __init__(self, store: GameStore | None = None, handler: GameLoopHandler | None = None, entity: Character | None = None, target: Character | None = None) -> None:
+        super().__init__(store, handler)
+        self._entity = entity
+        self._target = target
 
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, event: tcod.event.Event | None = None) -> None:
-        super().__init__(handler, state)
-
-        if event:
-            self.event = event
-
-
-class EntityEvent(BaseEvent):
-    entity: BaseGameEntity | None
-
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: BaseGameEntity | None = None) -> None:
-        super().__init__(handler, state)
-
-        if entity:
-            self.entity = entity
-
-
-class CharacterEvent(BaseEvent):
-    entity: Character | None
-    target: Character | None
-
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: Character | None = None, target: Character | None = None) -> None:
-        super().__init__(handler, state)
-
-        if entity:
-            self.entity = entity
-        if target:
-            self.target = target
-        if state:
-            self.state = state
+    @property
+    def entity(self) -> Character | None:
+        return self._entity
+    
+    @entity.setter
+    def entity(self, value: Character | None) -> None:
+        if value is not None and not isinstance(value, Character):
+            raise TypeError("entity must be an instance of Character or None")
+        self._entity = value
+    
+    @property
+    def target(self) -> Character | None:
+        return self._target
+    
+    @target.setter
+    def target(self, value: Character | None) -> None:
+        if value is not None and not isinstance(value, Character):
+            raise TypeError("target must be an instance of Character or None")
+        self._target = value
 
 
-class AIEvent(BaseEvent):
-    entity: AICharacter | None
-    target: Character | None
+class AICharacterEvent(BaseGameEvent):
+    _entity: AICharacter | None
+    _target: Character | None
 
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
-        super().__init__(handler, state)
+    def __init__(self, store: GameStore | None = None, handler: MobLoopHandler | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
+        super().__init__(store, handler)
+        self._entity = entity
+        self._target = target
+    
+    @property
+    def entity(self) -> AICharacter | None:
+        return self._entity
+    
+    @entity.setter
+    def entity(self, value: AICharacter | None) -> None:
+        if value is not None and not isinstance(value, AICharacter):
+            raise TypeError("entity must be an instance of AICharacter or None")
+        self._entity = value
 
-        if entity:
-            self.entity = entity
-        if target:
-            self.target = target
-        if state:
-            self.state = state
-
-
-"""These System Events are generated by the game engine itself. They are not tied to any specific entity or AI, but rather represent global game states or actions."""
-class GameStartEvent(SystemEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None) -> None:
-        super().__init__(handler, state)
-
-
-class GameOverEvent(SystemEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None) -> None:
-        super().__init__(handler, state)
-
-
-class FOVUpdateEvent(SystemEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None) -> None:
-        super().__init__(handler, state)
-    """Triggers the FOV update for all entities."""
+    @property
+    def target(self) -> Character | None:
+        return self._target
+    
+    @target.setter
+    def target(self, value: Character | None) -> None:
+        if value is not None and not isinstance(value, Character):
+            raise TypeError("target must be an instance of Character or None")
+        self._target = value
 
 
-"""These Entity Events are generated by entities in response to actions or interactions."""
-class NoCollision(EntityEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: BaseGameEntity | None = None) -> None:
-        super().__init__(handler, state, entity=entity)
+# """These System Events are generated by the game engine itself. They are not tied to any specific entity or AI, but rather represent global game states or actions."""
+# class GameStartEvent(SystemEvent):
+#     pass
 
 
-class WallCollision(EntityEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: BaseGameEntity | None = None) -> None:
-        super().__init__(handler, state, entity=entity)
+
+# class NonEvent(BaseGameEvent):
+#     pass
+
+# class GameOverEvent(SystemEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None) -> None:
+#         super().__init__(handler, state)
 
 
-class MapBoundaryCollision(EntityEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: BaseGameEntity | None = None) -> None:
-        super().__init__(handler, state, entity=entity)
+# class FOVUpdateEvent(SystemEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None) -> None:
+#         super().__init__(handler, state)
+#     """Triggers the FOV update for all entities."""
 
 
-class TargetCollision(EntityEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: BaseGameEntity | None = None) -> None:
-        super().__init__(handler, state, entity=entity)
+# """These Entity Events are generated by entities in response to actions or interactions."""
+# class NoCollision(EntityEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: BaseGameEntity | None = None) -> None:
+#         super().__init__(handler, state, entity=entity)
+
+
+# class WallCollision(EntityEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: BaseGameEntity | None = None) -> None:
+#         super().__init__(handler, state, entity=entity)
+
+
+# class MapBoundaryCollision(EntityEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: BaseGameEntity | None = None) -> None:
+#         super().__init__(handler, state, entity=entity)
+
+
+# class TargetCollision(EntityEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: BaseGameEntity | None = None) -> None:
+#         super().__init__(handler, state, entity=entity)
     
 
-class MeleeCollision(EntityEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: BaseGameEntity | None = None) -> None:
-        super().__init__(handler, state, entity=entity)
+# class MeleeCollision(EntityEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: BaseGameEntity | None = None) -> None:
+#         super().__init__(handler, state, entity=entity)
 
 
-"""These Combat Events are generated during combat interactions between entities and require targeting information."""
-class EntityCombatEvent(CharacterEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: Character | None = None, target: Character | None = None) -> None:
-        super().__init__(handler, state, entity=entity, target=target)
+# """These Combat Events are generated during combat interactions between entities and require targeting information."""
+# class EntityCombatEvent(PlayerCharacterEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: Character | None = None, target: Character | None = None) -> None:
+#         super().__init__(handler, state, entity=entity, target=target)
 
 
-class MeleeAttackEvent(EntityCombatEvent):
-    entity: Character | None
-    target: Character | None
+# class MeleeAttackEvent(EntityCombatEvent):
+#     entity: Character | None
+#     target: Character | None
 
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: Character | None = None, target: Character | None = None) -> None:
-        super().__init__(handler, state, entity=entity, target=target)
-
-
-class MissileAttackEvent(EntityCombatEvent):
-    pass
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: Character | None = None, target: Character | None = None) -> None:
+#         super().__init__(handler, state, entity=entity, target=target)
 
 
-class SpellAttackEvent(EntityCombatEvent):
-    pass
+# class MissileAttackEvent(EntityCombatEvent):
+#     pass
 
 
-"""These AI Events are generated by AI-controlled entities to trigger AI generated behaviors."""
-class TargetedAIEvent(AIEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
-        super().__init__(handler, state, entity=entity, target=target)
+# class SpellAttackEvent(EntityCombatEvent):
+#     pass
 
 
-class AttackedAIEvent(AIEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
-        super().__init__(handler, state, entity=entity, target=target)
+# """These AI Events are generated by AI-controlled entities to trigger AI generated behaviors."""
+# class TargetedAIEvent(AICharacterEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
+#         super().__init__(handler, state, entity=entity, target=target)
 
 
-class TargetAvailableAIEvent(AIEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
-        super().__init__(handler, state, entity=entity, target=target)
+# class AttackedAIEvent(AICharacterEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
+#         super().__init__(handler, state, entity=entity, target=target)
 
 
-class OnTargetAIEvent(AIEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
-        super().__init__(handler, state, entity=entity, target=target)
+# class TargetAvailableAIEvent(AICharacterEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
+#         super().__init__(handler, state, entity=entity, target=target)
 
 
-class TargetOutOfRangeAIEvent(AIEvent):
-    def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
-        super().__init__(handler, state, entity=entity, target=target)
+# class OnTargetAIEvent(AICharacterEvent):
+#     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
+#         super().__init__(handler, state, entity=entity, target=target)
+
+
+# class TargetOutOfRangeAIEvent(AICharacterEvent):
+    # def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
+    #     super().__init__(handler, state, entity=entity, target=target)

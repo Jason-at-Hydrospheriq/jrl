@@ -10,16 +10,16 @@ if TYPE_CHECKING:
     from core_components.store import GameStore
     from core_components.entities.library import AICharactor, BaseTargetableEntity
 
-from core_components.loops.events import CharacterEvent, EntityEvent, AIEvent
+from core_components.loops.events import PlayerCharacterEvent, EntityEvent, AICharacterEvent
 
-AE = TypeVar('AE', bound=AIEvent)
-EE = TypeVar('EE', bound=CharacterEvent)
+AE = TypeVar('AE', bound=AICharacterEvent)
+EE = TypeVar('EE', bound=PlayerCharacterEvent)
 
 # A typed dictionary for AI bots
 class EntityStateTableDict(TypedDict):
     bits: Tuple[str, ...]
     vector_tuples: Tuple[Tuple[int, ...], ...]
-    mapping: Tuple[TypeVar('E', bound=[AIEvent, EntityEvent])| None, ...] # type: ignore
+    mapping: Tuple[TypeVar('E', bound=[AICharacterEvent, EntityEvent])| None, ...] # type: ignore
 
 
 manifest_example = EntityStateTableDict({   'bits': ('is_alive', 'is_spotted', 'is_spotting', 'is_targeting'),
@@ -29,8 +29,8 @@ manifest_example = EntityStateTableDict({   'bits': ('is_alive', 'is_spotted', '
                                                             (1, 1, 0, 0), (1, 1, 0, 1), (1, 1, 1, 0), (1, 1, 1, 1) ),
                                         'mapping': (  (None), (None), (None), (None),
                                                         (None), (None), (None), (None),
-                                                        (None), (None), (AIEvent), (EntityEvent),
-                                                        (None), (None), (AIEvent), (EntityEvent) ),
+                                                        (None), (None), (AICharacterEvent), (EntityEvent),
+                                                        (None), (None), (AICharacterEvent), (EntityEvent) ),
                     })
 
 
@@ -63,7 +63,7 @@ class BaseMachine:
         except Exception as e:     
             raise e
     
-    def get_event_from_state_vector(self, state_vector: np.ndarray) -> AIEvent | EntityEvent | float:
+    def get_event_from_state_vector(self, state_vector: np.ndarray) -> AICharacterEvent | EntityEvent | float:
         try:
             index = np.where((self._state_matrix == state_vector).all(axis=1))[0]
             if index and index.size > 0:

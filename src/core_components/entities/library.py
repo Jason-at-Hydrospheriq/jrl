@@ -10,9 +10,9 @@ from tcod.map import compute_fov
 from core_components.entities.attributes import *
 
 if TYPE_CHECKING:
-    from core_components.loops import BaseLoopHandler
+    from core_components.loops import BaseGameTransformer
     from core_components.store import GameStore
-    from core_components.loops.handlers import MobHandler
+    from core_components.loops.handlers import MobLoopHandler
 
 from core_components.maps.tiles import TileCoordinate
 from core_components.entities.base import BaseGameSubState, BaseGameEntity
@@ -478,8 +478,8 @@ class Character(MobileEntity, CombatEntity):
     )
 
     def __init__(   self,
-                    *,
                     store: GameStore | None = None,
+                    *,
                     location: TileCoordinate | None = None,
                     symbol: str = "?",
                     color: Tuple[int, int, int],
@@ -524,7 +524,7 @@ class PlayerCharacter(Character):
         
 class AICharacter(Character):
     path: List[TileCoordinate] = []
-    _ai: BaseLoopHandler | None = None
+    _ai: BaseGameTransformer | None = None
     
     def __init__(   self,
                     *,
@@ -533,7 +533,7 @@ class AICharacter(Character):
                 name: str = "<Unnamed>",
                 symbol: str = '?',
                 color: Tuple[int, int, int]=(255, 255, 255),
-                ai_cls: BaseLoopHandler | None = None,
+                ai_cls: BaseGameTransformer | None = None,
                  ) -> None:
         
         if ai_cls:
@@ -543,11 +543,11 @@ class AICharacter(Character):
 
 
     @property
-    def ai(self) -> BaseLoopHandler | None:
+    def ai(self) -> BaseGameTransformer | None:
         return self._ai
 
     @ai.setter
-    def ai(self, value: BaseLoopHandler | None) -> None:
+    def ai(self, value: BaseGameTransformer | None) -> None:
         self._ai = value
 
     def die(self) -> None:
@@ -576,9 +576,9 @@ class MobCharacter(AICharacter):
         self.update()
 
     @property
-    def ai(self) -> BaseLoopHandler | None:
+    def ai(self) -> BaseGameTransformer | None:
         return self._ai
     
     @ai.setter
-    def ai(self, value: MobHandler | None) -> None:   # type: ignore
+    def ai(self, value: MobLoopHandler | None) -> None:   # type: ignore
         self._ai = value

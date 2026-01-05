@@ -7,7 +7,7 @@ import numpy as np
 import tcod as libtcodpy
 from tcod.map import compute_fov
 
-from type_protocols import *
+from protocols import *
 from core_components.loops.custom_types import *
 from core_components.maps.tiles.base import TileCoordinate
 from core_components.loops.base import BaseGameAction
