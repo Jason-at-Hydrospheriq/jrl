@@ -47,7 +47,6 @@ class Portfolio:
                             hp=35,
                             max_hp=35)
 
-
     def __init__(self, store: GameStore | None = None) -> None:
         if store is not None:
             self.store = store
@@ -91,17 +90,6 @@ class Portfolio:
     @property
     def live_ai_actors(self) -> List[AICharacter]:
         return [entity for entity in self.live_actors if isinstance(entity, AICharacter)]
-
-    def entity_collision(self, entity) -> BaseGameEntity | None:
-        """Check if the given entity's destination collides with any other entity that blocks movement."""
-        #TODO should this be a state method of MobileEntity?
-        
-        for location in self.entity_blocked_locations:
-            potential_blocker = self.get_entity_at_location(location)[0]
-            if entity.destination == location and isinstance(potential_blocker, BaseGameEntity):
-                return potential_blocker  # Return the first blocking entity found.
-
-        return None
     
     def get_entity_at_location(self, location: TileCoordinate) -> List[BaseGameEntity]:
         found_entity = []

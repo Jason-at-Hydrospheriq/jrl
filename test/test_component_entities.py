@@ -854,6 +854,7 @@ def test_entity_character():
     except Exception as e:
         pytest.fail(f"Test failed due to unexpected error: {e}")
     
+    # Atavise
     finally:
         pass
 
