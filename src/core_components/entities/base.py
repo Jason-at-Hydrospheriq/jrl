@@ -97,7 +97,7 @@ class BaseGameEntity(BaseParentState):
     machine: Machine
     location: TileCoordinate | None
     blocks_movement: bool | None
-    takes_damage: bool | None
+    is_invulnerable: bool | None
     _hp: int | None
     _max_hp: int | None
     name: str
@@ -126,7 +126,10 @@ class BaseGameEntity(BaseParentState):
             self.location = location
             
         self.blocks_movement = True
-        self.takes_damage = True
+        self.is_invulnerable = False
+        self._hp = 0
+        self._max_hp = 1
+        
         self.symbol = symbol
         self.color = color
         self.name = name
@@ -134,22 +137,22 @@ class BaseGameEntity(BaseParentState):
     
     @property
     def hp(self) -> int | None:
-        if self.takes_damage:
+        if not self.is_invulnerable:
             return self._hp
         return None
     
     @hp.setter
     def hp(self, value: int | None) -> None:
-        if self.takes_damage:
+        if not self.is_invulnerable:
             self._hp = value
 
     @property
     def max_hp(self) -> int | None:
-        if self.takes_damage:
+        if not self.is_invulnerable:
             return self._max_hp
         return None
     
     @max_hp.setter
     def max_hp(self, value: int | None) -> None:
-        if self.takes_damage:
+        if not self.is_invulnerable:
             self._max_hp = value

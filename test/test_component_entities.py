@@ -1,12 +1,11 @@
 import pytest
 from sys import path
-
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 from transitions import Machine 
 
 from core_components.entities.base  import BaseGameSubState, BaseGameEntity, BaseParentState
-from core_components.entities.library import CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character, AICharacter
+from core_components.entities.library import CharacterHealthSubState, CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character, AICharacter
 from core_components.entities.custom_types import GameEntity, EntityParentState
 from core_components.maps.tiles.base import TileCoordinate
 from core_components.maps.tilemaps.library import DefaultTileMap
@@ -777,18 +776,39 @@ def test_entity_character():
     try:
         # Arrange
         character = Character(name='character_entity', symbol='@', color=(255, 255, 255))
+        character.hp = 100
+        character.max_hp = 100
 
         # Act
         initial_blocks_movement = character.blocks_movement
-        initial_takes_damage = character.takes_damage
+        initial_invulnerable = character.is_invulnerable
         initial_symbol = character.symbol
         initial_color = character.color
         initial_name = character.name
+        character.location = TileCoordinate.from_tuple((0,0))
+        character.update()
+        initial_health_state = character.health.state # type: ignore | Expect 'healthy'
+        initial_is_alive = character.is_alive
+
+        character.take_damage(35)
+        character.update()
+        injured_health_state = character.health.state # type: ignore | Expect 'injured'
+
+        character.take_damage(45)
+        character.update()
+        critical_health_state = character.health.state # type: ignore | Expect 'critical'
+
+        character.take_damage(20)
+        character.update()
+        unconscious_health_state = character.health.state # type: ignore | Expect 'unconscious'
 
         character.die()
+        character.update()
+        dead_health_state = character.health.state # type: ignore | Expect 'dead'
 
         after_death_blocks_movement = character.blocks_movement
-        after_death_takes_damage = character.takes_damage
+        after_death_invulnerable = character.is_invulnerable
+        after_death_is_alive = character.is_alive
         after_death_symbol = character.symbol
         after_death_color = character.color
         after_death_name = character.name
@@ -801,17 +821,32 @@ def test_entity_character():
         assert isinstance(character, GameEntity), "Expected character to duck type to GameEntity"
         assert isinstance(character, EntityParentState), "Expected character to duck type to EntityParentState"
 
+        assert len(character._substates_manifest) == 5, "Expected five substates in _substates_manifest"
+        assert isinstance(character.substates[0], BaseGameSubState), "Expected first substate to be instance of BaseGameSubState"
+        assert isinstance(character.substates[1], TargetedSubState), "Expected second substate to be instance of TargetedSubState"
+        assert isinstance(character.substates[2], TargetingSubState), "Expected third substate to be instance of TargetingSubState"
+        assert isinstance(character.substates[3], CombatSubState), "Expected fourth substate to be instance of CombatSubState"
+        assert isinstance(character.substates[4], CharacterHealthSubState), "Expected fifth substate to be instance of CharacterHealthSubState"
+
         assert initial_blocks_movement == True, "Expected blocks_movement to be True initially"
-        assert initial_takes_damage == True, "Expected takes_damage to be True initially"
+        assert initial_invulnerable == False, "Expected is_invulnerable to be False initially"
         assert initial_symbol == '@', "Expected initial symbol to be '@'"
         assert initial_color == (255, 255, 255), "Expected initial color to be white"
         assert initial_name == 'character_entity', "Expected initial name to be 'character_entity'"
+        assert initial_health_state == 'healthy', "Expected health state to be 'healthy' initially"
+        assert initial_is_alive == True, "Expected is_alive to be True initially"
+
+        assert injured_health_state == 'injured', "Expected health state to be 'injured' after taking 35 damage"
+        assert critical_health_state == 'critical', "Expected health state to be 'critical' after taking additional 45 damage"
+        assert unconscious_health_state == 'unconscious', "Expected health state to be 'unconscious' after taking additional 20 damage"
+        assert dead_health_state == 'dead', "Expected health state to be 'dead' after death"
 
         assert after_death_blocks_movement == False, "Expected blocks_movement to be False after death"
-        assert after_death_takes_damage == False, "Expected takes_damage to be False after death"
+        assert after_death_invulnerable == True, "Expected is_invulnerable to be True after death"
         assert after_death_symbol == '%', "Expected symbol to change to '%' after death"
         assert after_death_color == (191, 0, 0), "Expected color to change to red after death"
         assert after_death_name == 'remains of character_entity', "Expected name to change to 'remains of character_entity' after death"
+        assert after_death_is_alive == False, "Expected is_alive to be False after death"
 
     except AssertionError as e:
         pytest.fail(str(e))

@@ -27,17 +27,25 @@ class Portfolio:
                                 symbol=chr(64), 
                                 color=(130, 200, 255),
                                 location=TileCoordinate(TileTuple(([0], [0])), 
-                                                    parent_map_size=PARENT_MAP_SIZE))
-    ORC = MobCharacter( name="Orc", 
-                        symbol=chr(65), 
-                        color=(63, 127, 63),
-                        location=TileCoordinate(TileTuple(([0], [0])), 
-                                                parent_map_size=PARENT_MAP_SIZE))
+                                                    parent_map_size=PARENT_MAP_SIZE),
+                                hp=150,
+                                max_hp=150)
+    
+    ORC = MobCharacter(     name="Orc", 
+                            symbol=chr(65), 
+                            color=(63, 127, 63),
+                            location=TileCoordinate(TileTuple(([0], [0])), 
+                                                    parent_map_size=PARENT_MAP_SIZE),
+                            hp=25,
+                            max_hp=25)
+    
     TROLL = MobCharacter(   name="Troll", 
                             symbol=chr(65), 
                             color=(0, 127, 0), 
                             location=TileCoordinate(TileTuple(([0], [0])), 
-                                                    parent_map_size=PARENT_MAP_SIZE))
+                                                    parent_map_size=PARENT_MAP_SIZE),
+                            hp=35,
+                            max_hp=35)
 
 
     def __init__(self, store: GameStore | None = None) -> None:
@@ -64,14 +72,12 @@ class Portfolio:
         self.entities.add(new_player)
 
     @property
-    def all_actors(self) -> List[BaseGameEntity]:
-        potential_actors = [entity for entity in self.entities if hasattr(entity, 'is_alive')]
-        return [entity for entity in potential_actors] #type: ignore
-    
+    def all_actors(self) -> List[Character]:
+        return [entity for entity in self.entities if isinstance(entity, Character)]
+        
     @property
     def all_non_actors(self) -> List[BaseGameEntity]:
-        potential_non_actors = [entity for entity in self.entities if not hasattr(entity, 'is_alive')]
-        return [entity for entity in potential_non_actors] #type: ignore
+        return [entity for entity in self.entities if not isinstance(entity, Character)]
 
     @property
     def entity_blocked_locations(self) -> List[TileCoordinate]:
@@ -79,9 +85,8 @@ class Portfolio:
         return [blocker.location for blocker in potential_blockers if blocker.blocks_movement] #type: ignore
     
     @property
-    def live_actors(self) -> List[BaseGameEntity]:
-        potential_actors = [entity for entity in self.entities if hasattr(entity, 'is_alive')]
-        return [entity for entity in potential_actors if entity.is_alive] #type: ignore
+    def live_actors(self) -> List[Character]:
+        return [entity for entity in self.all_actors if entity.is_alive]
     
     @property
     def live_ai_actors(self) -> List[AICharacter]:

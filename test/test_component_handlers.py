@@ -4,14 +4,14 @@ import numpy as np
 
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from core_components.handlers.base import BaseHandler, EntityStateTableDict, manifest_example
-from core_components.entities.library import AICharactor
+from core_components.loops.base import BaseLoopHandler, EntityStateTableDict, manifest_example
+from core_components.entities.library import AICharacter
 from core_components.events import AIEvent, EntityEvent
 from core_components.store import GameStore
 
 def test_component_base_ai_empty_init():
     # Arrange & Act
-    ai = BaseHandler(entity=None, state_table=None)
+    ai = BaseLoopHandler(entity=None, state_table=None)
 
     # Assert
     try:
@@ -29,12 +29,12 @@ def test_component_base_ai_empty_init():
 
 def test_component_base_ai_full_init():
     # Arrange
-    mock_entity = AICharactor(symbol='A', color=(255,0,0), name="TestAI")
+    mock_entity = AICharacter(symbol='A', color=(255,0,0), name="TestAI")
     custom_state_table: EntityStateTableDict = {'bits': ('is_alive',),
                                             'vector_tuples': ((0,), (1,)),
                                             'mapping': (None, AIEvent)}
     # Act
-    ai = BaseHandler(entity=mock_entity, state_table=custom_state_table)
+    ai = BaseLoopHandler(entity=mock_entity, state_table=custom_state_table)
 
     # Assert
     try:    

@@ -2,9 +2,9 @@ import pytest
 from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from core_components.generators.library import DEFAULT_MAP_TEMPLATE, DungeonGenerator, CIRCULAR_ROOM_TEMPLATE, RECTANGULAR_ROOM_TEMPLATE
-from core_components.maps.library import DefaultTileMap
-from core_components.tiles.library import TileCoordinate, TileTuple 
+from core_components.maps.generators.library import DEFAULT_MAP_TEMPLATE, DungeonGenerator, CIRCULAR_ROOM_TEMPLATE, RECTANGULAR_ROOM_TEMPLATE
+from core_components.maps.tilemaps.library import DefaultTileMap
+from core_components.maps.tiles.base import TileCoordinate, TileTuple 
 
 def test_generator_random_empty_init():
     # Arrange & Act

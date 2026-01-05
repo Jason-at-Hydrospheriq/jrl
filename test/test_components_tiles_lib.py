@@ -4,8 +4,8 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 print(path)
 
-from core_components.tiles.library import DEFAULT_CENTER_LOCATION, RectangularRoom, CircularRoom, DEFAULT_CENTER_COORDINATE, DEFAULT_GRID_SIZE
-from core_components.tiles.base import TileCoordinate, TileTuple
+from core_components.maps.tiles.library import DEFAULT_CENTER_LOCATION, RectangularRoom, CircularRoom, DEFAULT_CENTER_COORDINATE, DEFAULT_GRID_SIZE
+from core_components.maps.tiles.base import TileCoordinate, TileTuple
 
 def test_rectangular_room_empty_init():
     # Arrange & Act

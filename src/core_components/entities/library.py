@@ -170,6 +170,53 @@ class CombatSubState(BaseGameSubState):
         return not self.store.focus.is_targeting()  # type: ignore
   
 
+class CharacterHealthSubState(BaseGameSubState):
+    """The CharacterHealthSubState is a class that defines and runs the 'health' state machine for a Game Entity.
+    This state machine tracks whether a Character is healthy, injured, critical, or dead. It manages the 
+    'is_healthy', 'is_injured', 'is_critical', and 'is_dead' state bits in the state_vector."""
+
+    _state_bits = ('is_healthy', 'is_injured', 'is_critical', 'is_dead')
+    _states = ( {'name':'healthy', 'on_enter': ['update']},
+                {'name':'injured', 'on_enter': ['update']}, 
+                {'name':'critical', 'on_enter': ['update']}, 
+                {'name':'unconscious', 'on_enter': ['update']},
+                {'name':'dead', 'on_enter': ['update']},
+                {'name':'unknown', 'on_enter': ['update']},)
+    _transitions = (
+            {'trigger':'update', 'source':['unknown', 'injured', 'critical', 'unconscious'], 'dest':'healthy', 'conditions':['is_on_map', 'is_healthy']},
+            {'trigger':'update', 'source':['unknown', 'healthy', 'critical', 'unconscious'], 'dest':'injured', 'conditions':['is_on_map', 'is_injured']},
+            {'trigger':'update', 'source':['unknown', 'healthy', 'injured', 'unconscious'], 'dest':'critical', 'conditions':['is_on_map', 'is_critical']},
+            {'trigger':'update', 'source':['unknown', 'healthy', 'injured', 'critical'], 'dest':'unconscious', 'conditions':['is_on_map', 'is_unconscious']},
+            {'trigger':'update', 'source':['unknown', 'healthy', 'injured', 'critical', 'unconscious'], 'dest':'dead', 'conditions':['is_on_map', 'is_dead']},
+            {'trigger':'update', 'source':['healthy', 'injured', 'critical', 'unconscious', 'dead'], 'dest':'unknown', 'conditions':['is_not_on_map']},)
+    _initial_state = 'healthy'
+    
+    def set_bits(self) -> None:
+        if self.store.hp is not None and self.store.max_hp is not None:  # type: ignore | Character can take damage when alive.
+            self.store.state_vector['is_healthy'] = self.store.hp > (0.7 * self.store.max_hp) and self.store.is_alive  # type: ignore
+            self.store.state_vector['is_injured'] = (0.3 * self.store.max_hp) < self.store.hp <= (0.7 * self.store.max_hp) and self.store.is_alive  # type: ignore
+            self.store.state_vector['is_critical'] = 0 < self.store.hp <= (0.3 * self.store.max_hp) and self.store.is_alive  # type: ignore
+            self.store.state_vector['is_unconscious'] = self.store.hp == 0 and self.store.is_alive  # type: ignore
+        
+        elif self.store.hp is None:  # type: ignore | Character cannot take damage when dead.
+            self.store.state_vector['is_dead'] = not self.store.is_alive  # type: ignore
+
+    def is_healthy(self) -> bool:
+        return self.store.state_vector['is_healthy']  # type: ignore
+    
+    def is_injured(self) -> bool:
+        return self.store.state_vector['is_injured']  # type: ignore
+    
+    def is_critical(self) -> bool:
+        return self.store.state_vector['is_critical']  # type: ignore
+    
+    def is_unconscious(self) -> bool:
+        return self.store.state_vector['is_unconscious']  # type: ignore
+    
+    def is_dead(self) -> bool:
+        return self.store.state_vector['is_dead']  # type: ignore
+    
+    
 class MobileEntity(BaseGameEntity):
     """A Mobile Entity is any game object that can move around the map. It has a 'collision' substate that is an
     instance of CollisionSubState that manages its collision states. A Mobile Entity can 'move' and has 'speed' and 'destination' properties
@@ -419,6 +466,16 @@ class CombatEntity(TargetableEntity, TargetingEntity):
 
 
 class Character(MobileEntity, CombatEntity):
+    health: CharacterHealthSubState
+    is_alive: bool
+
+    _substates_manifest = (
+        ("spawn", BaseGameSubState),
+        ("perception", TargetedSubState),
+        ("focus", TargetingSubState),
+        ("combat", CombatSubState),
+        ("health", CharacterHealthSubState),
+    )
 
     def __init__(   self,
                     *,
@@ -428,15 +485,16 @@ class Character(MobileEntity, CombatEntity):
                     color: Tuple[int, int, int],
                     name: str = "<Unnamed>",
                     ) -> None:
-        
+                
+        self.is_alive = True
+
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-        
-        self.blocks_movement = True
-        self.takes_damage = True
+
         
     def die(self) -> None:
         self.blocks_movement = False
-        self.takes_damage = False
+        self.is_invulnerable = True
+        self.is_alive = False
         self.name = f"remains of {self.name}"
         self.symbol = "%"
         self.color = (191, 0, 0)
@@ -444,12 +502,14 @@ class Character(MobileEntity, CombatEntity):
 
 class PlayerCharacter(Character):
     def __init__(   self,
-                *,
                 store: GameStore | None = None,
+                *,
                 location: TileCoordinate | None = None,
                 name: str = "<Unnamed>",
                 symbol: str = '@',
                 color: Tuple[int, int, int]=(255, 255, 255),
+                hp: int = 100,
+                max_hp: int = 100,
 
                 ) -> None:
 
@@ -457,7 +517,11 @@ class PlayerCharacter(Character):
 
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
 
+        self.hp = hp
+        self.max_hp = max_hp
+        self.update()
 
+        
 class AICharacter(Character):
     path: List[TileCoordinate] = []
     _ai: BaseLoopHandler | None = None
@@ -472,10 +536,11 @@ class AICharacter(Character):
                 ai_cls: BaseLoopHandler | None = None,
                  ) -> None:
         
-        super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-
         if ai_cls:
             self._ai = ai_cls
+            
+        super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
+
 
     @property
     def ai(self) -> BaseLoopHandler | None:
@@ -498,9 +563,17 @@ class MobCharacter(AICharacter):
                     name: str = "<Unnamed>",
                     symbol: str = '?',
                     color: Tuple[int, int, int]=(255, 255, 255),
+                    hp: int = 50,
+                    max_hp: int = 50,
                     ) -> None:
         
+        self.fov_radius = 5
+
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
+
+        self.hp = hp
+        self.max_hp = max_hp
+        self.update()
 
     @property
     def ai(self) -> BaseLoopHandler | None:
