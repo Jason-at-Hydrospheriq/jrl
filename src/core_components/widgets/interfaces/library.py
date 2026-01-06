@@ -33,10 +33,11 @@ class HealthBarWidget(BaseUIWidget):
         maximum_value = 1
 
         if store.portfolio and store.portfolio.player is not None:
-            current_value = store.portfolio.player.physical.hp # type: ignore
-            maximum_value = store.portfolio.player.physical.max_hp # type: ignore
-        
-        bar_width = int(float(current_value) / maximum_value * self.width)
+            current_value = store.portfolio.player.hp 
+            maximum_value = store.portfolio.player.max_hp
+
+        if current_value and maximum_value:
+            bar_width = int(float(current_value) / maximum_value * self.width)
 
         console.draw_rect(x=self.upper_Left_x, y=self.upper_Left_y, width=self.width, height=self.height, ch=1, bg=colors.bar_empty)
 
@@ -86,9 +87,9 @@ class MainMapDisplay(BaseUIWidget):
 
             if len(actors) > 0:
                 for actor in store.portfolio.live_actors:
-                    if actor.is_spotted:
+                    if actor.perception.is_targeted() and actor.location:  # type: ignore | State machine method is dynamically added
                         console.print(actor.location.x, actor.location.y, actor.symbol, fg=actor.color)
-            if player:
+            if player and player.location:
                 console.print(player.location.x, player.location.y, player.symbol, fg=player.color)
 
 

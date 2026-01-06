@@ -148,7 +148,7 @@ class BaseGameEntity(BaseParentState):
     def __init__(self,
                  store: GameStore | None = None,
                  *,                 
-                 location: Tuple[int, int] | TileCoordinate | None = None,
+                 location: TileCoordinate | None = None,
                  name: str="<Unnamed>", 
                  symbol: str=' ', 
                  color: Tuple[int, int, int]=(0,0,0)) -> None:
@@ -160,8 +160,11 @@ class BaseGameEntity(BaseParentState):
         if self.store:
             parent_map_size = self.store.atlas.active.grid.size  # type: ignore
         
-        if not hasattr(self, 'location'):
+        if not hasattr(self, 'location') and location:
             self.location = location
+        
+        elif not hasattr(self, 'location'):
+            self.location = TileCoordinate.from_tuple((0,0), parent_map_size)
 
         if not hasattr(self, 'symbol'):
             self.symbol = symbol

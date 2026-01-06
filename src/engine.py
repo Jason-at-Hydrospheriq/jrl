@@ -56,6 +56,7 @@ class GameEngine:
         stores = self._get_all_stores(self)
         for store in self._get_all_stores(self.store):
             stores.append(store)
+            print(len(stores))
         
         for store in stores:
             store.store = self.store
@@ -113,20 +114,28 @@ class GameEngine:
         print(f"Game is {self.state}.") # type: ignore
     
     def _get_store_components(self, obj: object) -> list[StoredStateObject]:
-        found_stores = []
-        for attribute in dir(obj):
-            y = getattr(obj, attribute)
-            if isinstance(y, StoredStateObject):
-                found_stores.append(y)
-        return found_stores
-
-    def _get_all_stores(self, obj: object) -> list[StoredStateObject]:
-        found_stores = []
-        x = obj
-        while self._get_store_components(x):   
-            new_stores = self._get_store_components(x)
-            for store in new_stores:
-                x = store
-                found_stores.append(x)
+        try:
+            found_stores = []
+            for attribute in dir(obj):
+                y = getattr(obj, attribute)
+                if isinstance(y, StoredStateObject) and y.store is None:
+                    found_stores.append(y)
+            return found_stores
         
-        return found_stores
+        except Exception as e:
+            raise Exception(f"Error getting store components: {e}")
+        
+    def _get_all_stores(self, obj: object) -> list[StoredStateObject]:
+        try:
+            found_stores = []
+            x = obj
+            while self._get_store_components(x):   
+                new_stores = self._get_store_components(x)
+                for store in new_stores:
+                    x = store
+                    found_stores.append(x)
+            
+            return found_stores
+        
+        except Exception as e:
+            raise Exception(f"Error getting all stores: {e}")
