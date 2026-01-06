@@ -3,15 +3,19 @@ from sys import path
 
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
+from core_components.maps.atlas import Atlas
+from core_components.entities.portfolio import Portfolio
+from core_components.maps.tiles.base import TileCoordinate
 from core_components.entities.base import BaseGameEntity
 from core_components.entities.library import AICharacter, Character, PlayerCharacter
 from protocols import StatefulObject, StoredStateObject
 from core_components.loops.custom_types import GameLoopObject, StateActionObject, StateHandler, EventTransformer
 from core_components.loops.base import BaseGameEvent, BaseGameHandler
 from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
-from core_components.loops.library import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction
+from core_components.loops.library import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, EntityMoveAction
 from core_components.store import GameStore
 from tcod.event import Event
+import tcod
 
 def test_component_base_game_event():
     try:
@@ -259,5 +263,4 @@ def test_component_ai_character_event():
     # Atavise
     finally:
         pass
-
 

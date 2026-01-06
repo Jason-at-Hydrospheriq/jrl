@@ -56,9 +56,9 @@ class KeyDownAction(BaseGameAction):
             key_sim = self.input_event.sym if self.input_event else None
             destination = (0, 0)
 
-            if self.store and self.store.player and key_sim is not None:  # type: ignore | The store for this action must be GameStore.
-                if self.store.player.location:  # type: ignore | The store for this action must be GameStore.
-                    destination = (self.store.player.location.x, self.store.player.location.y) # type: ignore | The store for this action must be GameStore.
+            if self.store and self.store.portfolio.player and key_sim is not None:  # type: ignore | The store for this action must be GameStore.
+                if self.store.portfolio.player.location:  # type: ignore | The store for this action must be GameStore.
+                    destination = (self.store.portfolio.player.location.x, self.store.portfolio.player.location.y) # type: ignore | The store for this action must be GameStore.
 
                 # Parse movement keys
                 match key_sim:
@@ -80,8 +80,7 @@ class KeyDownAction(BaseGameAction):
                         destination = (destination[0], destination[1] + 1)
                 
                 if destination != (0,0):      
-                    if isinstance(self.handler, GameLoopHandler):
-                        self.handler.send(EntityMoveAction(store=self.store, handler=self.handler, entity=self.store.player,  # type: ignore | The store for this action must be GameStore.
+                    self.handler.send(EntityMoveAction(store=self.store, handler=self.handler, entity=self.store.portfolio.player,  # type: ignore | The store for this action must be GameStore.
                                                            destination=TileCoordinate.from_tuple(destination, parent_map_size=self.store.atlas.active.grid.size)))  # type: ignore | The store for this action must be GameStore.
 
 

@@ -4,10 +4,10 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from transitions import Machine 
 
 from core_components.entities.base  import BaseGameSubState, BaseGameEntity, BaseParentState
-from core_components.entities.library import CharacterHealthSubState, CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character, AICharacter
+from core_components.entities.library import CharacterHealthSubState, CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character, AICharacter, PlayerCharacter
 from core_components.entities.custom_types import GameEntity, EntityParentState
 from core_components.maps.tiles.base import TileCoordinate
-from core_components.maps.tilemaps.library import DefaultTileMap
+from core_components.maps import Atlas
 from core_components.store import GameStore
 from core_components.loops.base import BaseGameTransformer
 
@@ -140,18 +140,19 @@ def test_entity_collision_substate():
         actual_with_location_state = substate.state # type: ignore
         actual_is_on_map_location = substate.is_on_map() # Expect True
 
-        store.destination_is_blocking_entity = True
-        substate.set_bits()
-        substate.update() # type: ignore
-        actual_with_entity_collision_state = substate.state # type: ignore
-
         store.destination_is_blocking_entity = False
         store.destination_is_blocking_terrain = True
         substate.set_bits()
         substate.update() # type: ignore
         actual_with_terrain_collision_state = substate.state # type: ignore
 
+        store.destination_is_blocking_entity = True
         store.destination_is_blocking_terrain = False
+        substate.set_bits()
+        substate.update() # type: ignore
+        actual_with_entity_collision_state = substate.state # type: ignore
+
+        store.destination_is_blocking_entity = False
         store.destination_is_map_boundary = True
         substate.set_bits()
         substate.update() # type: ignore
@@ -380,7 +381,7 @@ def test_entity_mobile_entity():
     try:
     # Arrange
         store = GameStore()
-        store.map = DefaultTileMap()
+        store.atlas = Atlas()
         store.portfolio = DummyPortfolio() # type: ignore
         if store.portfolio:
             store.portfolio.live_actors[0].location = TileCoordinate.from_tuple((0,1), parent_map_size=store.map.grid.size) # type: ignore
@@ -901,7 +902,16 @@ def test_entity_character():
         pass
 
 def test_entity_player_character():
-    pytest.skip()
+    try:
+        player = PlayerCharacter(name='player_entity', symbol='@', color=(0, 255, 0))
+        assert isinstance(player, PlayerCharacter), "Expected player to be instance of PlayerCharacter"
+    
+    except AssertionError as e:
+        pytest.fail(str(e))
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    finally:
+        pass
 
 def test_entity_ai_character():
     try:
@@ -934,7 +944,7 @@ def test_entity_ai_character():
         assert isinstance(initial_ai, BaseGameTransformer), "Expected initial AI to be BaseLoopHandler()"
         assert after_death_ai == None, "Expected AI to be None after death"
         assert final_hp == None, "Expected hp to be the death value of None after action_locked state"
-        
+
     except AssertionError as e:
         pytest.fail(str(e))
 

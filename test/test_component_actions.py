@@ -3,17 +3,18 @@ from sys import path
 import time
 from typing import cast
 import threading
+import tcod
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
 from core_components.entities.portfolio import Portfolio
-from core_components.maps.tilemaps.library import DefaultTileMap
+from core_components.maps.atlas import Atlas
 from protocols import StoredStateObject
 from core_components.store import GameStore
 from core_components.entities.base import BaseGameEntity
 from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
 from core_components.loops.custom_types import StateActionObject
 from core_components.loops.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
-from core_components.loops.library import NoAction, WaitAction, EntityWaitAction, AIAcquireTargetAction, EntityMoveAction
+from core_components.loops.library import NoAction, WaitAction, EntityWaitAction, AIAcquireTargetAction, EntityMoveAction, BaseGameEvent, KeyDownAction
 from core_components.maps.tiles.base import TileCoordinate
 from core_components.entities.library import AICharacter, PlayerCharacter
 
@@ -269,11 +270,11 @@ def test_component_entity_acquire_target_action():
         action.store = GameStore()
         action.handler = MobLoopHandler()
         action.handler.start()  # type: ignore
-        action.store.map = DefaultTileMap()
-        tile_layout = action.store.map.get_tile_layout('floor')
+        action.store.atlas = Atlas()
+        tile_layout = action.store.atlas.active.get_tile_layout('floor')
         if tile_layout is not None:
             tile_layout[0:10,0:10] = True
-        action.store.map.set_tiles(tile_layout, graphic_name='floor')
+        action.store.atlas.active.set_tiles(tile_layout, graphic_name='floor')
         action.store.portfolio = Portfolio()
 
         action.entity = AICharacter() 
@@ -342,30 +343,30 @@ def test_component_move_action():
         action.store = GameStore()
         action.handler = MobLoopHandler()
         action.handler.start()  # type: ignore
-        action.store.map = DefaultTileMap()
-        tile_layout = action.store.map.get_tile_layout('floor')
+        action.store.atlas = Atlas()
+        tile_layout = action.store.atlas.active.get_tile_layout('floor')
         if tile_layout is not None:
             tile_layout[0:3,0:3] = True
-        action.store.map.set_tiles(tile_layout, graphic_name='floor')
+            action.store.atlas.active.set_tiles(tile_layout, graphic_name='floor')
 
         action.entity = AICharacter() 
         action.entity.name = "Test AI Character"
         action.entity.store = action.store
-        action.entity.location = TileCoordinate.from_tuple((0, 0), parent_map_size=action.store.map.grid.size)
+        action.entity.location = TileCoordinate.from_tuple((0, 0), parent_map_size=action.store.atlas.active.grid.size)
         action.entity.update()
 
         colliding_entity = PlayerCharacter()
         colliding_entity.name = "Colliding Player Character"
         colliding_entity.store = action.store
-        colliding_entity.location = TileCoordinate.from_tuple((2, 2), parent_map_size=action.store.map.grid.size)
+        colliding_entity.location = TileCoordinate.from_tuple((2, 2), parent_map_size=action.store.atlas.active.grid.size)
         action.store.portfolio = Portfolio()
         action.store.portfolio.entities.add(action.entity)
         action.store.portfolio.entities.add(colliding_entity)
 
-        move_destination = TileCoordinate.from_tuple((1, 1), parent_map_size=action.store.map.grid.size)
-        wall_destination = TileCoordinate.from_tuple((3, 3), parent_map_size=action.store.map.grid.size)
-        boundary_destination = TileCoordinate.from_tuple((-1, 0), parent_map_size=action.store.map.grid.size)
-        entity_destination = TileCoordinate.from_tuple((2, 2), parent_map_size=action.store.map.grid.size)
+        move_destination = TileCoordinate.from_tuple((1, 1), parent_map_size=action.store.atlas.active.grid.size)
+        wall_destination = TileCoordinate.from_tuple((3, 3), parent_map_size=action.store.atlas.active.grid.size)
+        boundary_destination = TileCoordinate.from_tuple((-1, 0), parent_map_size=action.store.atlas.active.grid.size)
+        entity_destination = TileCoordinate.from_tuple((2, 2), parent_map_size=action.store.atlas.active.grid.size)
 
         # Act 
         initial_location = action.entity.location
@@ -413,7 +414,7 @@ def test_component_move_action():
         assert action.destination is not None, "Expected destination to be set"
         assert isinstance(action.destination, TileCoordinate), "Expected destination to be instance of TileCoordinate"
 
-        assert initial_location == TileCoordinate.from_tuple((0, 0), parent_map_size=action.store.map.grid.size), "Expected entity's initial location to be (0,0)"
+        assert initial_location == TileCoordinate.from_tuple((0, 0), parent_map_size=action.store.atlas.active.grid.size), "Expected entity's initial location to be (0,0)"
         assert move_location == move_destination, "Expected entity to have moved to the move destination"
         assert wall_location == move_location, "Expected entity's location to remain unchanged when moving into a wall"
         assert boundary_location == move_location, "Expected entity's location to remain unchanged when moving out of bounds"
@@ -436,3 +437,48 @@ def test_component_move_action():
     # Atavise
     finally:
         pass
+
+def test_component_keydown_action():
+    try:
+        # Arrange        
+        store = GameStore()
+        store.atlas = Atlas()
+        store.portfolio = Portfolio()
+        handler = GameLoopHandler()
+        player = PlayerCharacter(store=store, location=TileCoordinate.from_tuple((1, 1), parent_map_size=store.atlas.active.grid.size))
+
+        store.portfolio.player = player
+        action = KeyDownAction(store=store, handler=handler)
+
+        handler.start()  # type: ignore
+
+        # Act
+        action.input_event = tcod.event.KeyDown(sym=tcod.event.K_LEFT, mod=0, scancode=0)
+        input_event = action.input_event
+        initial_event_queue_size = handler.events.qsize()
+        initial_action_queue_size = handler.actions.qsize() 
+        action.perform()
+        final_event_queue_size = handler.events.qsize()
+        final_action_queue_size = handler.actions.qsize()
+        final_action = handler.actions.get_nowait()
+
+        # Assert
+        assert isinstance(final_action, EntityMoveAction), "Expected event to be instance of KeyDownAction"
+        assert isinstance(action, BaseGameAction), "Expected event to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected event to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected event to be duck type as StoredStateObject Protocol"
+
+        assert final_action.destination == TileCoordinate.from_tuple((0, 1), parent_map_size=action.store.atlas.active.grid.size), "Expected action's destination to be the same (x - 1, y)"
+        assert final_event_queue_size == initial_event_queue_size, "Expected no event to be added to handler's event queue"
+        assert final_action_queue_size == initial_action_queue_size + 1, "Expected an action to be added to handler's action queue"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
+

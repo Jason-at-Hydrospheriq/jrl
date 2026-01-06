@@ -153,22 +153,31 @@ class BaseGameEntity(BaseParentState):
                  symbol: str=' ', 
                  color: Tuple[int, int, int]=(0,0,0)) -> None:
         super().__init__()
+        
         self.store = store
         parent_map_size = TileTuple(([100], [100]))
+
+        if self.store:
+            parent_map_size = self.store.atlas.active.grid.size  # type: ignore
         
-        if isinstance(location, tuple):
-            self.location = TileCoordinate.from_tuple(location, parent_map_size=parent_map_size)
-        else:
+        if not hasattr(self, 'location'):
             self.location = location
-            
+
+        if not hasattr(self, 'symbol'):
+            self.symbol = symbol
+    
+        if not hasattr(self, 'color'):
+            self.color = color
+        
+        if not hasattr(self, 'name'):
+            self.name = name
+
         self.blocks_movement = True
         self.is_invulnerable = False
         self._hp = 0
         self._max_hp = 1
         self.action_locked = False
-        self.symbol = symbol
-        self.color = color
-        self.name = name
+
         self.update()
     
     @property

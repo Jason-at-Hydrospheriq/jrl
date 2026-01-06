@@ -233,7 +233,7 @@ class MobileEntity(BaseGameEntity):
 
     @property
     def destination_is_blocking_entity(self) -> bool:
-        if self.store and self.store.map and self.store.portfolio: # type: ignore Assume store is GameStore
+        if self.store and self.store.atlas.active and self.store.portfolio: # type: ignore Assume store is GameStore
             for entity in self.store.portfolio.live_actors: # type: ignore Assume live_actors is List[Character]
                 if entity.location == self.destination and entity.blocks_movement:
                     return True
@@ -241,15 +241,15 @@ class MobileEntity(BaseGameEntity):
     
     @property
     def destination_is_blocking_terrain(self) -> bool:
-        if self.store and self.store.map and self.destination: # type: ignore Assume store is GameStore
-            return self.store.map.is_blocked(self.destination)  # type: ignore
+        if self.store and self.store.atlas.active and self.destination: # type: ignore Assume store is GameStore
+            return self.store.atlas.active.is_blocked(self.destination)  # type: ignore
         return False
     
     @property
     def destination_is_map_boundary(self) -> bool:
-        if self.store and self.store.map and self.destination: # type: ignore Assume store is GameStore
-            map_width = self.store.map.grid.width  # type: ignore
-            map_height = self.store.map.grid.height  # type: ignore
+        if self.store and self.store.atlas.active and self.destination: # type: ignore Assume store is GameStore
+            map_width = self.store.atlas.active.grid.width  # type: ignore
+            map_height = self.store.atlas.active.grid.height  # type: ignore
             if self.destination:
                 if self.destination.x < 0 or self.destination.x >= map_width or self.destination.y < 0 or self.destination.y >= map_height:
                     return True
@@ -336,10 +336,9 @@ class TargetingEntity(BaseGameEntity):
     @property
     def visible_tiles(self) -> np.ndarray | None:
         blocking_tiles = None
-        if self.store and self.store.map:  # type: ignore Assume store is GameStore
-            blocking_tiles = self.store.map.blocks_vision  # type: ignore
-            
-            # UPDATE ENTITY FOV
+        if self.store and self.store.atlas:  # type: ignore Assume store is GameStore
+            blocking_tiles = self.store.atlas.active.blocks_vision  # type: ignore
+
             if isinstance(blocking_tiles, np.ndarray) and self.location is not None:
                 return compute_fov(~blocking_tiles, (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
         return None
@@ -531,6 +530,7 @@ class Character(MobileEntity, CombatEntity):
 @action_locked
 class PlayerCharacter(Character):
     action_locked: bool = True
+    location: TileCoordinate | None
 
     def __init__(   self,
                 store: GameStore | None = None,
@@ -545,8 +545,9 @@ class PlayerCharacter(Character):
                 ) -> None:
 
         self.fov_radius = 6 # Must be set before super().__init__() call to ensure FOV is correct on initialization.
+        self.location = location # Must be set before super().__init__() call to ensure FOV is correct on initialization.
 
-        super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
+        super().__init__(store=store, symbol=symbol, color=color, name=name)
         self.hp = hp
         self.max_hp = max_hp
         self.update()
@@ -555,19 +556,14 @@ class PlayerCharacter(Character):
         tile_blocks_vision = None
 
         if self.store: # type: ignore | Assume store is GameStore
-            """Recompute the visible area based on the players point of view."""
-            if self.store.atlas: # type: ignore | Assume store is GameStore
-                tile_blocks_vision = self.store.atlas.active.blocks_vision     # type: ignore | Assume store is GameStore  
+            if self.visible_tiles is not None:
+                self.store.atlas.active.set_state_bits('visible', self.visible_tiles)  # type: ignore | Assume store is GameStore
 
-                # UPDATE PLAYER FOV
-                if tile_blocks_vision is not None:
-                    self.store.atlas.active.set_tiles(self.visible_tiles, 'visible')  # type: ignore | Assume store is GameStore
-
-                # If a tile is "visible" it should be added to "explored".
-                prior_seen_tiles = self.store.atlas.active.get_tile_layout('seen')  # type: ignore | Assume store is GameStore
-                if prior_seen_tiles and self.visible_tiles is not None:
-                    newly_seen_tiles = np.logical_or(prior_seen_tiles, self.visible_tiles)
-                    self.store.atlas.active.set_tiles(newly_seen_tiles, 'seen')  # type: ignore | Assume store is GameStore
+            # If a tile is "visible" it should be added to "explored".
+            prior_seen_tiles = self.store.atlas.active.get_tile_layout('seen')  # type: ignore | Assume store is GameStore
+            if isinstance(prior_seen_tiles, np.ndarray) and self.visible_tiles is not None:
+                newly_seen_tiles = np.logical_or(prior_seen_tiles, self.visible_tiles)
+                self.store.atlas.active.set_state_bits('seen', newly_seen_tiles)  # type: ignore | Assume store is GameStore
     
     def update(self) -> None:
         self.update_fov()
@@ -611,6 +607,7 @@ class AICharacter(Character):
 @action_locked
 class MobCharacter(AICharacter):
     action_locked: bool = False
+    location: TileCoordinate | None
 
     def __init__(   self,
                     store: GameStore | None = None,
@@ -624,6 +621,7 @@ class MobCharacter(AICharacter):
                     ) -> None:
 
         self.fov_radius = 5 # Must be set before super().__init__() call to ensure FOV is correct on initialization.
+        self.location = location # Must be set before super().__init__() call to ensure FOV is correct on initialization.
 
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
         
