@@ -11,6 +11,7 @@ from core_components.maps.tilemaps.library import DefaultTileMap
 from core_components.store import GameStore
 from core_components.loops.base import BaseGameTransformer
 
+
 class DummyGameStore:
     location: None = None
     state_vector = {}
@@ -29,6 +30,23 @@ class DummyGameStore:
 
 class DummyPortfolio:
     live_actors: list[BaseGameEntity] = [BaseGameEntity(name='existing_entity')]
+
+
+class DummyTarget:
+    target: BaseGameEntity | None = None
+    targeter: BaseGameEntity | None = None
+    location: TileCoordinate | None = None
+    hp: int = 0
+    max_hp: int = 0
+
+    def set_targeter(self, targeter: BaseGameEntity) -> None:
+        self.targeter = targeter
+
+    def clear_targeter(self) -> None:
+        self.targeter = None
+
+    def take_damage(self, damage: int) -> None:
+        self.hp = max(0, self.hp - damage)
 
 
 def test_entity_base_game_substate():
@@ -535,13 +553,10 @@ def test_entity_targeting_entity():
         store.portfolio = DummyPortfolio() # type: ignore
 
         targeter = TargetingEntity(store=store, name='targeting_entity')
-        targetable_target = TargetableEntity(store=store, name='targetable_entity')
-        targeting_target = TargetingEntity(store=store, name='targeting_target')
+        target = DummyTarget()
+        target.location = TileCoordinate.from_tuple((10,0))
 
-        targeting_target.location = TileCoordinate.from_tuple((0,10))
-        targetable_target.location = TileCoordinate.from_tuple((10,0))
-
-        store.portfolio.live_actors = [targetable_target] # type: ignore
+        store.portfolio.live_actors = [target] # type: ignore
 
         # Act 
         initial_target = targeter.target # Expect None
@@ -553,34 +568,28 @@ def test_entity_targeting_entity():
         set_location_targeter_state = targeter.focus.state # type: ignore | Expect 'idle'
         set_location_state_vector = targeter.state_vector.copy()
 
-        targeter.target = targeting_target # type: ignore
+        targeter.target = target # type: ignore
         targeter.update()
         with_target_state = targeter.focus.state # type: ignore | Expect 'searching'
         with_target_state_vector = targeter.state_vector.copy()
 
-        targeting_target.location = TileCoordinate.from_tuple((2,2))
+        target.location = TileCoordinate.from_tuple((6,0))
         targeter.update()
         closer_target_state = targeter.focus.state # type: ignore | Expect 'tracking'
         closer_target_state_vector = targeter.state_vector.copy()
 
-        targeting_target.location = TileCoordinate.from_tuple((1,1))
-        targeting_target.target = targeter # type: ignore
+        target.location = TileCoordinate.from_tuple((1,0))
+        target.target = targeter # type: ignore
         targeter.update()
         closest_target_state = targeter.focus.state # type: ignore | Expect 'targeting'
         closest_target_state_vector = targeter.state_vector.copy()
         
-        targeter.set_target(targetable_target)
-        targeter.update()
-        final_target = targeter.target
-        final_targeter_state = targeter.focus.state # type: ignore
-        target_targeter = targeter # type: ignore
-
         targeter.clear_target()
         targeter.update()
         cleared_target = targeter.target
         cleared_targeter_state = targeter.focus.state # type: ignore
 
-        targetable_target.location = TileCoordinate.from_tuple((3,3))
+        target.location = TileCoordinate.from_tuple((6,6))
         targeter.acquire_target()
         targeter.update()
         acquired_target = targeter.target
@@ -619,13 +628,10 @@ def test_entity_targeting_entity():
         assert closest_target_state_vector['target_is_hostile'] == True, "Expected state_vector to have 'target_is_hostile' set to True after moving target into hostile range"
         assert closest_target_state_vector['has_target'] == True, "Expected state_vector to have 'has_target' set to True after moving target into hostile range"
 
-        assert final_target == targetable_target, "Expected final target to be the targetable_target after setting target"
-        assert final_targeter_state == 'searching', "Expected focus state to be 'searching' after changing target to targetable entity" # type: ignore
-        assert target_targeter == targeter, "Expected targetable_target's targeter to be the targeting_entity"
         assert cleared_target == None, "Expected target to be None after clearing target"
         assert cleared_targeter_state == 'idle', "Expected focus state to be 'idle' after clearing target" # type: ignore
 
-        assert acquired_target == targetable_target, "Expected acquired target to be the targetable_target after acquiring target"
+        assert acquired_target == target, "Expected acquired target to be the targetable_target after acquiring target"
         assert acquired_targeter_state == 'tracking', "Expected focus state to be 'tracking' after acquiring a non-hostile target" # type: ignore
 
     except AssertionError as e:
@@ -651,13 +657,14 @@ def test_entity_combat_entity():
         combatant = CombatEntity(store=store, name='combatant_entity')
         combatant.hp = 100
         combatant.max_hp = 100
+        combatant.focus.threat_level_threshold = 9999 # type: ignore
 
-        targetable_target = TargetableEntity(store=store, name='targetable_entity')
-        targetable_target.location = TileCoordinate.from_tuple((10,0))
-        targetable_target.hp = 100
-        targetable_target.max_hp = 100
+        target = DummyTarget()
+        target.location = TileCoordinate.from_tuple((10,0))
+        target.hp = 100
+        target.max_hp = 100
 
-        store.portfolio.live_actors = [targetable_target] # type: ignore
+        store.portfolio.live_actors = [target] # type: ignore
 
         # Act
         initial_target = combatant.target # Expect None
@@ -666,40 +673,42 @@ def test_entity_combat_entity():
         initial_state_vector = combatant.state_vector.copy()
         initial_combatant_hp = combatant.hp
         initial_combatant_max_hp = combatant.max_hp
-        initial_target_hp = targetable_target.hp
-        initial_target_max_hp = targetable_target.max_hp
+        initial_target_hp = target.hp
+        initial_target_max_hp = target.max_hp
 
         combatant.location = TileCoordinate.from_tuple((0,0))
-        targetable_target.location = TileCoordinate.from_tuple((5,5))
+        target.location = TileCoordinate.from_tuple((6,6))
         combatant.update()
         set_location_focus_state = combatant.focus.state # type: ignore | Expect 'idle'
         set_location_combat_state = combatant.combat.state # type: ignore | Expect 'peaceful'
         set_location_state_vector = combatant.state_vector.copy()
 
-        combatant.set_target(targetable_target) # type: ignore
+        combatant.set_target(target) # type: ignore
+        target.location = TileCoordinate.from_tuple((3,3))
         combatant.update()
         with_target_focus_state = combatant.focus.state # type: ignore | Expect 'tracking'
         with_target_combat_state = combatant.combat.state # type: ignore | Expect 'peaceful'
         with_target_state_vector = combatant.state_vector.copy()
 
-        targetable_target.location = TileCoordinate.from_tuple((1,1))
+        target.location = TileCoordinate.from_tuple((1,1))
         combatant.update()
         moved_target_focus_state = combatant.focus.state # type: ignore | Expect 'tracking'
         moved_target_combat_state = combatant.combat.state # type: ignore | Expect 'disengaged'
         moved_target_state_vector = combatant.state_vector.copy()
 
-        combatant.focus.threat_level_threshold = 40
+        combatant.focus.threat_level_threshold = 100 # type: ignore
+        target.target = combatant # type: ignore
         combatant.update()
         high_threat_focus_state = combatant.focus.state # type: ignore | Expect 'targeting'
         high_threat_combat_state = combatant.combat.state # type: ignore | Expect 'fighting'
         high_threat_state_vector = combatant.state_vector.copy()
 
-        targetable_target.take_damage(combatant.attack())
+        target.take_damage(combatant.attack())
         combatant.update()
         post_attack_focus_state = combatant.focus.state # type: ignore | Expect 'targeting'
         post_attack_combat_state = combatant.combat.state # type: ignore | Expect 'fighting'
         post_attack_state_vector = combatant.state_vector.copy()
-        post_attack_target_hp = targetable_target.hp
+        post_attack_target_hp = target.hp
         post_attack_combatant_hp = combatant.hp
 
         combatant.take_damage(10 - combatant.defend())

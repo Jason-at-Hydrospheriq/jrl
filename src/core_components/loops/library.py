@@ -1,12 +1,12 @@
 from __future__ import annotations
 from time import sleep
 from typing import TYPE_CHECKING, cast
-
 import tcod
 
-from core_components.entities.library import BaseGameEntity, Character, AICharacter
-from core_components.loops.base import BaseGameAction, BaseGameEvent, BaseActionOnEntity
+from core_components.entities.library import BaseGameEntity, Character, AICharacter, MobileEntity, TargetingEntity
+from core_components.loops.base import BaseActionOnDestination, BaseGameAction, BaseGameEvent, BaseActionOnEntity
 from core_components.loops.custom_types import StateActionObject, StateHandler
+from core_components.maps.tiles.base import TileCoordinate
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class SystemEvent(BaseGameEvent):
-    def __init__(self, store: GameStore | None = None, handler: GameLoopHandler | None = None, input_event: tcod.event.Event | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler: StateHandler | None = None, input_event: tcod.event.Event | None = None) -> None:
         super().__init__(store, handler)
 
     def trigger(self) -> None:
@@ -44,10 +44,51 @@ class InputEvent(BaseGameEvent):
             self.handler.handle(cast(StateActionObject, self))
 
 
+class KeyDownAction(BaseGameAction):
+    input_event: tcod.event.Event | None
+
+    def __init__(self, store: GameStore | None = None, handler: GameLoopHandler | None = None, input_event: tcod.event.KeyboardEvent | None = None) -> None:
+        super().__init__(store, handler)
+        self.input_event = input_event
+
+    def perform(self) -> None:
+        if isinstance(self.input_event, tcod.event.KeyboardEvent):
+            key_sim = self.input_event.sym if self.input_event else None
+            destination = (0, 0)
+
+            if self.store and self.store.player and key_sim is not None:  # type: ignore | The store for this action must be GameStore.
+                if self.store.player.location:  # type: ignore | The store for this action must be GameStore.
+                    destination = (self.store.player.location.x, self.store.player.location.y) # type: ignore | The store for this action must be GameStore.
+
+                # Parse movement keys
+                match key_sim:
+                    case tcod.event.K_LEFT:
+                        destination = (destination[0] - 1, destination[1])
+                    case tcod.event.K_a:
+                        destination = (destination[0] - 1, destination[1])
+                    case tcod.event.K_RIGHT:
+                        destination = (destination[0] + 1, destination[1])
+                    case tcod.event.K_d:
+                        destination = (destination[0] + 1, destination[1])
+                    case tcod.event.K_UP:
+                        destination = (destination[0], destination[1] - 1)
+                    case tcod.event.K_w:
+                        destination = (destination[0], destination[1] - 1)
+                    case tcod.event.K_DOWN:
+                        destination = (destination[0], destination[1] + 1)
+                    case tcod.event.K_s:
+                        destination = (destination[0], destination[1] + 1)
+                
+                if destination != (0,0):      
+                    if isinstance(self.handler, GameLoopHandler):
+                        self.handler.send(EntityMoveAction(store=self.store, handler=self.handler, entity=self.store.player,  # type: ignore | The store for this action must be GameStore.
+                                                           destination=TileCoordinate.from_tuple(destination, parent_map_size=self.store.atlas.active.grid.size)))  # type: ignore | The store for this action must be GameStore.
+
+
 class EntityEvent(BaseGameEvent):
     _entity: BaseGameEntity | None
 
-    def __init__(self, store: GameStore | None = None, handler: GameLoopHandler | None = None, entity: BaseGameEntity | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler: StateHandler | None = None, entity: BaseGameEntity | None = None) -> None:
         super().__init__(store, handler)
         self._entity = entity
 
@@ -147,7 +188,7 @@ class NoAction(BaseGameAction):
 class WaitEvent(SystemEvent):
     wait_time: int
 
-    def __init__(self, store: GameStore | None = None, handler: GameLoopHandler | None = None, wait_time: int = 0) -> None:
+    def __init__(self, store: GameStore | None = None, handler: StateHandler | None = None, wait_time: int = 0) -> None:
         super().__init__(store, handler)
         self.wait_time = wait_time
 
@@ -170,7 +211,7 @@ class WaitAction(BaseGameAction):
 
 class EntityWaitEvent(EntityEvent, WaitEvent):
     
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: BaseGameEntity | None = None, wait_time: int = 0) -> None:
+    def __init__(self, store: GameStore | None = None, handler:  StateHandler | None = None, entity: BaseGameEntity | None = None, wait_time: int = 0) -> None:
         EntityEvent.__init__(self, store, handler, entity)
         WaitEvent.__init__(self, store, handler, wait_time)
 
@@ -181,7 +222,7 @@ class EntityWaitAction(WaitAction, BaseActionOnEntity):
     
     Duck Types: StateActionObject, StoredStateObject
     """
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: BaseGameEntity | None = None, wait_time: int = 0) -> None:
+    def __init__(self, store: GameStore | None = None, handler:  StateHandler | None = None, entity: BaseGameEntity | None = None, wait_time: int = 0) -> None:
         BaseActionOnEntity.__init__(self, store, handler, entity)
         WaitAction.__init__(self, wait_time)
 
@@ -229,8 +270,39 @@ class AIAcquireTargetAction(BaseActionOnEntity):
 
                 self.store.log.add(text=text)  # type: ignore | AICharacter must have a GameStore to log messages.
         
-        if self.handler:
-            self.handler.send(EntityWaitEvent(wait_time=100, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
+                if self.handler:
+                    self.handler.send(EntityWaitEvent(wait_time=100, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
+
+
+class EntityMoveAction(BaseActionOnDestination):
+
+    def __init__(self, store: GameStore | None = None, handler:  StateHandler | None = None, entity: MobileEntity | None = None, 
+                 destination: TileCoordinate | None = None) -> None:
+        super().__init__(store, handler, entity, destination)
+
+    def perform(self) -> None:
+        if isinstance(self.entity, MobileEntity) and self.store and self.destination:
+            self.entity.destination = self.destination
+            self.entity.update()
+
+            match self.entity.collision.state:  # type: ignore | State machine attribute created dynamically
+                case 'not_colliding':
+                    self.entity.move()
+                    self.entity.update()
+                    if self.handler and self.store:
+                        self.handler.send(EntityWaitAction(wait_time=100 - self.entity.speed, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore | The store for this action must be GameStore.
+
+                case 'colliding_with_terrain':
+                    return  # Do nothing on terrain collision for now.
+                
+                case 'colliding_with_boundary':
+                    return  # Do nothing on map boundary collision for now.
+                
+                case 'colliding_with_entity':
+                    if isinstance(self.entity, TargetingEntity):
+                        target = self.store.atlas.get_entity_at_location(self.entity.destination)  # type: ignore | The store for this action must be GameStore.
+                        self.entity.set_target(target)  
+                        self.entity.update()
 
 
 # """These System Events are generated by the game engine itself. They are not tied to any specific entity or AI, but rather represent global game states or actions."""

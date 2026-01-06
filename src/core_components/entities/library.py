@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from core_components.loops.handlers import MobLoopHandler
 
 from core_components.maps.tiles import TileCoordinate
-from core_components.entities.base import BaseGameSubState, BaseGameEntity
+from core_components.entities.base import BaseGameSubState, BaseGameEntity, action_locked
 
 
 class CollisionSubState(BaseGameSubState):
@@ -216,7 +216,8 @@ class CharacterHealthSubState(BaseGameSubState):
     def is_dead(self) -> bool:
         return self.store.state_vector['is_dead']  # type: ignore
     
-    
+
+@action_locked
 class MobileEntity(BaseGameEntity):
     """A Mobile Entity is any game object that can move around the map. It has a 'collision' substate that is an
     instance of CollisionSubState that manages its collision states. A Mobile Entity can 'move' and has 'speed' and 'destination' properties
@@ -258,7 +259,8 @@ class MobileEntity(BaseGameEntity):
         self.location = self.destination
         self.destination = None
 
-   
+
+@action_locked
 class TargetableEntity(BaseGameEntity):
     """A Targetable Entity is any game object that can become the focus of a TargetingEntity.
     It has a 'perception' substate that is an instance of TargetedSubState that manages its targeted states.
@@ -291,6 +293,7 @@ class TargetableEntity(BaseGameEntity):
             self.hp = max(self.hp, 0)
 
 
+@action_locked
 class TargetingEntity(BaseGameEntity):
     """A Targeting Entity is any game object that can focus on a TargetableEntity. It has a 'focus' substate 
     that is an instance of TargetingSubState that manages its targeting states. A Targeting Entity can assess 
@@ -300,7 +303,7 @@ class TargetingEntity(BaseGameEntity):
     focus: TargetingSubState
     _fov_radius: int = 6
     _initial_threat_level: int = 10
-    _threat_level: int = 10
+    _threat_level: int = 0
     _substates_manifest = (
         ("spawn", BaseGameSubState),
         ("focus", TargetingSubState))
@@ -378,23 +381,24 @@ class TargetingEntity(BaseGameEntity):
         visible_targets: List[TargetableEntity] = []
         distances: List[Tuple[int, TargetableEntity]] = []
         threats: list[Tuple[int, TargetableEntity]] = []
+        selection_list = []
 
         if self.store and self.store.portfolio:  # type: ignore | A TargetingEntity must have a GameStore
             visible_targets = [entity for entity in self.store.portfolio.live_actors if entity and self.visible_tiles[entity.location.x, entity.location.y]]  # type: ignore Assume live_actors is List[Character]
     
         if visible_targets:
             for entity in visible_targets:
-                self.set_target(entity)
-                distance = self.distance_to_target
-                distances.append((distance, entity))
-                threat = self.threat_level
-                threats.append((threat, entity))
+                if entity is not self:
+                    self.set_target(entity)
+                    distance = self.distance_to_target
+                    distances.append((distance, entity))
+                    threat = self.threat_level
+                    threats.append((threat, entity))
         
         if distances and threats:
             distances.sort(key=lambda x: x[0])
             threats.sort(key=lambda x: x[0], reverse=True)
         
-        selection_list = []
         for threat, threat_entity in threats:
             for distance, distance_entity in distances:
                 if threat_entity is distance_entity:
@@ -413,7 +417,7 @@ class TargetingEntity(BaseGameEntity):
         threat_level = self._initial_threat_level
 
         if self.distance_to_target > 8:
-            threat_level = (not friendly) * threat_level
+            threat_level = self._initial_threat_level * (not friendly)
         if self.distance_to_target <= 8:
             threat_level += (self._initial_threat_level + 10) * (not friendly)
         if self.distance_to_target <= 5:
@@ -433,6 +437,7 @@ class TargetingEntity(BaseGameEntity):
         super().update()
 
 
+@action_locked
 class CombatEntity(TargetableEntity, TargetingEntity):
     """A Combat Entity is any game object that can both target and be targeted by other entities and deal damage.
     It has both 'focus' and 'perception' substates that are instances of TargetingSubState and TargetedSubState. 
@@ -486,6 +491,7 @@ class CombatEntity(TargetableEntity, TargetingEntity):
         return damage_mitigated 
 
 
+@action_locked
 class Character(MobileEntity, CombatEntity):
     health: CharacterHealthSubState
     is_alive: bool
@@ -521,6 +527,7 @@ class Character(MobileEntity, CombatEntity):
         self.color = (191, 0, 0)
 
 
+@action_locked
 class PlayerCharacter(Character):
     def __init__(   self,
                 store: GameStore | None = None,
@@ -542,20 +549,43 @@ class PlayerCharacter(Character):
         self.max_hp = max_hp
         self.update()
 
-        
+    def update_fov(self) -> None:
+        tile_blocks_vision = None
+
+        if self.store: # type: ignore | Assume store is GameStore
+            """Recompute the visible area based on the players point of view."""
+            if self.store.atlas: # type: ignore | Assume store is GameStore
+                tile_blocks_vision = self.store.atlas.active.blocks_vision     # type: ignore | Assume store is GameStore  
+
+                # UPDATE PLAYER FOV
+                if tile_blocks_vision is not None:
+                    self.store.atlas.active.set_tiles(self.visible_tiles, 'visible')  # type: ignore | Assume store is GameStore
+
+                # If a tile is "visible" it should be added to "explored".
+                prior_seen_tiles = self.store.atlas.active.get_tile_layout('seen')  # type: ignore | Assume store is GameStore
+                if prior_seen_tiles and self.visible_tiles is not None:
+                    newly_seen_tiles = np.logical_or(prior_seen_tiles, self.visible_tiles)
+                    self.store.atlas.active.set_tiles(newly_seen_tiles, 'seen')  # type: ignore | Assume store is GameStore
+    
+    def update(self) -> None:
+        self.update_fov()
+        super().update()
+
+
+@action_locked
 class AICharacter(Character):
     path: List[TileCoordinate] = []
     _ai: BaseGameTransformer | None = None
     
     def __init__(   self,
-                    *,
-                store: GameStore | None = None,
-                location: TileCoordinate | None = None,
-                name: str = "<Unnamed>",
-                symbol: str = '?',
-                color: Tuple[int, int, int]=(255, 255, 255),
-                ai_cls: BaseGameTransformer | None = None,
-                 ) -> None:
+                    store: GameStore | None = None,
+                        *,
+                    location: TileCoordinate | None = None,
+                    name: str = "<Unnamed>",
+                    symbol: str = '?',
+                    color: Tuple[int, int, int]=(255, 255, 255),
+                    ai_cls: BaseGameTransformer | None = None,
+                    ) -> None:
         
         if ai_cls:
             self._ai = ai_cls
@@ -576,6 +606,7 @@ class AICharacter(Character):
         self._ai = None
 
 
+@action_locked
 class MobCharacter(AICharacter):
     def __init__(   self,
                     *,

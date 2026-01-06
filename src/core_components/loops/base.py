@@ -153,7 +153,7 @@ class BaseGameHandler(BaseGameLoop, BaseGameTransformer):
         
         self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
 
-    def handle(self, event: StateActionObject | Any | None = None) -> bool:
+    def handle(self, event: StateActionObject | None = None) -> bool:
         if event is not None:
             behavior = self.transform(event) # type: ignore
             if behavior is not None:

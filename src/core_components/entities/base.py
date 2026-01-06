@@ -12,6 +12,27 @@ from core_components.maps.tiles.base import TileCoordinate, TileTuple
 if TYPE_CHECKING:
     from core_components.store import GameStore
 
+from functools import wraps
+
+def is_locked(func):
+    """A decorator to wrap each method with a condition check."""
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        # Access the condition from the instance (self)
+        if self.action_locked:
+            return None # Or raise an exception, or handle as needed
+        return func(self, *args, **kwargs)
+    return wrapper
+
+def action_locked(cls):
+    """A class decorator to apply the condition_checker to all methods."""
+    for attr_name, attr_value in cls.__dict__.items():
+        if callable(attr_value) and not attr_name.startswith('__'):
+            # Wrap the method with the condition checker
+            setattr(cls, attr_name, is_locked(attr_value))
+    return cls
+
+
 class BaseSubState:
     machine: Machine
     name: str
@@ -86,7 +107,7 @@ class BaseGameSubState(BaseSubState):
     def is_not_on_map(self) -> bool:
         return not self.store.state_vector['on_map'] # type: ignore
     
-
+@action_locked
 class BaseGameEntity(BaseParentState):
     """
     A generic object to represent players, enemies, items, etc.

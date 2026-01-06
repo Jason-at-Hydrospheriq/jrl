@@ -1,6 +1,8 @@
 import pytest
 from sys import path
 import time
+from typing import cast
+import threading
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
 from core_components.entities.portfolio import Portfolio
@@ -11,9 +13,26 @@ from core_components.entities.base import BaseGameEntity
 from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
 from core_components.loops.custom_types import StateActionObject
 from core_components.loops.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
-from core_components.loops.library import NoAction, WaitAction, AIAcquireTargetAction
+from core_components.loops.library import NoAction, WaitAction, EntityWaitAction, AIAcquireTargetAction
 from core_components.maps.tiles.base import TileCoordinate
 from core_components.entities.library import AICharacter, PlayerCharacter
+
+
+class DummyTarget:
+    target: BaseGameEntity | None = None
+    targeter: BaseGameEntity | None = None
+    location: TileCoordinate | None = None
+    hp: int = 0
+    max_hp: int = 0
+
+    def set_targeter(self, targeter: BaseGameEntity) -> None:
+        self.targeter = targeter
+
+    def clear_targeter(self) -> None:
+        self.targeter = None
+
+    def take_damage(self, damage: int) -> None:
+        self.hp = max(0, self.hp - damage)
 
 
 def test_component_base_game_action():
@@ -189,6 +208,60 @@ def test_component_wait_action():
     finally:
         pass
 
+def test_component_entity_wait_action():
+    try:
+        # Arrange        
+        wait_time = 300  # 300 milliseconds
+        handler = GameLoopHandler()
+        handler.start()  # type: ignore
+        store = GameStore()  
+        entity = BaseGameEntity()
+        action = EntityWaitAction(wait_time=wait_time)
+        action.store = store
+        action.handler = handler
+        action.entity = entity
+
+        # Act
+        thread = threading.Thread(target=action.perform)
+        initial_lock = entity.action_locked  # type: ignore
+        start_time = time.time()
+        thread.start()
+        action_locked = entity.action_locked  # type: ignore
+        entity.hp = 10
+        update_hp_locked = entity.hp  # type: ignore
+        thread.join()
+        end_time = time.time()
+        elapsed_time = (end_time - start_time) * 1000  # Convert to milliseconds
+        final_lock = entity.action_locked  # type: ignore
+        entity.hp = 8
+        update_hp_unlocked = entity.hp  # type: ignore
+
+        # Assert
+        assert isinstance(action, EntityWaitAction), "Expected action to be instance of EntityWaitAction"
+        assert isinstance(action, BaseGameAction), "Expected action to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected action to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected action to duck type as StoredStateObject Protocol"
+        assert action.wait_time == wait_time, f"Expected wait_time to be {wait_time}, got {action.wait_time}"
+        assert action.entity is not None, "Expected entity to be set"
+        assert isinstance(action.entity, BaseGameEntity), "Expected entity to be instance of BaseGameEntity"
+        assert elapsed_time >= wait_time, f"Expected elapsed time to be at least {wait_time} ms, got {elapsed_time} ms"
+
+        assert initial_lock == False, "Expected entity action_locked to be False before wait"
+        assert action_locked == True, "Expected entity action_locked to be True during wait"
+        assert update_hp_locked == 0, "Expected entity hp to be the default value (locked) during wait"
+        assert final_lock == False, "Expected entity action_locked to be False after wait"
+        assert update_hp_unlocked == 8, "Expected entity hp to be updated value (unlocked) after wait"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
+
 def test_component_entity_acquire_target_action():
     try:
         # Arrange        
@@ -209,13 +282,13 @@ def test_component_entity_acquire_target_action():
         action.entity.location = TileCoordinate.from_tuple((0, 0))
         action.entity.update()
 
-        target = PlayerCharacter(name="Test Target Character")
+        target = PlayerCharacter()
+        target.name = "Test Player Character"
         target.store = action.store
-        target.location = TileCoordinate.from_tuple((5, 5))
-        target.update()
+        target.location = TileCoordinate.from_tuple((3, 3))
 
         action.store.portfolio.entities.add(action.entity)
-        action.store.portfolio.entities.add(target)
+        action.store.portfolio.entities.add(cast(PlayerCharacter, target))
 
         # Act 
         initial_entity_target = action.entity.target
@@ -261,4 +334,5 @@ def test_component_entity_acquire_target_action():
     # Atavise
     finally:
         pass
+
 
