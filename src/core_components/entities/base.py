@@ -98,6 +98,7 @@ class BaseGameEntity(BaseParentState):
     location: TileCoordinate | None
     blocks_movement: bool | None
     is_invulnerable: bool | None
+    action_locked: bool | None
     _hp: int | None
     _max_hp: int | None
     name: str
@@ -129,7 +130,7 @@ class BaseGameEntity(BaseParentState):
         self.is_invulnerable = False
         self._hp = 0
         self._max_hp = 1
-        
+        self.action_locked = False
         self.symbol = symbol
         self.color = color
         self.name = name

@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 from copy import deepcopy
+from core_components.entities.base import BaseGameEntity
 from core_components.loops.custom_types import StateActionObject, StateHandler
+from core_components.maps.tiles.base import TileCoordinate
 from protocols import *
 from typing import TYPE_CHECKING, Any, Set, Tuple, TypeVar
 from queue import Queue
@@ -21,6 +23,49 @@ class BaseGameAction:
     def __init__(self, store: StatefulObject | None = None, handler: StateHandler | None = None) -> None:
         self.store = store
         self.handler = handler
+
+    def perform(self) -> None:
+        raise NotImplementedError("Subclasses must implement the perform method.")
+    
+
+class BaseActionOnEntity(BaseGameAction):
+    entity: BaseGameEntity | None
+
+    def __init__(self, store: StatefulObject | None = None, handler:  StateHandler | None = None, entity: BaseGameEntity | None = None) -> None:
+        super().__init__(store, handler)
+
+        self.entity = entity
+
+    def perform(self) -> None:
+        raise NotImplementedError("Subclasses must implement the perform method.")
+    
+
+class BaseActionOnTarget(BaseGameAction):
+    entity: BaseGameEntity | None = None
+    target: BaseGameEntity | None = None
+
+    def __init__(self, store: StatefulObject | None = None, handler:  StateHandler | None = None, entity: BaseGameEntity | None = None, 
+                 target: BaseGameEntity | None = None) -> None:
+        super().__init__(store, handler)
+
+        self.entity = entity
+        self.target = target
+
+    def perform(self) -> None:
+        raise NotImplementedError("Subclasses must implement the perform method.")
+
+
+class BaseActionOnDestination(BaseGameAction):
+    entity: BaseGameEntity | None = None
+    destination: TileCoordinate | None = None
+
+    def __init__(self, store: StatefulObject | None = None, handler:  StateHandler | None = None, entity: BaseGameEntity | None = None, 
+                 destination: TileCoordinate | None = None) -> None:
+        super().__init__(store, handler)
+
+        self.entity = entity
+        self.destination = destination
+
     def perform(self) -> None:
         raise NotImplementedError("Subclasses must implement the perform method.")
 
@@ -47,22 +92,22 @@ class BaseGameTransformer:
         self.store = store
         self.behaviors = behaviors
 
-    def _transform(self, name: str) -> StateActionObject | None:
+    def transform(self, event: StateActionObject) -> StateActionObject | None:
         """Should NOT be overidden by subclasses. Retrieves a behavior (Event or Action) by name from the behaviors set."""
+        name = event.__class__.__name__.lower()
         if self.behaviors is not None and self.is_started(): # type: ignore
             for behavior in self.behaviors:
                 if name == behavior[0]:
                     action = behavior[1]
-                    return self._set_context(deepcopy(action))
-
+                    action = deepcopy(action)
+                    attributes = dir(event)
+                    attributes = [attr for attr in attributes if not attr.startswith('_') and not callable(getattr(event, attr))]
+                    for attr in attributes:
+                        if hasattr(action, attr):
+                            setattr(action, attr, getattr(event, attr))
+                    return action
             raise ValueError(f"Behavior not found for event: {name}")
         raise ValueError(f"State behaviors object not found: {name}")
-    
-    def _set_context(self, action: T, *args, **kwargs) -> T:
-        """Can be overidden by subclasses. Sets the context of the StateActionObject item with the arguments."""
-        action.store = self.store # type: ignore
-        action.handler = self # type: ignore
-        return action
 
 
 class BaseGameLoop:
@@ -75,15 +120,15 @@ class BaseGameLoop:
         self.events = Queue()
         self.actions = Queue()
 
-    def _send(self, action: StateActionObject)  -> bool:
+    def send(self, loop_item: StateActionObject)  -> bool:
         try:
 
-            if isinstance(action, BaseGameEvent):
-                self.events.put(action)
+            if isinstance(loop_item, BaseGameEvent):
+                self.events.put(loop_item)
                 return True
             
-            elif isinstance(action, BaseGameAction):
-                self.actions.put(action)
+            elif isinstance(loop_item, BaseGameAction):
+                self.actions.put(loop_item)
                 return True
                     
             return False
@@ -110,6 +155,7 @@ class BaseGameHandler(BaseGameLoop, BaseGameTransformer):
 
     def handle(self, event: StateActionObject | Any | None = None) -> bool:
         if event is not None:
-            return self._transform_send(event) # type: ignore
-        
+            behavior = self.transform(event) # type: ignore
+            if behavior is not None:
+                return self.send(behavior)
         return False

@@ -11,7 +11,7 @@ from core_components.loops.custom_types import StateActionObject
 if TYPE_CHECKING:
     from core_components.store import GameStore
 
-from core_components.loops.actions import NoAction
+from core_components.loops.behaviors import game_behaviors, mob_behaviors
 from core_components.loops.base import BaseGameHandler, BaseGameLoop, BaseGameTransformer, BaseGameEvent
 
 
@@ -20,11 +20,7 @@ class GameLoopHandler(BaseGameHandler):
     and sending them to the appropriate Queue."""
 
     def __init__(self, store: GameStore | None = None) -> None:
-        game_behaviors = {
-                        ('nonevent', NoAction()),
-                        }
-        
-        super().__init__(store=store, behaviors=game_behaviors) # type: ignore
+        super().__init__(store=store, behaviors=game_behaviors)  # type: ignore
 
 
 class MobLoopHandler(BaseGameHandler):
@@ -32,8 +28,4 @@ class MobLoopHandler(BaseGameHandler):
     and sending them to the appropriate Queue."""
 
     def __init__(self, store: GameStore | None = None) -> None:
-        game_behaviors = {
-                        ('nonevent', NoAction()),
-                        }
-        
-        super().__init__(store=store, behaviors=game_behaviors) # type: ignore
+        super().__init__(store=store, behaviors=mob_behaviors)  # type: ignore

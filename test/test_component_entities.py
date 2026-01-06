@@ -815,6 +815,9 @@ def test_entity_character():
         # Assert
         assert isinstance(character, Character), "Expected character to be instance of Character"
         assert isinstance(character, CombatEntity), "Expected character to be instance of CombatEntity"
+        assert isinstance(character, TargetingEntity), "Expected character to be instance of TargetingEntity"
+        assert isinstance(character, TargetableEntity), "Expected character to be instance of TargetableEntity"
+        assert isinstance(character, MobileEntity), "Expected character to be instance of MobileEntity"
         assert isinstance(character, BaseGameEntity), "Expected character to be instance of BaseGameEntity"
         assert isinstance(character, BaseParentState), "Expected character be an instance of BaseParentState"
         assert isinstance(character, GameEntity), "Expected character to duck type to GameEntity"
@@ -876,6 +879,9 @@ def test_entity_ai_character():
         # Assert
         assert isinstance(character, AICharacter), "Expected character to be instance of AICharacter"
         assert isinstance(character, CombatEntity), "Expected character to be instance of CombatEntity"
+        assert isinstance(character, TargetingEntity), "Expected character to be instance of TargetingEntity"
+        assert isinstance(character, TargetableEntity), "Expected character to be instance of TargetableEntity"
+        assert isinstance(character, MobileEntity), "Expected character to be instance of MobileEntity"
         assert isinstance(character, BaseGameEntity), "Expected character to be instance of BaseGameEntity"
         assert isinstance(character, BaseParentState), "Expected character be an instance of BaseParentState"
         assert isinstance(character, GameEntity), "Expected character to duck type to GameEntity"

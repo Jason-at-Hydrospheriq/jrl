@@ -296,10 +296,9 @@ class TargetingEntity(BaseGameEntity):
     that is an instance of TargetingSubState that manages its targeting states. A Targeting Entity can assess 
     threat levels and has a 'threat_level' property to represent its current threat assessment."""
 
-    target:TargetableEntity | None = None
+    target: TargetableEntity | None = None
     focus: TargetingSubState
     _fov_radius: int = 6
-    _visible_tiles: np.ndarray | None = None
     _initial_threat_level: int = 10
     _threat_level: int = 10
     _substates_manifest = (
@@ -332,19 +331,23 @@ class TargetingEntity(BaseGameEntity):
         self._fov_radius = value
 
     @property
-    def target_in_fov(self) -> bool:
+    def visible_tiles(self) -> np.ndarray | None:
         blocking_tiles = None
-        if self.store and self.store.map and self.target:  # type: ignore Assume store is GameStore
+        if self.store and self.store.map:  # type: ignore Assume store is GameStore
             blocking_tiles = self.store.map.blocks_vision  # type: ignore
             
             # UPDATE ENTITY FOV
             if isinstance(blocking_tiles, np.ndarray) and self.location is not None:
-                self._visible_tiles = compute_fov(~blocking_tiles, (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
-
-                if self.target and self.target.location is not None:
-                    tx, ty = self.target.location.x, self.target.location.y
-                    if self._visible_tiles[tx, ty]:
-                        return True
+                return compute_fov(~blocking_tiles, (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
+        return None
+    
+    @property
+    def target_in_fov(self) -> bool:
+        
+        if self.target and self.target.location is not None and isinstance(self.visible_tiles, np.ndarray):
+            tx, ty = self.target.location.x, self.target.location.y
+            if self.visible_tiles[tx, ty]:
+                return True
 
         return False
 
@@ -374,38 +377,56 @@ class TargetingEntity(BaseGameEntity):
     def acquire_target(self) -> bool:
         visible_targets: List[TargetableEntity] = []
         distances: List[Tuple[int, TargetableEntity]] = []
+        threats: list[Tuple[int, TargetableEntity]] = []
 
-        if self.store and self.store.portfolio and isinstance(self._visible_tiles, np.ndarray):  # type: ignore Assume store is GameStore
-            visible_targets = [entity for entity in self.store.portfolio.live_actors if entity and self._visible_tiles[entity.location.x, entity.location.y]]  # type: ignore Assume live_actors is List[Character]
+        if self.store and self.store.portfolio:  # type: ignore | A TargetingEntity must have a GameStore
+            visible_targets = [entity for entity in self.store.portfolio.live_actors if entity and self.visible_tiles[entity.location.x, entity.location.y]]  # type: ignore Assume live_actors is List[Character]
     
         if visible_targets:
             for entity in visible_targets:
                 self.set_target(entity)
                 distance = self.distance_to_target
                 distances.append((distance, entity))
+                threat = self.threat_level
+                threats.append((threat, entity))
         
-        if distances:
+        if distances and threats:
             distances.sort(key=lambda x: x[0])
-            self.set_target(distances[0][1])
+            threats.sort(key=lambda x: x[0], reverse=True)
+        
+        selection_list = []
+        for threat, threat_entity in threats:
+            for distance, distance_entity in distances:
+                if threat_entity is distance_entity:
+                    selection_list.append((threat * (self.fov_radius - distance), threat_entity))
+        
+        if selection_list:
+            selection_list.sort(key=lambda x: x[0], reverse=True)
+            self.set_target(selection_list[0][1])
             return True
         else:
             self.clear_target()
             return False
 
     def assess_threat(self) -> None:
+        friendly = isinstance(self.target, self.__class__)
+        threat_level = self._initial_threat_level
+
         if self.distance_to_target > 8:
-            self.threat_level = self._initial_threat_level
+            threat_level = (not friendly) * threat_level
         if self.distance_to_target <= 8:
-            self.threat_level = self._initial_threat_level + 10
+            threat_level += (self._initial_threat_level + 10) * (not friendly)
         if self.distance_to_target <= 5:
-            self.threat_level = self._initial_threat_level + 20
+            threat_level += (self._initial_threat_level + 20) * (not friendly)
         if self.distance_to_target <= 2:
-            self.threat_level = self._initial_threat_level + 30
+            threat_level += (self._initial_threat_level + 30) * (not friendly)
         if self.distance_to_target == 1:
-            self.threat_level = self._initial_threat_level + 40
+            threat_level += (self._initial_threat_level + 40) * (not friendly)
         if self.target and hasattr(self.target, 'target'):
             if self.target.target is self: # type: ignore
-                self.threat_level = self.threat_level * 2
+                threat_level = threat_level * 2 * (not friendly)
+
+        self.threat_level = threat_level
     
     def update(self) -> None:
         self.assess_threat()

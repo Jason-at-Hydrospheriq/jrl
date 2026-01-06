@@ -1,28 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from __future__ import annotations
-from typing import TYPE_CHECKING
-import numpy as np
-import tcod as libtcodpy
-from tcod.map import compute_fov
+# from __future__ import annotations
+# from time import sleep
+# from typing import TYPE_CHECKING
+# import numpy as np
+# import tcod as libtcodpy
+# from tcod.map import compute_fov
 
-from protocols import *
-from core_components.loops.custom_types import *
-from core_components.maps.tiles.base import TileCoordinate
-from core_components.loops.base import BaseGameAction
-from core_components.entities.library import Character
+# from core_components.loops.custom_types import StateActionObject, StateHandler
+# from core_components.loops.events import WaitEvent
+# from core_components.maps.tiles.base import TileCoordinate
+# from core_components.loops.base import BaseActionOnEntity, BaseGameAction, BaseActionOnTarget, BaseActionOnDestination
+# from core_components.entities.library import AICharacter, Character
 
-if TYPE_CHECKING:
-    from core_components.store import GameStore
-    from core_components.loops.handlers import GameLoopHandler
-    from core_components.entities.library import Charactor, CombatEntity, MobileEntity, TargetableEntity, TargetingEntity
+# if TYPE_CHECKING:
+#     from core_components.store import GameStore
+#     from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
+#     from core_components.entities.library import Charactor, CombatEntity, MobileEntity, TargetableEntity, TargetingEntity
 
-
-class NoAction(BaseGameAction):
-
-    def perform(self) -> None:
-        pass
 
 
 # class FOVUpdateAction(BaseGameAction):
@@ -71,155 +67,113 @@ class NoAction(BaseGameAction):
 #                             player.is_spotting = True
 
 
-class EntityActionOnTarget(BaseGameAction):
-    entity: Character | None = None
-    target: Character | None = None
 
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
-                 target: Character | None = None) -> None:
-        super().__init__(store, handler)
+# class EntityCollisionAction(BaseActionOnTarget):
 
-        self.entity = entity
-        self.target = target
+#     def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
+#                  target: Character | None = None) -> None:
+#         super().__init__(store, handler, entity, target)
 
-    def perform(self) -> None:
-        ...
-
-
-class EntityActionOnDestination(BaseGameAction):
-
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: MobileEntity | None = None, 
-                 destination: TileCoordinate | None = None) -> None:
-        super().__init__(store, handler)
-
-        self.entity = entity
-        self.destination = destination
-
-    def perform(self) -> None:
-        ...
-
-
-class EntityAcquireTargetAction(EntityActionOnTarget):
-
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
-                 target: Character | None = None) -> None:
-        super().__init__(store, handler, entity, target)
-
-    def perform(self) -> None:
-        self.transformer.handle(None) # type: ignore
-        if self.entity and self.store and self.target is not None:
-            if isinstance(self.target, Character) and isinstance(self.entity, Character):
-                self.entity.set_target(self.target)
-                self.target.set_targeter(self.entity)
-                self.store.log.add(text=f"{self.entity.name} is {self.entity.focus.state} the {self.target.name}.")
- 
-
-class EntityCollisionAction(EntityActionOnTarget):
-
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
-                 target: Character | None = None) -> None:
-        super().__init__(store, handler, entity, target)
-
-    def perform(self) -> None:
-        entity_can_target = issubclass(self.entity.__class__, TargetingEntity) if self.entity else False
-        entity_can_melee = issubclass(self.entity.__class__, CombatEntity) if self.entity else False
-        target_can_be_targeted = issubclass(self.target.__class__, TargetableEntity) if self.target else False
-        target_can_melee = issubclass(self.target.__class__, CombatEntity) if self.target else False
+#     def perform(self) -> None:
+#         entity_can_target = issubclass(self.entity.__class__, TargetingEntity) if self.entity else False
+#         entity_can_melee = issubclass(self.entity.__class__, CombatEntity) if self.entity else False
+#         target_can_be_targeted = issubclass(self.target.__class__, TargetableEntity) if self.target else False
+#         target_can_melee = issubclass(self.target.__class__, CombatEntity) if self.target else False
     
-        entity_targets = entity_can_target and target_can_be_targeted
-        entity_melees = entity_can_melee and target_can_melee 
+#         entity_targets = entity_can_target and target_can_be_targeted
+#         entity_melees = entity_can_melee and target_can_melee 
 
-        if self.entity is not None and self.target is not None: # Acquire target if none exists.
+#         if isinstance(self.entity, Character) and self.target is not None: # Acquire target if none exists.
             
-            entity_has_target = self.entity.target is not None if hasattr(self.entity, 'target') else False
+#             entity_has_target = self.entity.target is not None if hasattr(self.entity, 'target') else False
             
-            if entity_targets and not entity_has_target:
-                return EntityAcquireTargetAction(store=self.store, entity=self.entity, target=self.target).perform() # Acquire target.
+#             if entity_targets and not entity_has_target:
+#                 return EntityAcquireTargetAction(store=self.store, entity=self.entity, target=self.target).perform() # Acquire target.
         
-            elif entity_melees and entity_has_target:
-                return EntityMeleeAction(store=self.store, entity=self.entity, target=self.target).perform() # Immediate melee attack.
+#             elif entity_melees and entity_has_target:
+#                 return EntityMeleeAction(store=self.store, entity=self.entity, target=self.target).perform() # Immediate melee attack.
 
 
-class EntityMoveAction(EntityActionOnDestination):
+# class EntityMoveAction(BaseActionOnDestination):
 
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: MixinBaseMobileEntity | None = None, 
-                 destination: TileCoordinate | None = None) -> None:
-        super().__init__(store, handler, entity, destination)
+#     def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: MixinBaseMobileEntity | None = None, 
+#                  destination: TileCoordinate | None = None) -> None:
+#         super().__init__(store, handler, entity, destination)
 
-    def perform(self) -> None:
-        event = self.transformer.get_template('fovupdateevent') # type: ignore <-- Add this line to send a reaction event
-        self.transformer.handle(event) # type: ignore  <-- Add this line to send a reaction event
+#     def perform(self) -> None:
+#         event = self.transformer.get_template('fovupdateevent') # type: ignore <-- Add this line to send a reaction event
+#         self.transformer.handle(event) # type: ignore  <-- Add this line to send a reaction event
 
-        if self.entity and self.store and self.destination:
-            self.entity.destination = self.destination
-            self.entity.move()
+#         if self.entity and self.store and self.destination:
+#             self.entity.destination = self.destination
+#             self.entity.move()
 
-            for entity in self.store.portfolio.live_ai_actors:
-                if entity:  
-                    entity.ai.update_store(self.store) # type: ignore
+#             for entity in self.store.portfolio.live_ai_actors:
+#                 if entity:  
+#                     entity.ai.update_store(self.store) # type: ignore
 
 
-class EntityMeleeAction(EntityActionOnTarget):
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
-                 target: Character | None = None) -> None:
-        super().__init__(store, handler, entity, target)
+# class EntityMeleeAction(BaseActionOnTarget):
+#     def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
+#                  target: Character | None = None) -> None:
+#         super().__init__(store, handler, entity, target)
 
-    def perform(self) -> None:
-        self.transformer.handle(None) # type: ignore
+#     def perform(self) -> None:
+#         self.transformer.handle(None) # type: ignore
 
-        damage = 0
-        defense = 0
-        attack_power = 0
+#         damage = 0
+#         defense = 0
+#         attack_power = 0
     
-        if self.entity is not None and self.target is not None and isinstance(self.entity, CombatEntity) and isinstance(self.target, CombatEntity):
-            engaged = self.entity.is_in_combat and self.target.is_in_combat
-            if not engaged:
-                 self.entity.is_in_combat = True
-                 self.target.is_in_combat = True
+#         if self.entity is not None and self.target is not None and isinstance(self.entity, CombatEntity) and isinstance(self.target, CombatEntity):
+#             engaged = self.entity.is_in_combat and self.target.is_in_combat
+#             if not engaged:
+#                  self.entity.is_in_combat = True
+#                  self.target.is_in_combat = True
 
-            if engaged:     
-                attack_power = self.entity.combat.attack_power # type: ignore
-                defense = self.target.combat.defense # type: ignore
+#             if engaged:     
+#                 attack_power = self.entity.combat.attack_power # type: ignore
+#                 defense = self.target.combat.defense # type: ignore
                 
-                if isinstance(self.target, Character): # Attack only mortal entities
-                    defense = 1  # Basic defense for non-combat entities
-                    damage = max(0, attack_power - defense)
-                    self.target.take_damage(damage)
-                    self.store.log.add(text=f"{self.entity.name} attacks the {self.target.name} for {damage} damage!") # type: ignore
+#                 if isinstance(self.target, Character): # Attack only mortal entities
+#                     defense = 1  # Basic defense for non-combat entities
+#                     damage = max(0, attack_power - defense)
+#                     self.target.take_damage(damage)
+#                     self.store.log.add(text=f"{self.entity.name} attacks the {self.target.name} for {damage} damage!") # type: ignore
 
-                if self.target.physical.hp <= 0 and isinstance(self.entity, Charactor): #type: ignore
-                    self.entity.clear_target()
-                    self.entity.is_in_combat = False
+#                 if self.target.physical.hp <= 0 and isinstance(self.entity, Charactor): #type: ignore
+#                     self.entity.clear_target()
+#                     self.entity.is_in_combat = False
                 
-                if self.target.physical.hp <= 0 and isinstance(self.target, MortalEntity): #type: ignore
-                    return EntityDeathAction(self.store, self.entity, self.target).perform() # type: ignore
+#                 if self.target.physical.hp <= 0 and isinstance(self.target, MortalEntity): #type: ignore
+#                     return EntityDeathAction(self.store, self.entity, self.target).perform() # type: ignore
 
 
-class EntityDeathAction(EntityActionOnTarget):
+# class EntityDeathAction(BaseActionOnTarget):
         
 
-    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
-                 target: Character | None = None) -> None:
-        super().__init__(store, handler, entity, target)
+#     def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: Character | None = None, 
+#                  target: Character | None = None) -> None:
+#         super().__init__(store, handler, entity, target)
 
-    def perform(self) -> None:
-        self.transformer.handle(None) # type: ignore
+#     def perform(self) -> None:
+#         self.transformer.handle(None) # type: ignore
         
-        if self.store and self.entity and self.target is not None:
-            if self.target == self.store.portfolio.player:
-                death_message = f"You have been slain by the {self.entity.name}! Game Over."
-                self.store.log.add(text=death_message)
-                self.target.clear_target()
-                self.target.die()
+#         if self.store and self.entity and self.target is not None:
+#             if self.target == self.store.portfolio.player:
+#                 death_message = f"You have been slain by the {self.entity.name}! Game Over."
+#                 self.store.log.add(text=death_message)
+#                 self.target.clear_target()
+#                 self.target.die()
 
-                event = self.transformer.get_template('gameoverevent') # type: ignore <-- Add this line to send a reaction event
-                self.transformer.handle(event) # type: ignore  <-- Add this line to send a reaction event
+#                 event = self.transformer.get_template('gameoverevent') # type: ignore <-- Add this line to send a reaction event
+#                 self.transformer.handle(event) # type: ignore  <-- Add this line to send a reaction event
 
-            else:
-                death_message = f"You have slain the {self.target.name}!"
-                self.store.log.add(text=death_message)
-                self.target.clear_target()
-                self.target.die()
-                self.entity.clear_target()
+#             else:
+#                 death_message = f"You have slain the {self.target.name}!"
+#                 self.store.log.add(text=death_message)
+#                 self.target.clear_target()
+#                 self.target.die()
+#                 self.entity.clear_target()
 
-                self.transformer.handle(None) # type: ignore
+#                 self.transformer.handle(None) # type: ignore

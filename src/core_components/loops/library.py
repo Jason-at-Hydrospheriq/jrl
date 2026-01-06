@@ -1,15 +1,16 @@
 from __future__ import annotations
+from time import sleep
 from typing import TYPE_CHECKING, cast
 
 import tcod
 
 from core_components.entities.library import BaseGameEntity, Character, AICharacter
-from core_components.loops.base import BaseGameEvent
-from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
+from core_components.loops.base import BaseGameAction, BaseGameEvent, BaseActionOnEntity
 from core_components.loops.custom_types import StateActionObject, StateHandler
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
+    from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
 
 
 class SystemEvent(BaseGameEvent):
@@ -38,6 +39,10 @@ class InputEvent(BaseGameEvent):
             raise TypeError("input_event must be an instance of tcod.event.Event or None")
         self._input_event = value
 
+    def trigger(self) -> None:
+        if self.handler:
+            self.handler.handle(cast(StateActionObject, self))
+
 
 class EntityEvent(BaseGameEvent):
     _entity: BaseGameEntity | None
@@ -55,6 +60,10 @@ class EntityEvent(BaseGameEvent):
         if value is not None and not isinstance(value, BaseGameEntity):
             raise TypeError("entity must be an instance of BaseGameEntity or None")
         self._entity = value
+
+    def trigger(self) -> None:
+        if self.handler:
+            self.handler.handle(cast(StateActionObject, self))
 
 
 class PlayerCharacterEvent(BaseGameEvent):
@@ -86,6 +95,10 @@ class PlayerCharacterEvent(BaseGameEvent):
             raise TypeError("target must be an instance of Character or None")
         self._target = value
 
+    def trigger(self) -> None:
+        if self.handler:
+            self.handler.handle(cast(StateActionObject, self))
+
 
 class AICharacterEvent(BaseGameEvent):
     _entity: AICharacter | None
@@ -116,6 +129,109 @@ class AICharacterEvent(BaseGameEvent):
             raise TypeError("target must be an instance of Character or None")
         self._target = value
 
+    def trigger(self) -> None:
+        if self.handler:
+            self.handler.handle(cast(StateActionObject, self))
+
+
+class NonEvent(BaseGameEvent):
+    pass
+
+
+class NoAction(BaseGameAction):
+
+    def perform(self) -> None:
+        pass
+
+
+class WaitEvent(SystemEvent):
+    wait_time: int
+
+    def __init__(self, store: GameStore | None = None, handler: GameLoopHandler | None = None, wait_time: int = 0) -> None:
+        super().__init__(store, handler)
+        self.wait_time = wait_time
+
+    def trigger(self) -> None:
+        if self.handler:
+            self.handler.handle(cast(StateActionObject, self))
+
+
+class WaitAction(BaseGameAction):
+    wait_time: int = 0  # Time to wait in milliseconds
+
+    def __init__(self, wait_time: int = 0) -> None:
+        super().__init__()
+        self.wait_time = wait_time
+
+    def perform(self) -> None:
+        sleep(self.wait_time / 1000.0) # Convert milliseconds to seconds
+        self.handler.handle(None) # type: ignore
+        
+
+class EntityWaitEvent(EntityEvent, WaitEvent):
+    
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: BaseGameEntity | None = None, wait_time: int = 0) -> None:
+        EntityEvent.__init__(self, store, handler, entity)
+        WaitEvent.__init__(self, store, handler, wait_time)
+
+
+class EntityWaitAction(WaitAction, BaseActionOnEntity):
+    """
+    The EntityWaitAction is the action of the Wait behavior. It is called by an EntityWaitEvent created by an entity.
+    
+    Duck Types: StateActionObject, StoredStateObject
+    """
+    def __init__(self, store: GameStore | None = None, handler:  GameLoopHandler | None = None, entity: BaseGameEntity | None = None, wait_time: int = 0) -> None:
+        BaseActionOnEntity.__init__(self, store, handler, entity)
+        WaitAction.__init__(self, wait_time)
+
+    def perform(self) -> None:
+        if self.entity:
+            self.entity.action_locked = True  # Lock the entity's actions during the wait
+            sleep(self.wait_time / 1000.0) # Convert milliseconds to seconds
+            self.entity.action_locked = False  # Unlock the entity's actions after the wait
+
+        if self.handler:
+            self.handler.handle(None) # type: ignore
+
+
+class AIAcquireTargetEvent(EntityEvent):
+    pass
+
+
+class AIAcquireTargetAction(BaseActionOnEntity):
+    """
+    The EntityAcquireTargetAction is the action of the AcquireTarget behavior. It is called by an AIAcquireTargetEvent created by an AICharacter.
+    
+    Duck Types: StateActionObject, StoredStateObject
+    """
+    def __init__(self, store: GameStore | None = None, handler:  MobLoopHandler | None = None, entity: AICharacter | None = None) -> None:
+        super().__init__(store, handler, entity)
+
+    def perform(self) -> None:
+
+        if isinstance(self.entity, AICharacter) and self.store is not None:
+            self.entity.acquire_target()
+            self.entity.update()
+
+            if self.entity.target is not None:
+                match self.entity.focus.state:  # type: ignore | State machine attribute created dynamically
+                    case 'searching':
+                        text = f"The {self.entity.name}'s guard is up."
+                    case 'tracking':
+                        text = f"The {self.entity.name} has spotted {self.entity.target.name}"  # type: ignore | Entity in this state must have a target.
+                    case 'targeting':
+                        text = f"The {self.entity.name} is looking at {self.entity.target.name} with malice."  # type: ignore | Entity in this state must have a target.
+                    case 'idle':
+                        text = f"The {self.entity.name} looks bored."
+                    case _:
+                        text = f"The {self.entity.name} looks confused."
+
+                self.store.log.add(text=text)  # type: ignore | AICharacter must have a GameStore to log messages.
+        
+        if self.handler:
+            self.handler.send(EntityWaitEvent(wait_time=100, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
+
 
 # """These System Events are generated by the game engine itself. They are not tied to any specific entity or AI, but rather represent global game states or actions."""
 # class GameStartEvent(SystemEvent):
@@ -123,8 +239,6 @@ class AICharacterEvent(BaseGameEvent):
 
 
 
-# class NonEvent(BaseGameEvent):
-#     pass
 
 # class GameOverEvent(SystemEvent):
 #     def __init__(self, handler: GameLoopHandler | None = None, state: GameStore | None = None) -> None:

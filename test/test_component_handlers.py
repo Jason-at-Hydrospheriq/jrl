@@ -5,7 +5,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from protocols import StatefulObject, StoredStateObject
 from core_components.loops.custom_types import GameLoopObject, StateHandler, EventTransformer
 from core_components.loops.base import BaseGameHandler
-from core_components.loops.handlers import GameLoopHandler
+from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
 from core_components.store import GameStore
 
 
@@ -61,6 +61,34 @@ def test_component_game_loop_handler():
     # Atavise
     finally:
         pass
+
+
+def test_component_mob_loop_handler():
+    try:
+        # Arrange
+        store = GameStore()
+        handler = MobLoopHandler(store=store)
+
+        # Act
+
+        # Assert
+        assert isinstance(handler, BaseGameHandler), "Expected handler to be instance of BaseGameHandler"
+        assert isinstance(handler, StateHandler), "Expected handler to duck type as StateActionObject Protocol"
+        assert isinstance(handler, EventTransformer), "Expected handler to duck type as EventTransformer Protocol"
+        assert isinstance(handler, GameLoopObject), "Expected handler to duck type as GameLoopObject Protocol"
+        assert isinstance(handler, StoredStateObject), "Expected handler to be duck type as StoredStateObject Protocol"
+        assert isinstance(handler, StatefulObject), "Expected handler.store to be instance of GameStore"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
+
 
 # import pytest
 # from sys import path

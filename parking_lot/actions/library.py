@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from core_components.store import GameStore
 
 from core_components.entities.library import Charactor, CombatEntity, MobCharactor, MixinBaseMobileEntity, PlayerCharactor, BaseTargetableEntity, BaseTargetingEntity, BaseMortalEntity
-from core_components.loops.events import FOVUpdateEvent, MeleeAttackEvent, TargetAvailableAIEvent
+from core_components.loops.library import FOVUpdateEvent, MeleeAttackEvent, TargetAvailableAIEvent
 
 
 class GeneralAction:

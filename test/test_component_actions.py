@@ -1,0 +1,264 @@
+import pytest
+from sys import path
+import time
+path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
+
+from core_components.entities.portfolio import Portfolio
+from core_components.maps.tilemaps.library import DefaultTileMap
+from protocols import StoredStateObject
+from core_components.store import GameStore
+from core_components.entities.base import BaseGameEntity
+from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
+from core_components.loops.custom_types import StateActionObject
+from core_components.loops.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
+from core_components.loops.library import NoAction, WaitAction, AIAcquireTargetAction
+from core_components.maps.tiles.base import TileCoordinate
+from core_components.entities.library import AICharacter, PlayerCharacter
+
+
+def test_component_base_game_action():
+    try:
+        # Arrange
+        action = BaseGameAction()
+
+        # Act
+        with pytest.raises(NotImplementedError, match="Subclasses must implement the perform method."):
+            action.perform()
+
+        # Assert
+        assert isinstance(action, BaseGameAction), "Expected action to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected action to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected action to be duck type as StoredStateObject Protocol"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
+
+def test_component_base_action_on_entity():
+    try:
+        # Arrange        
+        action = BaseActionOnEntity()
+        action.entity = BaseGameEntity()
+
+        # Act 
+        with pytest.raises(NotImplementedError, match="Subclasses must implement the perform method."):
+            action.perform()
+
+        # Assert
+        assert isinstance(action, BaseActionOnEntity), "Expected action to be instance of BaseActionOnEntity"
+        assert isinstance(action, BaseGameAction), "Expected action to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected action to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected action to duck type as StoredStateObject Protocol"
+        assert action.entity is not None, "Expected entity to be set"
+        assert isinstance(action.entity, BaseGameEntity), "Expected entity to be instance of BaseGameEntity"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
+
+def test_component_base_action_on_target():
+    try:
+        # Arrange        
+        action = BaseActionOnTarget()
+        action.entity = BaseGameEntity()
+        action.target = BaseGameEntity()
+
+        # Act 
+        with pytest.raises(NotImplementedError, match="Subclasses must implement the perform method."):
+            action.perform()
+
+        # Assert
+        assert isinstance(action, BaseActionOnTarget), "Expected action to be instance of BaseActionOnTarget"
+        assert isinstance(action, BaseGameAction), "Expected action to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected action to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected action to duck type as StoredStateObject Protocol"
+        assert action.entity is not None, "Expected entity to be set"
+        assert isinstance(action.entity, BaseGameEntity), "Expected entity to be instance of BaseGameEntity"
+        assert action.target is not None, "Expected target to be set"
+        assert isinstance(action.target, BaseGameEntity), "Expected target to be instance of BaseGameEntity"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
+
+def test_component_base_action_on_destination():
+    try:
+        # Arrange        
+        action = BaseActionOnDestination()
+        action.entity = BaseGameEntity()
+        action.destination = TileCoordinate.from_tuple((5, 10))
+
+        # Act 
+        with pytest.raises(NotImplementedError, match="Subclasses must implement the perform method."):
+            action.perform()
+
+        # Assert
+        assert isinstance(action, BaseActionOnDestination), "Expected action to be instance of BaseActionOnDestination"
+        assert isinstance(action, BaseGameAction), "Expected action to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected action to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected action to duck type as StoredStateObject Protocol"
+        assert action.entity is not None, "Expected entity to be set"
+        assert isinstance(action.entity, BaseGameEntity), "Expected entity to be instance of BaseGameEntity"
+        assert action.destination is not None, "Expected destination to be set"
+        assert isinstance(action.destination, TileCoordinate), "Expected destination to be instance of TileCoordinate"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
+
+def test_component_no_action():
+    try:
+        # Arrange        
+        action = NoAction()
+        
+        # Act
+        action.perform()
+        
+        # Assert
+        assert isinstance(action, NoAction), "Expected action to be instance of NoAction"
+        assert isinstance(action, BaseGameAction), "Expected action to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected action to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected action to duck type as StoredStateObject Protocol"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
+
+def test_component_wait_action():
+    try:
+        # Arrange        
+        wait_time = 500  # 500 milliseconds
+        handler = GameLoopHandler()
+        handler.start()  # type: ignore
+        store = GameStore()  
+        action = WaitAction(wait_time=wait_time)
+        action.store = store
+        action.handler = handler
+
+        # Act
+        start_time = time.time()
+        action.perform()
+        end_time = time.time()
+        elapsed_time = (end_time - start_time) * 1000  # Convert to milliseconds
+
+        # Assert
+        assert isinstance(action, WaitAction), "Expected action to be instance of WaitAction"
+        assert isinstance(action, BaseGameAction), "Expected action to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected action to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected action to duck type as StoredStateObject Protocol"
+        assert action.wait_time == wait_time, f"Expected wait_time to be {wait_time}, got {action.wait_time}"
+        assert elapsed_time >= wait_time, f"Expected elapsed time to be at least {wait_time} ms, got {elapsed_time} ms"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
+
+def test_component_entity_acquire_target_action():
+    try:
+        # Arrange        
+        action = AIAcquireTargetAction()
+        action.store = GameStore()
+        action.handler = MobLoopHandler()
+        action.handler.start()  # type: ignore
+        action.store.map = DefaultTileMap()
+        tile_layout = action.store.map.get_tile_layout('floor')
+        if tile_layout is not None:
+            tile_layout[0:10,0:10] = True
+        action.store.map.set_tiles(tile_layout, graphic_name='floor')
+        action.store.portfolio = Portfolio()
+
+        action.entity = AICharacter() 
+        action.entity.name = "Test AI Character"
+        action.entity.store = action.store
+        action.entity.location = TileCoordinate.from_tuple((0, 0))
+        action.entity.update()
+
+        target = PlayerCharacter(name="Test Target Character")
+        target.store = action.store
+        target.location = TileCoordinate.from_tuple((5, 5))
+        target.update()
+
+        action.store.portfolio.entities.add(action.entity)
+        action.store.portfolio.entities.add(target)
+
+        # Act 
+        initial_entity_target = action.entity.target
+        initial_focus_state = action.entity.focus.state  # type: ignore
+        initial_event_queue_size = action.handler.events.qsize()
+        initial_action_queue_size = action.handler.actions.qsize()
+        initial_store_log_size = len(action.store.log.messages)  # type: ignore
+        
+        action.perform()
+        
+        final_entity_target = action.entity.target
+        final_focus_state = action.entity.focus.state  # type: ignore
+        final_event_queue_size = action.handler.events.qsize()
+        final_action_queue_size = action.handler.actions.qsize()
+        final_store_log_size = len(action.store.log.messages)  # type: ignore
+
+        # Assert
+        assert isinstance(action, AIAcquireTargetAction), "Expected action to be instance of EntityAcquireTargetAction"
+        assert isinstance(action, BaseGameAction), "Expected action to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected action to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected action to duck type as StoredStateObject Protocol"
+        assert action.entity is not None, "Expected entity to be set"
+        assert isinstance(action.entity, BaseGameEntity), "Expected entity to be instance of BaseGameEntity"
+
+        assert initial_entity_target == None, "Expected entity's target to remain unchanged after acquire target action"
+        assert initial_focus_state ==  'idle', "Expected entity's focus state to be 'idle' before acquire target action"
+        assert initial_event_queue_size == 0, "Expected initial event queue size to be 0"
+        assert initial_action_queue_size == 0, "Expected initial action queue size to be 0"
+        assert initial_store_log_size == 0, "Expected initial store log size to be 0"
+
+        assert final_entity_target == target, "Expected entity's target to be set to the target character after acquire target action"
+        assert final_focus_state == 'tracking', "Expected entity's focus state to be 'tracking' after acquire target action"
+        assert final_event_queue_size == initial_event_queue_size + 1, "Expected final event queue size to be +1 added by acquire target action"
+        assert final_action_queue_size == initial_action_queue_size, "Expected final action queue size to be unchanged by acquire target action"
+        assert final_store_log_size == initial_store_log_size + 1, "Expected final store log size to be +1 added by acquire target action"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
+

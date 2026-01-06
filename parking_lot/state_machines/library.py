@@ -8,7 +8,7 @@ import numpy as np
 if TYPE_CHECKING:
     from core_components.entities.library import MobCharactor
 
-from core_components.loops.events import MeleeAttackEvent, TargetAvailableAIEvent, OnTargetAIEvent, TargetOutOfRangeAIEvent
+from core_components.loops.library import MeleeAttackEvent, TargetAvailableAIEvent, OnTargetAIEvent, TargetOutOfRangeAIEvent
 from core_components.loops.handlers import BaseHandler, EntityStateTableDict
 
 
