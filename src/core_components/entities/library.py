@@ -31,8 +31,8 @@ class CollisionSubState(BaseGameSubState):
                 {'name':'unknown', 'on_enter': ['update']},)
     _transitions = (
             {'trigger':'update', 'source':['not_colliding', 'unknown', 'colliding_with_terrain', 'colliding_with_boundary'], 'dest':'colliding_with_entity', 'conditions':['is_on_map', 'is_colliding_with_entity']},
-            {'trigger':'update', 'source':['not_colliding', 'unknown', 'colliding_with_entity', 'colliding_with_boundary'], 'dest':'colliding_with_terrain', 'conditions':['is_on_map', 'is_colliding_with_terrain']},
-            {'trigger':'update', 'source':['not_colliding', 'unknown', 'colliding_with_entity', 'colliding_with_terrain'], 'dest':'colliding_with_boundary', 'conditions':['is_on_map', 'is_colliding_with_boundary']},
+            {'trigger':'update', 'source':['not_colliding', 'unknown', 'colliding_with_entity'], 'dest':'colliding_with_terrain', 'conditions':['is_on_map', 'is_colliding_with_terrain']},
+            {'trigger':'update', 'source':['not_colliding', 'unknown', 'colliding_with_entity'], 'dest':'colliding_with_boundary', 'conditions':['is_on_map', 'is_colliding_with_boundary']},
             {'trigger':'update', 'source':['unknown', 'colliding_with_entity', 'colliding_with_terrain', 'colliding_with_boundary'], 'dest':'not_colliding', 'conditions':['is_on_map', 'is_not_colliding']},
             {'trigger':'update', 'source':['not_colliding', 'colliding_with_entity', 'colliding_with_terrain', 'colliding_with_boundary'], 'dest':'unknown', 'conditions':['is_not_on_map']})
     _initial_state = 'not_colliding'
@@ -502,6 +502,7 @@ class Character(MobileEntity, CombatEntity):
         ("focus", TargetingSubState),
         ("combat", CombatSubState),
         ("health", CharacterHealthSubState),
+        ("collision", CollisionSubState)
     )
 
     def __init__(   self,
@@ -529,6 +530,8 @@ class Character(MobileEntity, CombatEntity):
 
 @action_locked
 class PlayerCharacter(Character):
+    action_locked: bool = True
+
     def __init__(   self,
                 store: GameStore | None = None,
                 *,
@@ -541,10 +544,9 @@ class PlayerCharacter(Character):
 
                 ) -> None:
 
-        self.fov_radius = 6
+        self.fov_radius = 6 # Must be set before super().__init__() call to ensure FOV is correct on initialization.
 
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-
         self.hp = hp
         self.max_hp = max_hp
         self.update()
@@ -608,9 +610,11 @@ class AICharacter(Character):
 
 @action_locked
 class MobCharacter(AICharacter):
+    action_locked: bool = False
+
     def __init__(   self,
-                    *,
                     store: GameStore | None = None,
+                    *,
                     location: TileCoordinate | None = None,
                     name: str = "<Unnamed>",
                     symbol: str = '?',
@@ -618,11 +622,11 @@ class MobCharacter(AICharacter):
                     hp: int = 50,
                     max_hp: int = 50,
                     ) -> None:
-        
-        self.fov_radius = 5
+
+        self.fov_radius = 5 # Must be set before super().__init__() call to ensure FOV is correct on initialization.
 
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-
+        
         self.hp = hp
         self.max_hp = max_hp
         self.update()

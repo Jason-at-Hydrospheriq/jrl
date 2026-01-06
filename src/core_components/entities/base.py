@@ -30,6 +30,20 @@ def action_locked(cls):
         if callable(attr_value) and not attr_name.startswith('__'):
             # Wrap the method with the condition checker
             setattr(cls, attr_name, is_locked(attr_value))
+
+        if isinstance(attr_value, property):
+            if attr_value.fset:
+                # Wrap the setter method of the property
+                setter = attr_value.fset
+                if setter and callable(setter):
+                    wrapped_setter = is_locked(setter)
+                else:
+                    wrapped_setter = setter
+
+                # Create a new property with the wrapped methods
+                new_property = property(attr_value.fget, wrapped_setter)
+                setattr(cls, attr_name, new_property)
+
     return cls
 
 

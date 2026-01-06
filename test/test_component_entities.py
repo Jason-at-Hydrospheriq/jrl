@@ -410,15 +410,15 @@ def test_entity_mobile_entity():
         offmap_state_vector = entity.state_vector.copy()
         offmap_collision_state = entity.collision.state # type: ignore
 
-        entity.destination = TileCoordinate.from_tuple((1,1), parent_map_size=store.map.grid.size)
-        entity.update()
-        blocking_terrain_state_vector = entity.state_vector.copy()
-        blocking_terrain_collision_state = entity.collision.state # type: ignore
-
         entity.destination = TileCoordinate.from_tuple((0,1), parent_map_size=store.map.grid.size)
         entity.update()
         blocking_entity_state_vector = entity.state_vector.copy()
         blocking_entity_collision_state = entity.collision.state # type: ignore
+
+        entity.destination = TileCoordinate.from_tuple((1,1), parent_map_size=store.map.grid.size)
+        entity.update()
+        blocking_terrain_state_vector = entity.state_vector.copy()
+        blocking_terrain_collision_state = entity.collision.state # type: ignore
 
         entity.destination = TileCoordinate.from_tuple((1,0), parent_map_size=store.map.grid.size)
         entity.update()
@@ -428,6 +428,11 @@ def test_entity_mobile_entity():
         entity.move()
         entity.update()
         final_location = entity.location
+
+        initial_hp = entity.hp
+        entity.action_locked = True
+        entity.hp = 10
+        final_hp = entity.hp
 
         # Assert
         assert isinstance(entity, MobileEntity), "Expected entity to be instance of MobileEntity"
@@ -464,6 +469,7 @@ def test_entity_mobile_entity():
 
         assert final_location == TileCoordinate.from_tuple((1,0), parent_map_size=store.map.grid.size), "Expected final location to be (1,0) after move"
         assert entity.destination == None, "Expected destination to be None after move"
+        assert final_hp == initial_hp, "Expected hp to remain unchanged after action_locked move attempt"
 
     except AssertionError as e:
         pytest.fail(str(e))
@@ -506,6 +512,10 @@ def test_entity_targetable_entity():
         after_damage_hp = target.hp
         after_damage_max_hp = target.max_hp
 
+        target.action_locked = True
+        target.hp = 10
+        final_hp = target.hp
+
         # Assert
         assert isinstance(target, TargetableEntity), "Expected target to be instance of TargetableEntity"
         assert isinstance(target, BaseGameEntity), "Expected target to be instance of BaseGameEntity"
@@ -531,6 +541,8 @@ def test_entity_targetable_entity():
         assert after_damage_state_vector['is_target'] == True, "Expected state_vector to have 'is_target' remain True after taking damage"
         assert after_damage_hp == 70, "Expected hp to be 70 after taking 30 damage"
         assert after_damage_max_hp == 100, "Expected max_hp to remain 100 after taking damage"
+
+        assert final_hp == after_damage_hp, "Expected hp to remain unchanged after action_locked state"
 
     except AssertionError as e:
         pytest.fail(str(e))
@@ -595,6 +607,10 @@ def test_entity_targeting_entity():
         acquired_target = targeter.target
         acquired_targeter_state = targeter.focus.state # type: ignore
 
+        targeter.action_locked = True
+        targeter.hp = 10
+        final_hp = targeter.hp
+
         # Assert
         assert isinstance(targeter, TargetingEntity), "Expected targeter to be instance of TargetingEntity"
         assert isinstance(targeter, BaseGameEntity), "Expected targeter to be instance of BaseGameEntity"
@@ -633,6 +649,8 @@ def test_entity_targeting_entity():
 
         assert acquired_target == target, "Expected acquired target to be the targetable_target after acquiring target"
         assert acquired_targeter_state == 'tracking', "Expected focus state to be 'tracking' after acquiring a non-hostile target" # type: ignore
+
+        assert final_hp == targeter.hp, "Expected hp to remain unchanged after action_locked state"
 
     except AssertionError as e:
         pytest.fail(str(e))
@@ -718,6 +736,10 @@ def test_entity_combat_entity():
         post_defense_state_vector = combatant.state_vector.copy()
         post_defense_combatant_hp = combatant.hp
 
+        combatant.action_locked = True
+        combatant.hp = 10
+        final_hp = combatant.hp
+
         # Assert
         assert isinstance(combatant, CombatEntity), "Expected combatant to be instance of CombatEntity"
         assert isinstance(combatant, BaseGameEntity), "Expected combatant to be instance of BaseGameEntity"
@@ -770,6 +792,8 @@ def test_entity_combat_entity():
         assert post_defense_state_vector['in_melee_range'] == True, "Expected state_vector to have 'in_melee_range' remain True after defending"
         assert post_defense_combatant_hp == 95, "Expected combatant hp to be 95 (100 - 10 attack + 5 defense) after taking damage"
 
+        assert final_hp == post_defense_combatant_hp, "Expected hp to remain unchanged after action_locked state"
+
     except AssertionError as e:
         pytest.fail(str(e))
     
@@ -821,6 +845,10 @@ def test_entity_character():
         after_death_color = character.color
         after_death_name = character.name
 
+        character.action_locked = True
+        character.hp = 10
+        final_hp = character.hp
+
         # Assert
         assert isinstance(character, Character), "Expected character to be instance of Character"
         assert isinstance(character, CombatEntity), "Expected character to be instance of CombatEntity"
@@ -832,12 +860,13 @@ def test_entity_character():
         assert isinstance(character, GameEntity), "Expected character to duck type to GameEntity"
         assert isinstance(character, EntityParentState), "Expected character to duck type to EntityParentState"
 
-        assert len(character._substates_manifest) == 5, "Expected five substates in _substates_manifest"
+        assert len(character._substates_manifest) == 6, "Expected six substates in _substates_manifest"
         assert isinstance(character.substates[0], BaseGameSubState), "Expected first substate to be instance of BaseGameSubState"
         assert isinstance(character.substates[1], TargetedSubState), "Expected second substate to be instance of TargetedSubState"
         assert isinstance(character.substates[2], TargetingSubState), "Expected third substate to be instance of TargetingSubState"
         assert isinstance(character.substates[3], CombatSubState), "Expected fourth substate to be instance of CombatSubState"
         assert isinstance(character.substates[4], CharacterHealthSubState), "Expected fifth substate to be instance of CharacterHealthSubState"
+        assert isinstance(character.substates[5], CollisionSubState), "Expected sixth substate to be instance of CollisionSubState"
 
         assert initial_blocks_movement == True, "Expected blocks_movement to be True initially"
         assert initial_invulnerable == False, "Expected is_invulnerable to be False initially"
@@ -858,6 +887,8 @@ def test_entity_character():
         assert after_death_color == (191, 0, 0), "Expected color to change to red after death"
         assert after_death_name == 'remains of character_entity', "Expected name to change to 'remains of character_entity' after death"
         assert after_death_is_alive == False, "Expected is_alive to be False after death"
+
+        assert final_hp == None, "Expected hp to be the death value of None after action_locked state"
 
     except AssertionError as e:
         pytest.fail(str(e))
@@ -885,6 +916,10 @@ def test_entity_ai_character():
 
         after_death_ai = character.ai
 
+        character.action_locked = True
+        character.hp = 10
+        final_hp = character.hp
+
         # Assert
         assert isinstance(character, AICharacter), "Expected character to be instance of AICharacter"
         assert isinstance(character, CombatEntity), "Expected character to be instance of CombatEntity"
@@ -898,7 +933,8 @@ def test_entity_ai_character():
 
         assert isinstance(initial_ai, BaseGameTransformer), "Expected initial AI to be BaseLoopHandler()"
         assert after_death_ai == None, "Expected AI to be None after death"
-
+        assert final_hp == None, "Expected hp to be the death value of None after action_locked state"
+        
     except AssertionError as e:
         pytest.fail(str(e))
 

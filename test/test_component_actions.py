@@ -13,7 +13,7 @@ from core_components.entities.base import BaseGameEntity
 from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
 from core_components.loops.custom_types import StateActionObject
 from core_components.loops.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
-from core_components.loops.library import NoAction, WaitAction, EntityWaitAction, AIAcquireTargetAction
+from core_components.loops.library import NoAction, WaitAction, EntityWaitAction, AIAcquireTargetAction, EntityMoveAction
 from core_components.maps.tiles.base import TileCoordinate
 from core_components.entities.library import AICharacter, PlayerCharacter
 
@@ -335,4 +335,104 @@ def test_component_entity_acquire_target_action():
     finally:
         pass
 
+def test_component_move_action():
+    try:
+        # Arrange        
+        action = EntityMoveAction()
+        action.store = GameStore()
+        action.handler = MobLoopHandler()
+        action.handler.start()  # type: ignore
+        action.store.map = DefaultTileMap()
+        tile_layout = action.store.map.get_tile_layout('floor')
+        if tile_layout is not None:
+            tile_layout[0:3,0:3] = True
+        action.store.map.set_tiles(tile_layout, graphic_name='floor')
 
+        action.entity = AICharacter() 
+        action.entity.name = "Test AI Character"
+        action.entity.store = action.store
+        action.entity.location = TileCoordinate.from_tuple((0, 0), parent_map_size=action.store.map.grid.size)
+        action.entity.update()
+
+        colliding_entity = PlayerCharacter()
+        colliding_entity.name = "Colliding Player Character"
+        colliding_entity.store = action.store
+        colliding_entity.location = TileCoordinate.from_tuple((2, 2), parent_map_size=action.store.map.grid.size)
+        action.store.portfolio = Portfolio()
+        action.store.portfolio.entities.add(action.entity)
+        action.store.portfolio.entities.add(colliding_entity)
+
+        move_destination = TileCoordinate.from_tuple((1, 1), parent_map_size=action.store.map.grid.size)
+        wall_destination = TileCoordinate.from_tuple((3, 3), parent_map_size=action.store.map.grid.size)
+        boundary_destination = TileCoordinate.from_tuple((-1, 0), parent_map_size=action.store.map.grid.size)
+        entity_destination = TileCoordinate.from_tuple((2, 2), parent_map_size=action.store.map.grid.size)
+
+        # Act 
+        initial_location = action.entity.location
+        action.destination = move_destination
+        action.perform()
+        move_location = action.entity.location
+
+        action.destination = wall_destination
+        action.perform()
+        wall_location = action.entity.location
+
+        action.destination = boundary_destination
+        action.perform()
+        boundary_location = action.entity.location
+
+        action.destination = entity_destination
+        action.perform()
+        entity_location = action.entity.location
+        entity_target = action.entity.target
+
+        action.destination = move_destination
+        thread = threading.Thread(target=action.perform)
+        initial_lock = action.entity.action_locked  # type: ignore
+        start_time = time.time()
+        thread.start()
+        time.sleep(0.005)  # Ensure the thread has started
+        print(f"During move: Lock = {action.entity.action_locked}")  # type: ignore
+        action_locked = action.entity.action_locked  # type: ignore
+        action.entity.hp = 10
+        update_hp_locked = action.entity.hp  # type: ignore
+        thread.join()
+        end_time = time.time()
+        elapsed_time = (end_time - start_time) * 1000  # Convert to milliseconds
+        final_lock = action.entity.action_locked  # type: ignore
+        action.entity.hp = 8
+        update_hp_unlocked = action.entity.hp  # type: ignore
+
+        # Assert
+        assert isinstance(action, EntityMoveAction), "Expected action to be instance of EntityMoveAction"
+        assert isinstance(action, BaseGameAction), "Expected action to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected action to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected action to duck type as StoredStateObject Protocol"
+        assert action.entity is not None, "Expected entity to be set"
+        assert isinstance(action.entity, BaseGameEntity), "Expected entity to be instance of BaseGameEntity"
+        assert action.destination is not None, "Expected destination to be set"
+        assert isinstance(action.destination, TileCoordinate), "Expected destination to be instance of TileCoordinate"
+
+        assert initial_location == TileCoordinate.from_tuple((0, 0), parent_map_size=action.store.map.grid.size), "Expected entity's initial location to be (0,0)"
+        assert move_location == move_destination, "Expected entity to have moved to the move destination"
+        assert wall_location == move_location, "Expected entity's location to remain unchanged when moving into a wall"
+        assert boundary_location == move_location, "Expected entity's location to remain unchanged when moving out of bounds"
+        assert entity_location == move_location, "Expected entity's location to remain unchanged when moving into another entity"
+        assert entity_target == colliding_entity, "Expected entity's target to be set to the colliding entity after move attempt"
+
+        assert initial_lock == False, "Expected entity action_locked to be False before move"
+        assert action_locked == True, "Expected entity action_locked to be True during move"
+        assert update_hp_locked == 0, "Expected entity hp to be the default value (locked) during move"
+        assert final_lock == False, "Expected entity action_locked to be False after move"
+        assert update_hp_unlocked == 8, "Expected entity hp to be updated value (unlocked) after move"
+        assert elapsed_time >= 100, "Expected move action to take at least 100 ms"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
