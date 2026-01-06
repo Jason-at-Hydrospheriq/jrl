@@ -62,21 +62,21 @@ class KeyDownAction(BaseGameAction):
 
                 # Parse movement keys
                 match key_sim:
-                    case tcod.event.K_LEFT:
+                    case tcod.event.KeySym.LEFT:
                         destination = (destination[0] - 1, destination[1])
-                    case tcod.event.K_a:
+                    case tcod.event.KeySym.A:
                         destination = (destination[0] - 1, destination[1])
-                    case tcod.event.K_RIGHT:
+                    case tcod.event.KeySym.RIGHT:
                         destination = (destination[0] + 1, destination[1])
-                    case tcod.event.K_d:
+                    case tcod.event.KeySym.D:
                         destination = (destination[0] + 1, destination[1])
-                    case tcod.event.K_UP:
+                    case tcod.event.KeySym.UP:
                         destination = (destination[0], destination[1] - 1)
-                    case tcod.event.K_w:
+                    case tcod.event.KeySym.W:
                         destination = (destination[0], destination[1] - 1)
-                    case tcod.event.K_DOWN:
+                    case tcod.event.KeySym.DOWN:
                         destination = (destination[0], destination[1] + 1)
-                    case tcod.event.K_s:
+                    case tcod.event.KeySym.S:
                         destination = (destination[0], destination[1] + 1)
                 
                 if destination != (0,0):      

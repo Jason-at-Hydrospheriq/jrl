@@ -85,10 +85,12 @@ class MainMapDisplay(BaseUIWidget):
                 default=SHROUD,
             ) 
 
-            if len(actors) > 0:
+            if len(actors) > 0 and store.atlas:
+                visible = store.atlas.active.visible
                 for actor in store.portfolio.live_actors:
-                    if actor.perception.is_targeted() and actor.location:  # type: ignore | State machine method is dynamically added
+                    if not actor.perception.is_targeted() and actor.location and visible[*actor.location.to_list]:  # type: ignore | State machine method is dynamically added
                         console.print(actor.location.x, actor.location.y, actor.symbol, fg=actor.color)
+            
             if player and player.location:
                 console.print(player.location.x, player.location.y, player.symbol, fg=player.color)
 

@@ -274,8 +274,8 @@ class TargetableEntity(BaseGameEntity):
     
     def __init__(self,
                  store: GameStore | None = None,
+                 location: TileCoordinate | None = None,
                  *,
-                 location: Tuple[int, int] | TileCoordinate | None = None,
                  name: str="<Unnamed>", 
                  symbol: str=' ', 
                  color: Tuple[int, int, int]=(0,0,0)) -> None:
@@ -311,7 +311,7 @@ class TargetingEntity(BaseGameEntity):
     def __init__(self,
                  store: GameStore | None = None,
                  *,
-                 location: Tuple[int, int] | TileCoordinate | None = None,
+                 location: TileCoordinate | None = None,
                  name: str="<Unnamed>", 
                  symbol: str=' ', 
                  color: Tuple[int, int, int]=(0,0,0)) -> None:
@@ -529,13 +529,13 @@ class Character(MobileEntity, CombatEntity):
 
 @action_locked
 class PlayerCharacter(Character):
-    action_locked: bool = True
+    action_locked: bool | None = True
     location: TileCoordinate | None
 
     def __init__(   self,
                 store: GameStore | None = None,
-                *,
                 location: TileCoordinate | None = None,
+                *,
                 name: str = "<Unnamed>",
                 symbol: str = '@',
                 color: Tuple[int, int, int]=(255, 255, 255),
@@ -606,7 +606,7 @@ class AICharacter(Character):
 
 @action_locked
 class MobCharacter(AICharacter):
-    action_locked: bool = False
+    action_locked: bool | None = False
     location: TileCoordinate | None
 
     def __init__(   self,
