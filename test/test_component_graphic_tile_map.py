@@ -4,9 +4,9 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 import itertools
 
-from core_components.interfaces.graphics.tile_types import ascii_graphic
-from core_components.maps.tilemaps.library import DefaultTileMap, DEFAULT_MANIFEST
-from core_components.maps.tiles.base import BaseTileGrid, TileCoordinate, TileTuple
+from display_components.graphics.tile_types import ascii_graphic
+from atlas_components.tilemaps.library import DefaultTileMap, DEFAULT_TILEMAP_MANIFEST
+from atlas_components.tiles.base import BaseTileGrid, TileCoordinate, TileTuple
 
 
 # Test Cases for ascii_graphic dtype

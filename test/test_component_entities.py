@@ -3,13 +3,14 @@ from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from transitions import Machine 
 
-from core_components.entities.base  import BaseGameSubState, BaseGameEntity, BaseParentState
-from core_components.entities.library import CharacterHealthSubState, CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character, AICharacter, PlayerCharacter
-from core_components.entities.custom_types import GameEntity, EntityParentState
-from core_components.maps.tiles.base import TileCoordinate
-from core_components.maps import Atlas
-from core_components.store import GameStore
-from core_components.loops.base import BaseGameTransformer
+from entities.base  import BaseGameSubState, BaseGameEntity, BaseParentState
+from entities.library import CharacterHealthSubState, CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character, AICharacter, PlayerCharacter
+from protocols import GameEntity, EntityParentState
+from atlas_components.tiles.base import TileCoordinate
+from atlas_components.tilemaps.library import DefaultTileMap
+from store_components import Atlas
+from engine_components.store import GameStore
+from engine_components.ai import LoopHandler
 
 
 class DummyGameStore:
@@ -25,7 +26,7 @@ class DummyGameStore:
     destination_is_blocking_entity: bool = False
     destination_is_blocking_terrain: bool = False
     destination_is_map_boundary: bool = False
-    map: DefaultTileMap | None = None
+    atlas: Atlas = Atlas()
 
 
 class DummyPortfolio:
@@ -381,15 +382,15 @@ def test_entity_mobile_entity():
     try:
     # Arrange
         store = GameStore()
-        store.atlas = Atlas()
+        store.atlas = Atlas(store=store)
         store.portfolio = DummyPortfolio() # type: ignore
         if store.portfolio:
-            store.portfolio.live_actors[0].location = TileCoordinate.from_tuple((0,1), parent_map_size=store.map.grid.size) # type: ignore
+            store.portfolio.live_actors[0].location = TileCoordinate.from_tuple((0,1), parent_map_size=store.atlas.active.grid.size) # type: ignore
 
-        tile_layout = store.map.get_tile_layout('wall')
+        tile_layout = store.atlas.active.get_tile_layout('wall')
         if tile_layout is not None:
             tile_layout[1,1] = True
-        store.map.set_tiles(tile_layout, graphic_name='wall')
+        store.atlas.active.set_tiles(tile_layout, graphic_name='wall')
 
         # Act 
         entity = MobileEntity(store=store, name='mobile_entity')
@@ -399,29 +400,29 @@ def test_entity_mobile_entity():
         initial_in_play_state = entity.spawn.is_in_play() # type: ignore
         initial_collision_state = entity.collision.state # type: ignore
 
-        entity.location = TileCoordinate.from_tuple((0,0), parent_map_size=store.map.grid.size)
+        entity.location = TileCoordinate.from_tuple((0,0), parent_map_size=store.atlas.active.grid.size)
         entity.update()
         set_location = entity.location
         set_location_in_play_state = entity.spawn.is_in_play() # type: ignore
         set_location_state_vector = entity.state_vector.copy()
         set_location_collision_state = entity.collision.state # type: ignore
 
-        entity.destination = TileCoordinate.from_tuple((-1,-1), parent_map_size=store.map.grid.size)
+        entity.destination = TileCoordinate.from_tuple((-1,-1), parent_map_size=store.atlas.active.grid.size)
         entity.update()
         offmap_state_vector = entity.state_vector.copy()
         offmap_collision_state = entity.collision.state # type: ignore
 
-        entity.destination = TileCoordinate.from_tuple((0,1), parent_map_size=store.map.grid.size)
+        entity.destination = TileCoordinate.from_tuple((0,1), parent_map_size=store.atlas.active.grid.size)
         entity.update()
         blocking_entity_state_vector = entity.state_vector.copy()
         blocking_entity_collision_state = entity.collision.state # type: ignore
 
-        entity.destination = TileCoordinate.from_tuple((1,1), parent_map_size=store.map.grid.size)
+        entity.destination = TileCoordinate.from_tuple((1,1), parent_map_size=store.atlas.active.grid.size)
         entity.update()
         blocking_terrain_state_vector = entity.state_vector.copy()
         blocking_terrain_collision_state = entity.collision.state # type: ignore
 
-        entity.destination = TileCoordinate.from_tuple((1,0), parent_map_size=store.map.grid.size)
+        entity.destination = TileCoordinate.from_tuple((1,0), parent_map_size=store.atlas.active.grid.size)
         entity.update()
         no_blocker_state_vector = entity.state_vector.copy()
         no_blocker_collision_state = entity.collision.state # type: ignore
@@ -468,7 +469,7 @@ def test_entity_mobile_entity():
         assert no_blocker_state_vector['in_boundary_collision'] == False, "Expected state_vector to have 'in_boundary_collision' set to False after moving into free space"
         assert no_blocker_collision_state == 'not_colliding', "Expected collision state to be 'not_colliding' after moving into free space" # type: ignore
 
-        assert final_location == TileCoordinate.from_tuple((1,0), parent_map_size=store.map.grid.size), "Expected final location to be (1,0) after move"
+        assert final_location == TileCoordinate.from_tuple((1,0), parent_map_size=store.atlas.active.grid.size), "Expected final location to be (1,0) after move"
         assert entity.destination == None, "Expected destination to be None after move"
         assert final_hp == initial_hp, "Expected hp to remain unchanged after action_locked move attempt"
 
@@ -558,11 +559,11 @@ def test_entity_targeting_entity():
     try:
         # Arrange
         store = GameStore()
-        store.map = DefaultTileMap()
-        tile_layout = store.map.get_tile_layout('floor')
+        store.atlas = Atlas(store=store)
+        tile_layout = store.atlas.active.get_tile_layout('floor')
         if tile_layout is not None:
             tile_layout[0:10,0:10] = True
-        store.map.set_tiles(tile_layout, graphic_name='floor')
+        store.atlas.active.set_tiles(tile_layout, graphic_name='floor')
         store.portfolio = DummyPortfolio() # type: ignore
 
         targeter = TargetingEntity(store=store, name='targeting_entity')
@@ -666,11 +667,11 @@ def test_entity_combat_entity():
     try:
         # Arrange
         store = GameStore()
-        store.map = DefaultTileMap()
-        tile_layout = store.map.get_tile_layout('floor')
+        store.atlas = Atlas(store=store)
+        tile_layout = store.atlas.active.get_tile_layout('floor')
         if tile_layout is not None:
             tile_layout[0:10,0:10] = True
-        store.map.set_tiles(tile_layout, graphic_name='floor')
+        store.atlas.active.set_tiles(tile_layout, graphic_name='floor')
         store.portfolio = DummyPortfolio() # type: ignore
 
         combatant = CombatEntity(store=store, name='combatant_entity')
@@ -917,7 +918,7 @@ def test_entity_ai_character():
     try:
         # Arrange
         character = AICharacter(name='character_entity', symbol='@', color=(255, 255, 255))
-        character.ai = BaseGameTransformer()  
+        character.ai = LoopHandler()
         
         # Act
         initial_ai = character.ai
@@ -941,7 +942,7 @@ def test_entity_ai_character():
         assert isinstance(character, GameEntity), "Expected character to duck type to GameEntity"
         assert isinstance(character, EntityParentState), "Expected character to duck type to EntityParentState"
 
-        assert isinstance(initial_ai, BaseGameTransformer), "Expected initial AI to be BaseLoopHandler()"
+        assert isinstance(initial_ai, LoopHandler), "Expected initial AI to be BaseLoopHandler()"
         assert after_death_ai == None, "Expected AI to be None after death"
         assert final_hp == None, "Expected hp to be the death value of None after action_locked state"
 

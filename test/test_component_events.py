@@ -3,17 +3,17 @@ from sys import path
 
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from core_components.maps.atlas import Atlas
-from core_components.entities.portfolio import Portfolio
-from core_components.maps.tiles.base import TileCoordinate
-from core_components.entities.base import BaseGameEntity
-from core_components.entities.library import AICharacter, Character, PlayerCharacter
+from store_components.atlas import Atlas
+from store_components import Portfolio
+from atlas_components.tiles.base import TileCoordinate
+from entities.base import BaseGameEntity
+from entities.library import AICharacter, Character, PlayerCharacter
 from protocols import StatefulObject, StoredStateObject
-from core_components.loops.custom_types import GameLoopObject, StateActionObject, StateHandler, EventTransformer
-from core_components.loops.base import BaseGameEvent, BaseGameHandler
-from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
-from core_components.loops.library import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, KeyDownAction
-from core_components.store import GameStore
+from protocols import GameLoopObject, StateActionObject, StateHandler, EventTransformer
+from ai_components.base import BaseGameEvent
+from engine_components.ai import LoopHandler
+from ai_components.library import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, KeyDownAction
+from engine_components.store import GameStore
 from tcod.event import Event
 import tcod
 
@@ -21,7 +21,7 @@ def test_component_base_game_event():
     try:
         # Arrange
         store = GameStore()
-        handler = BaseGameHandler()
+        handler = LoopHandler()
         event = BaseGameEvent(store=store, handler=handler)
 
         # Act
@@ -47,12 +47,10 @@ def test_component_system_event():
     try:
         # Arrange        
         store = GameStore()
-        handler = GameLoopHandler()
+        behaviors = set((('systemevent', NoAction()),))
+        handler = LoopHandler(behaviors=behaviors)
         event = SystemEvent(store=store, handler=handler)
         handler.start()  # type: ignore
-
-        if handler.behaviors:
-            handler.behaviors.add(('systemevent', NoAction()))
         
         # Act
         initial_event_queue_size = handler.events.qsize()
@@ -85,13 +83,11 @@ def test_component_input_event():
     try:
         # Arrange        
         store = GameStore()
-        handler = GameLoopHandler()
+        behaviors = set((('inputevent', KeyDownAction()),))
+        handler = LoopHandler(behaviors=behaviors)
         event = InputEvent(store=store, handler=handler)
 
         handler.start()  # type: ignore
-
-        if handler.behaviors:
-            handler.behaviors.add(('inputevent', NoAction()))
 
         # Act
         with pytest.raises(TypeError):
@@ -130,13 +126,11 @@ def test_component_entity_event():
     try:
         # Arrange        
         store = GameStore()
-        handler = GameLoopHandler()
+        behaviors = set((('entityevent', NoAction()),))
+        handler = LoopHandler(behaviors=behaviors)
         event = EntityEvent(store=store, handler=handler)
         
         handler.start()  # type: ignore
-
-        if handler.behaviors:
-            handler.behaviors.add(('entityevent', NoAction()))
 
         # Act
         with pytest.raises(TypeError):
@@ -175,12 +169,10 @@ def test_component_player_character_event():
     try:
         # Arrange        
         store = GameStore()
-        handler = GameLoopHandler()
+        behaviors = set((('playercharacterevent', NoAction()),))
+        handler = LoopHandler(behaviors=behaviors)
         event = PlayerCharacterEvent(store=store, handler=handler)
         handler.start()  # type: ignore
-
-        if handler.behaviors:
-            handler.behaviors.add(('playercharacterevent', NoAction()))
 
         # Act
         with pytest.raises(TypeError):
@@ -225,11 +217,10 @@ def test_component_ai_character_event():
     try:
         # Arrange        
         store = GameStore()
-        handler = MobLoopHandler()
+        behaviors = set((('aicharacterevent', NoAction()),))
+        handler = LoopHandler(behaviors=behaviors)
         event = AICharacterEvent(store=store, handler=handler)
         handler.start()  # type: ignore
-        if handler.behaviors:
-            handler.behaviors.add(('aicharacterevent', NoAction()))
 
         # Act
         with pytest.raises(TypeError):

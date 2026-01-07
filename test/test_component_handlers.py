@@ -3,10 +3,9 @@ from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
 from protocols import StatefulObject, StoredStateObject
-from core_components.loops.custom_types import GameLoopObject, StateHandler, EventTransformer
-from core_components.loops.base import BaseGameHandler
-from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
-from core_components.store import GameStore
+from protocols import GameLoopObject, StateHandler, EventTransformer
+from engine_components.ai import LoopHandler
+from engine_components.store import GameStore
 
 
 def test_component_base_handler():
@@ -14,12 +13,12 @@ def test_component_base_handler():
         # Arrange
         store = GameStore()
         behaviors = set()
-        handler = BaseGameHandler(store=store, behaviors=behaviors)
+        handler = LoopHandler(store=store, behaviors=behaviors)
 
         # Act
 
         # Assert
-        assert isinstance(handler, BaseGameHandler), "Expected handler to be instance of BaseGameHandler"
+        assert isinstance(handler, LoopHandler), "Expected handler to be instance of LoopHandler"
         assert isinstance(handler, StateHandler), "Expected handler to duck type as StateActionObject Protocol"
         assert isinstance(handler, EventTransformer), "Expected handler to duck type as EventTransformer Protocol"
         assert isinstance(handler, GameLoopObject), "Expected handler to duck type as GameLoopObject Protocol"
@@ -40,12 +39,12 @@ def test_component_game_loop_handler():
     try:
         # Arrange
         store = GameStore()
-        handler = GameLoopHandler(store=store)
+        handler = LoopHandler(store=store)
 
         # Act
 
         # Assert
-        assert isinstance(handler, BaseGameHandler), "Expected handler to be instance of BaseGameHandler"
+        assert isinstance(handler, LoopHandler), "Expected handler to be instance of LoopHandler"
         assert isinstance(handler, StateHandler), "Expected handler to duck type as StateActionObject Protocol"
         assert isinstance(handler, EventTransformer), "Expected handler to duck type as EventTransformer Protocol"
         assert isinstance(handler, GameLoopObject), "Expected handler to duck type as GameLoopObject Protocol"
@@ -67,12 +66,12 @@ def test_component_mob_loop_handler():
     try:
         # Arrange
         store = GameStore()
-        handler = MobLoopHandler(store=store)
+        handler = LoopHandler(store=store)
 
         # Act
 
         # Assert
-        assert isinstance(handler, BaseGameHandler), "Expected handler to be instance of BaseGameHandler"
+        assert isinstance(handler, LoopHandler), "Expected handler to be instance of LoopHandler"
         assert isinstance(handler, StateHandler), "Expected handler to duck type as StateActionObject Protocol"
         assert isinstance(handler, EventTransformer), "Expected handler to duck type as EventTransformer Protocol"
         assert isinstance(handler, GameLoopObject), "Expected handler to duck type as GameLoopObject Protocol"
@@ -96,10 +95,10 @@ def test_component_mob_loop_handler():
 
 # path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-# from core_components.loops.base import BaseGameTransformer, EntityStateTableDict, manifest_example
-# from core_components.entities.library import AICharacter
+# from ai_components.base import BaseGameTransformer, EntityStateTableDict, manifest_example
+# from entities.library import AICharacter
 # from core_components.events import AIEvent, EntityEvent
-# from core_components.store import GameStore
+# from engine_components.store import GameStore
 
 # def test_component_base_ai_empty_init():
 #     # Arrange & Act

@@ -2,7 +2,7 @@ import pytest
 
 from ai import GameAI
 from components.events import GameOver
-from engine_components.store import GameStore
+from store import GameStore
 
 def test_game_over_event_handling():
     state = GameStore()

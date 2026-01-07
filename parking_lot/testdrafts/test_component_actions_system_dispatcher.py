@@ -2,7 +2,7 @@ import pytest
 import tcod.event
 
 from core_components.dispatchers.library import SystemDispatcher
-from engine_components.store import GameStore
+from store import GameStore
 
 
 def test_dispatcher_ev_gamestart():

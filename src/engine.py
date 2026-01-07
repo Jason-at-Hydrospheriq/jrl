@@ -4,9 +4,9 @@
 from __future__ import annotations
 from transitions import Machine
 
-from core_components.store import GameStore
-from core_components.display import Display
-from core_components.loop import GameLoop
+from engine_components import GameStore
+from engine_components import GameDisplay
+from engine_components  import GameAI
 from protocols import StoredStateObject
 
 class GameEngine:
@@ -17,12 +17,12 @@ class GameEngine:
     Duck Types: StatefulObject, StoredStateObject
     """
     machine: Machine
-    loop: GameLoop | None
+    ai: GameAI | None
     store: GameStore | None
-    display: Display | None
+    display: GameDisplay | None
 
-    def __init__(self, loop: GameLoop | None = None, display: Display | None = None, store: GameStore | None = None) -> None:
-        self.loop = loop
+    def __init__(self, ai: GameAI | None = None, display: GameDisplay | None = None, store: GameStore | None = None) -> None:
+        self.ai = ai
         self.display = display
         self.store = store
 
@@ -48,9 +48,9 @@ class GameEngine:
         if not self.store:
             self.store = GameStore()
         if not self.display:
-            self.display = Display()
-        if not self.loop:
-            self.loop = GameLoop()
+            self.display = GameDisplay()
+        if not self.ai:
+            self.ai = GameAI()
 
         # Propagate the store to all StoredStateObjects
         stores = self._get_all_stores(self)
@@ -70,8 +70,8 @@ class GameEngine:
         if self.display and self.display.state != 'started': # type: ignore
             self.display.start() # type: ignore
 
-        if self.loop and self.loop.state != 'started':  # type: ignore
-            self.loop.start() # type: ignore
+        if self.ai and self.ai.state != 'started':  # type: ignore
+            self.ai.start() # type: ignore
 
         print(f"Game is {self.state}.") # type: ignore
     
@@ -80,8 +80,8 @@ class GameEngine:
         print("Starting the game.")
         if self.store and self.store.state != 'started': # type: ignore
             self.store.start() # type: ignore
-        if self.loop and self.loop.state != 'started':  # type: ignore
-            self.loop.start() # type: ignore
+        if self.ai and self.ai.state != 'started':  # type: ignore
+            self.ai.start() # type: ignore
         self.store.portfolio.player.update_fov()  # type: ignore
 
     def _pause(self) -> None:
@@ -89,16 +89,16 @@ class GameEngine:
         print("Pausing the game.")
         if self.store and self.store.state != 'stopped': # type: ignore
             self.store.stop() # type: ignore
-        if self.loop and self.loop.state != 'paused':  # type: ignore
-            self.loop.pause() # type: ignore
+        if self.ai and self.ai.state != 'paused':  # type: ignore
+            self.ai.pause() # type: ignore
 
     def _shutdown(self) -> None:
         """Cleans up resources and stops the game loop."""
         print("Shutting down the game.")
         if self.store and self.store.state != 'stopped': # type: ignore
             self.store.stop() # type: ignore
-        if self.loop and self.loop.state != 'stopped':  # type: ignore
-            self.loop.stop() # type: ignore
+        if self.ai and self.ai.state != 'stopped':  # type: ignore
+            self.ai.stop() # type: ignore
         if self.display and self.display.state != 'stopped':  # type: ignore
             self.display.stop() # type: ignore
 

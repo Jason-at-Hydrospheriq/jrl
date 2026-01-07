@@ -2,10 +2,10 @@ import pytest
 from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from core_components.maps.atlas import Atlas
-from core_components.entities.portfolio import Portfolio
-from core_components.store import GameStore
-from core_components.maps.tiles.base import TileCoordinate
+from store_components.atlas import Atlas
+from store_components import Portfolio
+from engine_components.store import GameStore
+from atlas_components.tiles.base import TileCoordinate
 
 def test_component_portfolio_initialization():
     try:
