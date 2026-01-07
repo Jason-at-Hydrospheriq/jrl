@@ -19,7 +19,7 @@ def main() -> None:
         if game.display:
             game.display.render()
 
-        # Update State Inputs
+        # Update Inputs
         for event in tcod.event.wait():
             time.sleep(GLOBAL_LOOP_COOLDOWN_TIME / 1000)  # Small delay to prevent high CPU usage
             if event.type in ( "QUIT", "KEYDOWN" ):
@@ -29,7 +29,7 @@ def main() -> None:
                 
                     case "KEYDOWN":
                         key_sim = event.sym
-                        if game.loop and game.loop.handler:
+                        if game.loop and game.loop.game_loop_handler:
                             match key_sim:
                                 case tcod.event.KeySym.ESCAPE:
                                     game.reset()  # type: ignore
@@ -52,11 +52,11 @@ def main() -> None:
                                         print(msg)
                                 case _:
                                     if game.state not in ('idle', 'paused', 'shutdown'):  # type: ignore
-                                        if game.loop.handler.events.qsize() < 10 and game.loop.handler.actions.qsize() < 10:
-                                            game_event = InputEvent(store=game.store, handler=game.loop.handler, input_event=event)
-                                            game.loop.handler.handle(game_event)
+                                        if game.loop.game_loop_handler.events.qsize() < 10 and game.loop.game_loop_handler.actions.qsize() < 10:
+                                            game_event = InputEvent(store=game.store, handler=game.loop.game_loop_handler, input_event=event)
+                                            game.loop.game_loop_handler.handle(game_event)
                                         else:
-                                            game.store.log.add(f"Events={game.loop.handler.events.qsize()}, Actions={game.loop.handler.actions.qsize()}")  # type: ignore
+                                            game.store.log.add(f"Events={game.loop.game_loop_handler.events.qsize()}, Actions={game.loop.game_loop_handler.actions.qsize()}")  # type: ignore
 
         if game.state == 'shutdown':  # type: ignore
             break

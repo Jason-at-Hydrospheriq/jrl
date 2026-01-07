@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, List
 import time
 import queue
 
-from core_components.loops.handlers import GameLoopHandler
+from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
 from core_components.loops.base import BaseGameEvent, BaseGameAction
 
 if TYPE_CHECKING:
@@ -25,13 +25,15 @@ class GameLoop:
     """
     store: GameStore | None
     machine: Machine
-    handler: GameLoopHandler | None
+    game_loop_handler: GameLoopHandler | None
+    mob_loop_handler: MobLoopHandler | None
     threads: List[threading.Thread | None]
     stop_signal: threading.Event
 
     def __init__(self, store: GameStore | None = None) -> None:
         self.store = store
-        self.handler = GameLoopHandler(store=store)
+        self.game_loop_handler = GameLoopHandler(store=store)
+        self.mob_loop_handler = MobLoopHandler(store=store)
         self.threads = []
         self.stop_signal = threading.Event()
         #threading.excepthook = self.threaded_exception_handler
@@ -50,37 +52,43 @@ class GameLoop:
         self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
 
     def _start(self) -> None:
-        """Starts the game loop threads."""
+        """Starts the loop threads."""
         try:
-            self.handler.start() # type: ignore | State machine attribute created dynamically
+            self.game_loop_handler.start() # type: ignore | State machine attribute created dynamically
+            self.mob_loop_handler.start()  # type: ignore | State machine attribute created dynamically
             self.stop_signal.clear()
 
             if not self.threads:
-                self.threads.append(threading.Thread(target=self.event_loop))
-                self.threads.append(threading.Thread(target=self.action_loop))
+                self.threads.append(threading.Thread(target=self.game_event_loop))
+                self.threads.append(threading.Thread(target=self.game_action_loop))
+                self.threads.append(threading.Thread(target=self.mob_event_loop))
+                self.threads.append(threading.Thread(target=self.mob_action_loop))
                 for thread in self.threads:
                     if thread is not None:
                         thread.start()
+            print("Game loops started.")
 
         except Exception as e:
-            print(f"Error starting game loop: {e}")
+            print(f"Error starting loops: {e}")
 
     def _pause(self) -> None:
-        self.handler.stop()  # type: ignore | State machine attribute created dynamically
+        self.game_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
+        self.mob_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
 
     def _stop(self) -> None:
-        """Stops the game loop threads."""
+        """Stops the loop threads."""
         try:
             self.stop_signal.set()
             for thread in self.threads:
                 if thread is not None:
                     thread.join()
-            self.handler.stop() # type: ignore | State machine attribute created dynamically
+            self.game_loop_handler.stop() # type: ignore | State machine attribute created dynamically
+            self.mob_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
 
         except Exception as e:
-            print(f"Error stopping game loop: {e}")
+            print(f"Error stopping loops: {e}")
     
-    def action_loop(self) -> None:
+    def game_action_loop(self) -> None:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
@@ -90,8 +98,8 @@ class GameLoop:
                     time.sleep(0.1)
                     continue
                 next_action = None
-                if self.handler and self.handler.actions is not None:
-                    next_action = self.handler.actions.get_nowait()
+                if self.game_loop_handler and self.game_loop_handler.actions is not None:
+                    next_action = self.game_loop_handler.actions.get_nowait()
                 if next_action is not None and isinstance(next_action, BaseGameAction):
                     next_action.perform()
                 
@@ -102,7 +110,29 @@ class GameLoop:
                 print(f"Error processing action: {e}")
                 break
     
-    def event_loop(self) -> None:
+    def mob_action_loop(self) -> None:
+        """
+        Update the state of the game by processing events and updating the roster, map, and UI.
+        """
+        while not self.stop_signal.is_set():  # type: ignore
+            try:
+                if self.state != 'started':  # type: ignore
+                    time.sleep(0.1)
+                    continue
+                next_action = None
+                if self.mob_loop_handler and self.mob_loop_handler.actions is not None:
+                    next_action = self.mob_loop_handler.actions.get_nowait()
+                if next_action is not None and isinstance(next_action, BaseGameAction):
+                    next_action.perform()
+                
+            except queue.Empty:
+                time.sleep(0.05)
+
+            except BaseException as e:
+                print(f"Error processing action: {e}")
+                break
+
+    def game_event_loop(self) -> None:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
@@ -112,8 +142,30 @@ class GameLoop:
                     time.sleep(0.1)
                     continue
                 next_event = None
-                if self.handler and self.handler.events is not None:
-                    next_event = self.handler.events.get_nowait()
+                if self.game_loop_handler and self.game_loop_handler.events is not None:
+                    next_event = self.game_loop_handler.events.get_nowait()
+                if next_event is not None and isinstance(next_event, BaseGameEvent):
+                    next_event.trigger()
+                
+            except queue.Empty:
+                time.sleep(0.05)
+
+            except BaseException as e:
+                print(f"Error processing event: {e}")
+                break
+
+    def mob_event_loop(self) -> None:
+        """
+        Update the state of the game by processing events and updating the roster, map, and UI.
+        """
+        while not self.stop_signal.is_set():  # type: ignore
+            try:
+                if self.state != 'started':  # type: ignore
+                    time.sleep(0.1)
+                    continue
+                next_event = None
+                if self.mob_loop_handler and self.mob_loop_handler.events is not None:
+                    next_event = self.mob_loop_handler.events.get_nowait()
                 if next_event is not None and isinstance(next_event, BaseGameEvent):
                     next_event.trigger()
                 

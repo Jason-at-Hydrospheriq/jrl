@@ -104,10 +104,9 @@ class GameEngine:
     def _reset(self) -> None:
         """Resets the game state to its initial configuration."""
         print("Resetting the game.")
-        self.store.initialize()  # type: ignore | State machine attribute created dynamically
         if self.store.log: # type: ignore 
             self.store.log.messages.clear()  # type: ignore 
-
+        self.store.initialize()  # type: ignore | State machine attribute created dynamically
         self.play() # type: ignore | State machine attribute created dynamically
     
     def _get_store_components(self, obj: object) -> list[StoredStateObject]:
