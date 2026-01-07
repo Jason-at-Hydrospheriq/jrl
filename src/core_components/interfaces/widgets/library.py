@@ -7,13 +7,13 @@ from tcod.console import Console
 from tcod.context import Context
 import numpy as np
 
-from core_components.widgets.interfaces import BaseUIWidget
-from core_components.widgets.graphics import colors
+from core_components.interfaces.widgets import BaseUIWidget
+from core_components.interfaces.graphics import colors
 
 if TYPE_CHECKING:
     from core_components.store import GameStore
 
-from core_components.widgets.graphics.tile_types import SHROUD
+from core_components.interfaces.graphics.tile_types import SHROUD
 
 
 class HealthBarWidget(BaseUIWidget):

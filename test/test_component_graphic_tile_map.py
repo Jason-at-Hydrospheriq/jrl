@@ -4,7 +4,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 import itertools
 
-from core_components.widgets.graphics.tile_types import ascii_graphic
+from core_components.interfaces.graphics.tile_types import ascii_graphic
 from core_components.maps.tilemaps.library import DefaultTileMap, DEFAULT_MANIFEST
 from core_components.maps.tiles.base import BaseTileGrid, TileCoordinate, TileTuple
 

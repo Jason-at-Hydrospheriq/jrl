@@ -10,8 +10,8 @@ from transitions import Machine
 import os
 import numpy as np
 
-from core_components.widgets.interfaces import *
-from core_components.widgets.interfaces import HealthBarWidget, MainMapDisplay, MessageLogWidget, MessageLog
+from core_components.interfaces.widgets.base import BaseUI, UIManifestDict
+from core_components.interfaces.widgets.library import HealthBarWidget, MainMapDisplay, MessageLogWidget, MessageLog
 from core_components.maps.tilemaps import DEFAULT_MANIFEST
 
 if TYPE_CHECKING:

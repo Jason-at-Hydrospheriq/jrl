@@ -6,7 +6,7 @@ from transitions import Machine
 
 from core_components import Portfolio
 from core_components import Atlas
-from core_components.widgets.interfaces.library import MessageLog
+from core_components.interfaces.widgets.library import MessageLog
 
 class GameStore:
     """

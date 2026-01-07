@@ -65,6 +65,7 @@ class GameEngine:
         if self.store and self.store.state != 'initialized': # type: ignore
             self.store._initialize() # type: ignore
             self.store.start() # type: ignore
+            #TODO connect mobloops to portfolio here
             
         if self.display and self.display.state != 'started': # type: ignore
             self.display.start() # type: ignore

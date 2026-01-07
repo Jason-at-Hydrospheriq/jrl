@@ -237,12 +237,16 @@ class EntityWaitAction(WaitAction, BaseActionOnEntity):
 
 
 class AIAcquireTargetEvent(EntityEvent):
+    """
+    The AIAcquireTargetEvent is the event portion of the AcquireTarget behavior for a TargetingEntity controlled by the GameAI. It is created by the Game AI or directly by an AICharacter.
+    Duck Types: StateActionObject, StoredStateObject
+    """
     pass
 
 
 class AIAcquireTargetAction(BaseActionOnEntity):
     """
-    The EntityAcquireTargetAction is the action of the AcquireTarget behavior. It is called by an AIAcquireTargetEvent created by an AICharacter.
+    The AIAcquireTargetAction is the action portion of the AcquireTarget behavior for a TargetingEntity controlled by the GameAI. It is performed by an AICharacter.
     
     Duck Types: StateActionObject, StoredStateObject
     """

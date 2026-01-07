@@ -1,1 +1,0 @@
-from core_components.widgets.graphics.tile_types import ascii_graphic
