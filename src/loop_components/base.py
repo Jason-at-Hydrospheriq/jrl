@@ -6,9 +6,22 @@ from entities.base import BaseGameEntity
 from game_types import StateHandler
 from atlas_components.tiles.base import TileCoordinate
 from game_types import *
-from typing import TYPE_CHECKING
 
 
+GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds
+
+
+class BaseGameEvent:
+    store: StatefulObject | None
+    handler: StateHandler | None
+    
+    def __init__(self, store: StatefulObject | None = None, handler: StateHandler | None = None) -> None:
+        self.store = store
+        self.handler = handler
+        
+    def trigger(self) -> None:
+        raise NotImplementedError("Subclasses must implement the trigger method.")
+        
 
 class BaseGameAction:
     store: StatefulObject | None
@@ -62,19 +75,3 @@ class BaseActionOnDestination(BaseGameAction):
 
     def perform(self) -> None:
         raise NotImplementedError("Subclasses must implement the perform method.")
-
-
-class BaseGameEvent:
-    store: StatefulObject | None
-    handler: StateHandler | None
-    
-    def __init__(self, store: StatefulObject | None = None, handler: StateHandler | None = None) -> None:
-        self.store = store
-        self.handler = handler
-        
-    def trigger(self) -> None:
-        raise NotImplementedError("Subclasses must implement the trigger method.")
-        
-
-
-

@@ -10,8 +10,7 @@ from typing import TYPE_CHECKING, List, AbstractSet, Tuple, TypeVar
 import time
 import queue
 
-
-from ai_components.library import game_behaviors, mob_behaviors
+from loop_components import *
 from game_types import StatefulObject, StateActionObject,  GameAction, GameEvent
 
 if TYPE_CHECKING:
@@ -19,6 +18,18 @@ if TYPE_CHECKING:
 
 GLOBAL_LOOP_COOLDOWN_TIME = 25  # Global cooldown time in milliseconds
 
+game_behaviors = {
+    ('nonevent', NoAction()),
+    ('waitevent', WaitAction()),
+    ('entitywaitevent', EntityWaitAction()),
+    ('inputevent', KeyDownAction()),
+}
+
+mob_behaviors = {
+    ('nonevent', NoAction()),
+    ('waitevent', WaitAction()),
+    ('entitywaitevent', EntityWaitAction()),
+}
 
 class BaseGameLoop:
     store: StatefulObject | None

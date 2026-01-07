@@ -10,9 +10,9 @@ from entities.base import BaseGameEntity
 from entities.library import AICharacter, Character, PlayerCharacter
 from game_types import StatefulObject, StoredStateObject
 from game_types import GameLoopObject, StateActionObject, StateHandler, EventTransformer
-from ai_components.base import BaseGameEvent
+from loop_components import BaseGameEvent
 from engine_components.ai import LoopHandler
-from ai_components.library import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, KeyDownAction
+from loop_components import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, KeyDownAction
 from engine_components.store import GameStore
 from tcod.event import Event
 import tcod

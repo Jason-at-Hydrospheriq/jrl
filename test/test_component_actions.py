@@ -13,8 +13,8 @@ from engine_components.store import GameStore
 from entities.base import BaseGameEntity
 from engine_components.ai import LoopHandler
 from game_types import StateActionObject
-from ai_components.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
-from ai_components.library import NoAction, WaitAction, EntityWaitAction, AIAcquireTargetAction, EntityMoveAction, BaseGameEvent, KeyDownAction
+from loop_components.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination, BaseGameEvent
+from loop_components import NoAction, WaitAction, AIAcquireTargetAction, KeyDownAction, EntityWaitAction, EntityMoveAction
 from atlas_components.tiles.base import TileCoordinate
 from entities.library import AICharacter, PlayerCharacter
 

@@ -4,7 +4,7 @@
 from __future__ import annotations
 import tcod
 from engine import GameEngine
-from ai_components.library import InputEvent
+from loop_components import InputEvent
 import time
 
 GLOBAL_COOLDOWN_TIME = 0.005  # in milliseconds
