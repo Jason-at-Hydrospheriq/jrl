@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 from transitions import Machine
-from protocols import StatefulObject
+from game_types import StatefulObject
 from typing import Dict, Tuple, TYPE_CHECKING
 import numpy as np
 

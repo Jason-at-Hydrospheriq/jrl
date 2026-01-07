@@ -8,11 +8,11 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
 from store_components.portfolio import Portfolio
 from store_components.atlas import Atlas
-from protocols import StoredStateObject
+from game_types import StoredStateObject
 from engine_components.store import GameStore
 from entities.base import BaseGameEntity
 from engine_components.ai import LoopHandler
-from protocols import StateActionObject
+from game_types import StateActionObject
 from ai_components.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
 from ai_components.library import NoAction, WaitAction, EntityWaitAction, AIAcquireTargetAction, EntityMoveAction, BaseGameEvent, KeyDownAction
 from atlas_components.tiles.base import TileCoordinate

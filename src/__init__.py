@@ -19,6 +19,6 @@ __maintainer__ = "Jason Nichols"
 __email__ = "guumbarahma@gmail.com"
 __status__ = "Prototype"
 
-from protocols import *
+from game_types import *
 
 #  import actions, components, dungeon_factory, entities, engine, event_handlers, game_map, main, mob_factory, tile_types

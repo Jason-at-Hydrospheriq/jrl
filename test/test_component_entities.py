@@ -5,7 +5,7 @@ from transitions import Machine
 
 from entities.base  import BaseGameSubState, BaseGameEntity, BaseParentState
 from entities.library import CharacterHealthSubState, CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character, AICharacter, PlayerCharacter
-from protocols import GameEntity, EntityParentState
+from game_types import GameEntity, EntityParentState
 from atlas_components.tiles.base import TileCoordinate
 from atlas_components.tilemaps.library import DefaultTileMap
 from store_components import Atlas

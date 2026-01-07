@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 from entities.base import BaseGameEntity
-from protocols import StateHandler
+from game_types import StateHandler
 from atlas_components.tiles.base import TileCoordinate
-from protocols import *
+from game_types import *
 from typing import TYPE_CHECKING
 
 

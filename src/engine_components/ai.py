@@ -12,7 +12,7 @@ import queue
 
 
 from ai_components.library import game_behaviors, mob_behaviors
-from protocols import StatefulObject, StateActionObject,  GameAction, GameEvent
+from game_types import StatefulObject, StateActionObject,  GameAction, GameEvent
 
 if TYPE_CHECKING:
     from store import GameStore

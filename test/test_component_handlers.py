@@ -2,8 +2,8 @@ import pytest
 from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from protocols import StatefulObject, StoredStateObject
-from protocols import GameLoopObject, StateHandler, EventTransformer
+from game_types import StatefulObject, StoredStateObject
+from game_types import GameLoopObject, StateHandler, EventTransformer
 from engine_components.ai import LoopHandler
 from engine_components.store import GameStore
 

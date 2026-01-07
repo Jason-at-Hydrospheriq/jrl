@@ -7,7 +7,7 @@ from transitions import Machine
 from engine_components import GameStore
 from engine_components import GameDisplay
 from engine_components  import GameAI
-from protocols import StoredStateObject
+from game_types import StoredStateObject
 
 class GameEngine:
     """

@@ -8,8 +8,8 @@ from store_components import Portfolio
 from atlas_components.tiles.base import TileCoordinate
 from entities.base import BaseGameEntity
 from entities.library import AICharacter, Character, PlayerCharacter
-from protocols import StatefulObject, StoredStateObject
-from protocols import GameLoopObject, StateActionObject, StateHandler, EventTransformer
+from game_types import StatefulObject, StoredStateObject
+from game_types import GameLoopObject, StateActionObject, StateHandler, EventTransformer
 from ai_components.base import BaseGameEvent
 from engine_components.ai import LoopHandler
 from ai_components.library import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, KeyDownAction

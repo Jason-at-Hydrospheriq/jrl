@@ -5,7 +5,7 @@ import tcod
 
 from entities.library import BaseGameEntity, Character, AICharacter, MobileEntity, TargetingEntity
 from ai_components.base import BaseActionOnDestination, BaseGameAction, BaseGameEvent, BaseActionOnEntity
-from protocols import StateActionObject, StateHandler
+from game_types import StateActionObject, StateHandler
 from atlas_components.tiles.base import TileCoordinate
 
 if TYPE_CHECKING:
