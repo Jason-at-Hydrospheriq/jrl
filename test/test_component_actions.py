@@ -390,6 +390,7 @@ def test_component_move_action():
         action.destination = move_destination
         thread = threading.Thread(target=action.perform)
         initial_lock = action.entity.action_locked  # type: ignore
+        action.entity.speed = -100  # Slow down for test
         start_time = time.time()
         thread.start()
         time.sleep(0.005)  # Ensure the thread has started
@@ -468,7 +469,7 @@ def test_component_keydown_action():
         assert isinstance(action, StateActionObject), "Expected event to duck type as StateActionObject Protocol"
         assert isinstance(action, StoredStateObject), "Expected event to be duck type as StoredStateObject Protocol"
 
-        assert final_action.destination == TileCoordinate.from_tuple((0, 1), parent_map_size=action.store.atlas.active.grid.size), "Expected action's destination to be the same (x - 1, y)"
+        assert final_action.destination == TileCoordinate.from_tuple((0, 1), parent_map_size=action.store.atlas.active.grid.size), "Expected action's destination to be the same (x - 1, y)"  # type: ignore
         assert final_event_queue_size == initial_event_queue_size, "Expected no event to be added to handler's event queue"
         assert final_action_queue_size == initial_action_queue_size + 1, "Expected an action to be added to handler's action queue"
 

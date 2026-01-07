@@ -24,42 +24,36 @@ class GameStore:
         self.portfolio = Portfolio(store=self)
         self.atlas = Atlas(store=self)
 
-        states = ['idle', 
+        states = [{'name': 'initialized', 'on_enter': '_initialize'},
                   {'name': 'started', 'on_enter': '_start'}, 
                   {'name': 'stopped', 'on_enter': '_stop'}]
         transitions =[
-            {'trigger': 'start', 'source': 'stopped', 'dest': 'started'},
+            {'trigger': 'initialize', 'source': ['started', 'stopped'], 'dest': 'initialized'},
+            {'trigger': 'start', 'source': ['initialized', 'stopped'], 'dest': 'started'},
             {'trigger': 'stop', 'source': 'started', 'dest': 'stopped'}
             ]
         self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
         
         self.log = MessageLog()
         
-    def _start(self):
+    def _initialize(self):
         """Starts the game loop and prepares the game state for play."""
+        if self.atlas and self.portfolio:
+            self._start()
 
-        if self.atlas is not None:
-            self.atlas.create_map()
-            self.map = self.atlas.active
+            map = None
+            if self.atlas is not None:
+                self.atlas.create_map()
+                map = self.atlas.active
 
-        if self.portfolio and self.map is not None:
-            self.portfolio.spawn_player(self.map)
-            self.portfolio.initialize_random_mobs(self.map, max_mobs_per_area=3)
-            self.player = self.portfolio.player
-            self.mobs = self.portfolio.live_ai_actors
+            if self.portfolio and map is not None:
+                self.portfolio.spawn_player(map)
+                self.portfolio.initialize_random_mobs(map, max_mobs_per_area=3)
 
-        self.log.add("Welcome to JRL - Jay's Roguelike!", fg=(255, 255, 0))
+            self.log.add("Welcome to JRL - Jay's Roguelike!", fg=(255, 255, 0))
 
-        print(f"Game Store is {self.state}.") # type: ignore
+    def _start(self):
+        pass
 
     def _stop(self):
-        """Handles any cleanup or finalization needed when the game stops."""
-        # if self.atlas is not None:
-        #     self.atlas.stop() # type: ignore
-        # if self.portfolio is not None:
-        #     self.portfolio.stop() # type: ignore
-        print(f"Game Store is {self.state}.") # type: ignore
-
-        # self.portfolio = None
-        # self.atlas = None
-        # self.loop.stop.set() # Confirm all threads terminate. 
+        pass

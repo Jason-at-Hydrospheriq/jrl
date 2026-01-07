@@ -4,7 +4,7 @@
 from __future__ import annotations
 from typing import List, Tuple, TYPE_CHECKING
 import numpy as np
-import tcod as libtcodpy
+from tcod import libtcodpy
 from tcod.map import compute_fov
 
 from core_components.entities.attributes import *

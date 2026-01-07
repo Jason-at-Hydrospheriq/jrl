@@ -42,9 +42,9 @@ class GameLoop:
                   {'name': 'stopped', 'on_enter': '_stop'}]
         transitions =[
             {'trigger': 'start', 'source': 'stopped', 'dest': 'started'},
+            {'trigger': 'stop', 'source': 'started', 'dest': 'stopped'},
             {'trigger': 'pause', 'source': 'started', 'dest': 'paused'},
             {'trigger': 'start', 'source': 'paused', 'dest': 'started'},
-            {'trigger': 'stop', 'source': 'started', 'dest': 'stopped'},
             {'trigger': 'stop', 'source': 'paused', 'dest': 'stopped'}
             ]
         self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
@@ -52,7 +52,8 @@ class GameLoop:
     def _start(self) -> None:
         """Starts the game loop threads."""
         try:
-            self.handler.start() # type: ignore
+            self.handler.start() # type: ignore | State machine attribute created dynamically
+            self.stop_signal.clear()
 
             if not self.threads:
                 self.threads.append(threading.Thread(target=self.event_loop))
@@ -60,13 +61,12 @@ class GameLoop:
                 for thread in self.threads:
                     if thread is not None:
                         thread.start()
+
         except Exception as e:
             print(f"Error starting game loop: {e}")
-            
-        print("Game loop has started.")
 
     def _pause(self) -> None:
-        self.handler.stop()  # type: ignore
+        self.handler.stop()  # type: ignore | State machine attribute created dynamically
 
     def _stop(self) -> None:
         """Stops the game loop threads."""
@@ -75,8 +75,7 @@ class GameLoop:
             for thread in self.threads:
                 if thread is not None:
                     thread.join()
-            self.handler.stop() # type: ignore
-            print("Game loop has stopped.")
+            self.handler.stop() # type: ignore | State machine attribute created dynamically
 
         except Exception as e:
             print(f"Error stopping game loop: {e}")
@@ -85,8 +84,11 @@ class GameLoop:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
-        while not self.stop_signal.is_set() and self.state == 'started':  # type: ignore
+        while not self.stop_signal.is_set():  # type: ignore
             try:
+                if self.state != 'started':  # type: ignore
+                    time.sleep(0.1)
+                    continue
                 next_action = None
                 if self.handler and self.handler.actions is not None:
                     next_action = self.handler.actions.get_nowait()
@@ -104,8 +106,11 @@ class GameLoop:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
-        while not self.stop_signal.is_set() and self.state == 'started':  # type: ignore
+        while not self.stop_signal.is_set():  # type: ignore
             try:
+                if self.state != 'started':  # type: ignore
+                    time.sleep(0.1)
+                    continue
                 next_event = None
                 if self.handler and self.handler.events is not None:
                     next_event = self.handler.events.get_nowait()

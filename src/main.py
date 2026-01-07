@@ -35,18 +35,28 @@ def main() -> None:
                                     game.reset()  # type: ignore
 
                                 case tcod.event.KeySym.P:
+                                    msg = "Game is now "
+
                                     if game.state == 'playing':  # type: ignore
                                         game.pause()  # type: ignore
+                                        msg = msg + f"{game.state}."  # type: ignore | State machine attribute created dynamically
                                     elif game.state == 'paused':  # type: ignore
                                         game.play()  # type: ignore
+                                        msg = msg + f"{game.state}."  # type: ignore | State machine attribute created dynamically
                                     elif game.state == 'idle':  # type: ignore
                                         game.play()  # type: ignore
-                        
-                            if game.loop.handler.events.qsize() < 10 and game.loop.handler.actions.qsize() < 10:
+                                        msg = msg + f"{game.state}."  # type: ignore | State machine attribute created dynamically
+                                    
+                                    if game.store and msg != "Game is now ":
+                                        game.store.log.add(msg)
+                                        print(msg)
+                                case _:
+                                    if game.state not in ('idle', 'paused', 'shutdown'):  # type: ignore
+                                        if game.loop.handler.events.qsize() < 10 and game.loop.handler.actions.qsize() < 10:
                                             game_event = InputEvent(store=game.store, handler=game.loop.handler, input_event=event)
                                             game.loop.handler.handle(game_event)
-                            else:
-                                game.store.log.add(f"Events={game.loop.handler.events.qsize()}, Actions={game.loop.handler.actions.qsize()}")  # type: ignore
+                                        else:
+                                            game.store.log.add(f"Events={game.loop.handler.events.qsize()}, Actions={game.loop.handler.actions.qsize()}")  # type: ignore
 
         if game.state == 'shutdown':  # type: ignore
             break

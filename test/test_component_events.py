@@ -12,7 +12,7 @@ from protocols import StatefulObject, StoredStateObject
 from core_components.loops.custom_types import GameLoopObject, StateActionObject, StateHandler, EventTransformer
 from core_components.loops.base import BaseGameEvent, BaseGameHandler
 from core_components.loops.handlers import GameLoopHandler, MobLoopHandler
-from core_components.loops.library import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, EntityMoveAction
+from core_components.loops.library import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, KeyDownAction
 from core_components.store import GameStore
 from tcod.event import Event
 import tcod
@@ -112,7 +112,7 @@ def test_component_input_event():
         assert isinstance(event, StoredStateObject), "Expected event to be duck type as StoredStateObject Protocol"
         assert isinstance(input_event, Event), "Expected input_event to be instance of tcod.event.Event"
 
-        assert isinstance(handler.actions.get_nowait(), NoAction), "Expected action in handler's action queue to be instance of NoAction"
+        assert isinstance(handler.actions.get_nowait(), KeyDownAction), "Expected action in handler's action queue to be instance of KeyDownAction"
         assert final_event_queue_size == initial_event_queue_size, "Expected no event to be added to handler's event queue"
         assert final_action_queue_size == initial_action_queue_size + 1, "Expected an action to be added to handler's action queue"
 

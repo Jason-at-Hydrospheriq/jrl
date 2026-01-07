@@ -62,7 +62,8 @@ class GameEngine:
             store.store = self.store
 
         # Start components
-        if self.store and self.store.state != 'started': # type: ignore
+        if self.store and self.store.state != 'initialized': # type: ignore
+            self.store._initialize() # type: ignore
             self.store.start() # type: ignore
             
         if self.display and self.display.state != 'started': # type: ignore
@@ -80,8 +81,7 @@ class GameEngine:
             self.store.start() # type: ignore
         if self.loop and self.loop.state != 'started':  # type: ignore
             self.loop.start() # type: ignore
-
-        print(f"Game is {self.state}.") # type: ignore
+        self.store.portfolio.player.update_fov()  # type: ignore
 
     def _pause(self) -> None:
         """Pauses the game loop, halting event processing and state updates."""
@@ -90,8 +90,6 @@ class GameEngine:
             self.store.stop() # type: ignore
         if self.loop and self.loop.state != 'paused':  # type: ignore
             self.loop.pause() # type: ignore
-
-        print(f"Game is {self.state}.") # type: ignore
 
     def _shutdown(self) -> None:
         """Cleans up resources and stops the game loop."""
@@ -103,15 +101,14 @@ class GameEngine:
         if self.display and self.display.state != 'stopped':  # type: ignore
             self.display.stop() # type: ignore
 
-        print(f"Game is {self.state}.") # type: ignore
-
     def _reset(self) -> None:
         """Resets the game state to its initial configuration."""
         print("Resetting the game.")
-        self._initialize()
-        self.play() # type: ignore
+        self.store.initialize()  # type: ignore | State machine attribute created dynamically
+        if self.store.log: # type: ignore 
+            self.store.log.messages.clear()  # type: ignore 
 
-        print(f"Game is {self.state}.") # type: ignore
+        self.play() # type: ignore | State machine attribute created dynamically
     
     def _get_store_components(self, obj: object) -> list[StoredStateObject]:
         try:
