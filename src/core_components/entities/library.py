@@ -345,7 +345,6 @@ class TargetingEntity(BaseGameEntity):
     
     @property
     def target_in_fov(self) -> bool:
-        
         if self.target and self.target.location is not None and isinstance(self.visible_tiles, np.ndarray):
             tx, ty = self.target.location.x, self.target.location.y
             if self.visible_tiles[tx, ty]:
@@ -553,17 +552,16 @@ class PlayerCharacter(Character):
         self.update()
 
     def update_fov(self) -> None:
-        tile_blocks_vision = None
-
         if self.store: # type: ignore | Assume store is GameStore
             if self.visible_tiles is not None:
                 self.store.atlas.active.set_state_bits('visible', self.visible_tiles)  # type: ignore | Assume store is GameStore
 
             # If a tile is "visible" it should be added to "explored".
-            prior_seen_tiles = self.store.atlas.active.get_tile_layout('seen')  # type: ignore | Assume store is GameStore
-            if isinstance(prior_seen_tiles, np.ndarray) and self.visible_tiles is not None:
-                newly_seen_tiles = np.logical_or(prior_seen_tiles, self.visible_tiles)
-                self.store.atlas.active.set_state_bits('seen', newly_seen_tiles)  # type: ignore | Assume store is GameStore
+            if self.store.atlas:  # type: ignore | Assume store is GameStore
+                seen_tiles = self.store.atlas.active.seen  # type: ignore | Assume store is GameStore
+                if isinstance(seen_tiles, np.ndarray) and self.visible_tiles is not None: # type: ignore | Assume store is GameStore
+                    newly_seen_tiles = np.logical_or(seen_tiles, self.visible_tiles)
+                    self.store.atlas.active.set_state_bits('seen', newly_seen_tiles)  # type: ignore | Assume store is GameStore
     
     def update(self) -> None:
         self.update_fov()

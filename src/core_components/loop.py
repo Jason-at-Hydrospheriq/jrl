@@ -14,6 +14,8 @@ from core_components.loops.base import BaseGameEvent, BaseGameAction
 if TYPE_CHECKING:
     from core_components.store import GameStore
 
+GLOBAL_LOOP_COOLDOWN_TIME = 25  # Global cooldown time in milliseconds
+
 class GameLoop:
     """
     The GameLoop manages the main game loop, processing events and actions in separate threads. It has a list of managed threads and provides an API for starting and stopping the loop. 

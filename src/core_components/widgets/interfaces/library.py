@@ -72,24 +72,24 @@ class MainMapDisplay(BaseUIWidget):
         """
         player = None
         game_map = None
-        actors = []
 
-        if store.map and store.portfolio is not None:
+        if store.atlas and store.portfolio is not None:
             player = store.portfolio.player
-            game_map = store.map    
-            actors = store.portfolio.live_actors
+            game_map = store.atlas.active  # type: ignore | Assume store is GameStore  
 
-            console.rgb[0 : self.width, 0 : self.height] = np.select(
+        if game_map:
+            tile_map = np.select(
                 condlist=[game_map.visible, game_map.seen],
                 choicelist=[game_map.tiles['graphic_type']['visible'], game_map.tiles['graphic_type']['explored']],
                 default=SHROUD,
             ) 
+            console.rgb[0 : self.width, 0 : self.height] = tile_map
 
-            if len(actors) > 0 and store.atlas:
-                visible = store.atlas.active.visible
-                for actor in store.portfolio.live_actors:
-                    if not actor.perception.is_targeted() and actor.location and visible[*actor.location.to_list]:  # type: ignore | State machine method is dynamically added
-                        console.print(actor.location.x, actor.location.y, actor.symbol, fg=actor.color)
+        if store.portfolio and store.atlas:
+            visible = store.atlas.active.visible
+            for actor in store.portfolio.live_actors:
+                if not actor.perception.is_targeted() and actor.location and visible[*actor.location.to_list]:  # type: ignore | State machine method is dynamically added
+                    console.print(actor.location.x, actor.location.y, actor.symbol, fg=actor.color)
             
             if player and player.location:
                 console.print(player.location.x, player.location.y, player.symbol, fg=player.color)
