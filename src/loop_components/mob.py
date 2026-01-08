@@ -67,7 +67,11 @@ class AICharacter(Character):
         if self.path:
             self.path.pop(0)  # Remove current location from path
             self.destination = self.path.pop(0) if self.path else None
-            self.update()
+        else:
+            self.set_path_to_target()
+            self.set_destination_from_path()
+
+        self.update()
 
     def die(self) -> None:
         super().die()
@@ -122,17 +126,8 @@ class MobCharacter(AICharacter):
                         match self.focus.state:  # type: ignore | State machine attribute created dynamically
                             case 'idle':
                                 self.ai.handle(AIAcquireTargetEvent(store=self.store, handler=self.ai, entity=self))
-                            case 'tracking':
-                                if self.distance_to_target > 1:
-                                    self.ai.handle(AIPursuitEvent(store=self.store, handler=self.ai, entity=self))
-                            case 'targeting':
-                                if self.distance_to_target > 1:
-                                    self.ai.handle(AIPursuitEvent(store=self.store, handler=self.ai, entity=self))
-                                if self.distance_to_target == 1:
-                                    self.store.log.add(f"The {self.name} kicks {self.target.name}!")  # type: ignore | Entity in this state must have a target.
                             case _:
                                 pass
-
 
 
 # BEHAVIORS
@@ -192,26 +187,27 @@ class AIAcquireTargetAction(BaseActionOnEntity):
     def perform(self) -> None:
 
         if isinstance(self.entity, AICharacter) and self.store is not None:
-            self.entity.acquire_target()
-            self.entity.update()
+            if not self.entity.action_locked:
+                self.entity.acquire_target()
+                self.entity.update()
 
-            if self.entity.target is not None:
-                match self.entity.focus.state:  # type: ignore | State machine attribute created dynamically
-                    case 'searching':
-                        text = f"The {self.entity.name}'s guard is up."
-                    case 'tracking':
-                        text = f"The {self.entity.name} has spotted {self.entity.target.name}"  # type: ignore | Entity in this state must have a target.
-                    case 'targeting':
-                        text = f"The {self.entity.name} is looking at {self.entity.target.name} with malice."  # type: ignore | Entity in this state must have a target.
-                    case 'idle':
-                        text = f"The {self.entity.name} looks bored."
-                    case _:
-                        text = f"The {self.entity.name} looks confused."
+                if self.entity.target is not None:
+                    match self.entity.focus.state:  # type: ignore | State machine attribute created dynamically
+                        case 'searching':
+                            text = f"The {self.entity.name}'s guard is up."
+                        case 'tracking':
+                            text = f"The {self.entity.name} has spotted {self.entity.target.name}"  # type: ignore | Entity in this state must have a target.
+                        case 'targeting':
+                            text = f"The {self.entity.name} is looking at {self.entity.target.name} with malice."  # type: ignore | Entity in this state must have a target.
+                        case 'idle':
+                            text = f"The {self.entity.name} looks bored."
+                        case _:
+                            text = f"The {self.entity.name} looks confused."
 
-                self.store.log.add(text=text)  # type: ignore | AICharacter must have a GameStore to log messages.
-        
-                if self.handler:
-                    self.handler.send(EntityWaitEvent(wait_time=GLOBAL_ACTION_COOLDOWN_TIME, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
+                    self.store.log.add(text=text)  # type: ignore | AICharacter must have a GameStore to log messages.
+            
+                    if self.handler:
+                        self.handler.send(EntityWaitEvent(wait_time=GLOBAL_ACTION_COOLDOWN_TIME, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
 
 acquire_target = ('aiacquiretargetevent', AIAcquireTargetAction())
 
@@ -238,21 +234,21 @@ class AIInvestigateAction(BaseActionOnEntity):
     def perform(self) -> None:
 
         if isinstance(self.entity, AICharacter) and self.store is not None:
-
-            if self.entity.focus.is_tracking():  # type: ignore | State machine attribute created dynamically
-                if self.entity.distance_to_target is not None and self.entity.distance_to_target > 1: # Do nothing if adjacent
-                    self.entity.set_path_to_target()
-                    self.entity.set_destination_from_path()
-
-                    while self.entity.collision.is_colliding():  # type: ignore | State machine attribute created dynamically
+            if not self.entity.action_locked:
+                if self.entity.focus.is_tracking():  # type: ignore | State machine attribute created dynamically
+                    if self.entity.distance_to_target is not None and self.entity.distance_to_target > 1: # Do nothing if adjacent
                         self.entity.set_path_to_target()
                         self.entity.set_destination_from_path()
 
-                    self.store.log.add(text=f"The {self.entity.name} is moving to investigate {self.entity.target.name}.")  # type: ignore | Entity in this state must have a target. | If collision detected, recalculate path
+                        # while self.entity.collision.is_colliding():  # type: ignore | State machine attribute created dynamically
+                        #     self.entity.set_path_to_target()
+                        #     self.entity.set_destination_from_path()
 
-                    if self.handler:
-                        self.handler.send(EntityWaitEvent(wait_time=GLOBAL_ACTION_COOLDOWN_TIME, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
-                        self.handler.send(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
+                        self.store.log.add(text=f"The {self.entity.name} is moving to investigate {self.entity.target.name}.")  # type: ignore | Entity in this state must have a target. | If collision detected, recalculate path
+
+                        if self.handler:
+                            self.handler.send(EntityWaitEvent(wait_time=GLOBAL_ACTION_COOLDOWN_TIME, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
+                            self.handler.send(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
 
 investigate = ('aiinvestigateevent', AIInvestigateAction())
 
@@ -279,22 +275,26 @@ class AIPursuitAction(BaseActionOnEntity):
     def perform(self) -> None:
 
         if isinstance(self.entity, AICharacter) and self.store is not None:
+            step_size = 0
+            if self.entity.location and self.entity.destination: # Calculate step size for movement
+                x_step = self.entity.location.x - self.entity.destination.x if self.entity.destination else 0
+                y_step = self.entity.location.y - self.entity.destination.y if self.entity.destination else 0
+                step_size = max(abs(x_step), abs(y_step))
+
+            if step_size <= 0 or step_size > 1: # Recalculate the path if step_size is invalid
+                self.entity.set_destination_from_path()
+            
+            if not self.entity.action_locked:
+               EntityMoveAction(store=self.store, handler=self.handler, entity=self.entity, destination=self.entity.destination).perform()  # type: ignore
+            
             if self.handler:
-                self.handler.send(EntityMoveAction(store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
+                if self.entity.focus.state == 'tracking' or self.entity.focus.state == 'targeting':  # type: ignore | State machine attribute created dynamically
+                    if self.entity.distance_to_target > 1:
+                        self.entity.set_destination_from_path() # If not adjacent to target, recalculate path, and continue pursuit
+                        self.handler.handle(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity))
+                        self.store.log.add(text=f"The {self.entity.name} is pursuing {self.entity.target.name}.")  # type: ignore | Entity in this state must have a target.
 
-            if self.entity.focus.is_tracking() and self.entity.path:  # type: ignore | State machine attribute created dynamically
-                self.entity.move()
-                if self.entity.distance_to_target is not None and self.entity.distance_to_target > 1: # Do nothing if adjacent
-                    self.entity.set_destination_from_path()
-
-                    while self.entity.collision.is_colliding():  # type: ignore | State machine attribute created dynamically | If collision detected, recalculate path
-                        self.entity.set_path_to_target()
-                        self.entity.set_destination_from_path()
-                    
-                    self.store.log.add(text=f"The {self.entity.name} is pursuing {self.entity.target.name}.")  # type: ignore | Entity in this state must have a target.
-
-                    if self.handler:
-                        self.handler.send(EntityWaitEvent(wait_time=GLOBAL_ACTION_COOLDOWN_TIME, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
-                        self.handler.send(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
+                if self.entity.focus.state == 'targeting' and self.entity.distance_to_target == 1: # # type: ignore | State machine attribute created dynamically | Dummy combat action for now
+                    self.store.log.add(f"The {self.entity.name} kicks {self.entity.target.name}!")  # type: ignore | Entity in this state must have a target.
 
 pursue = ('aipursuitevent', AIPursuitAction())
