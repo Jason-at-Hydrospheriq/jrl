@@ -1,7 +1,6 @@
 import pytest
 from sys import path
 
-from loop_components.player import PlayerCharacter
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from transitions import Machine 
 from unittest.mock import Mock, MagicMock, patch
@@ -13,7 +12,7 @@ from entities.library import CharacterHealthSubState, CollisionSubState, Targete
 from game_types import GameEntity, EntityParentState
 from atlas_components.tiles.base import TileCoordinate
 from store_components import Atlas
-from loop_components import AICharacter, investigate
+from loop_components import AICharacter, investigate, PlayerCharacter
 from engine_components.store import GameStore
 from engine_components.ai import LoopHandler
 
@@ -933,79 +932,240 @@ class TestUpdateVisibleTiles:
         assert mock_compute_fov.call_args[1]['algorithm'] == mock_libtcodpy.FOV_RESTRICTIVE
 
 class TestIsLocationInFov:
-    """Tests for TargetingEntity.is_location_in_fov method"""
     
-    def test_is_location_in_fov_returns_true_when_location_visible(self):
-        """Test that is_location_in_fov returns True when location is in visible tiles"""
+    def test_returns_false_when_visible_tiles_is_none(self):
         entity = TargetingEntity()
-        entity.visible_tiles = np.array([[False, True], [True, False]])
-        location = TileCoordinate.from_tuple((1, 0))
+        entity.visible_tiles = None
+        location = TileCoordinate.from_tuple((5, 5))
+        
+        assert entity.is_location_in_fov(location) is False
+    
+    def test_returns_false_when_visible_tiles_is_not_ndarray(self):
+        entity = TargetingEntity()
+        entity.visible_tiles = [[True, False], [False, True]]  # type: ignore
+        location = TileCoordinate.from_tuple((0, 0))
+        
+        assert entity.is_location_in_fov(location) is False
+    
+    def test_returns_false_when_location_is_none(self):
+        entity = TargetingEntity()
+        entity.visible_tiles = np.zeros((10, 10), dtype=bool)
+        
+        assert entity.is_location_in_fov(None) is False
+    
+    def test_returns_true_when_location_is_visible(self):
+        entity = TargetingEntity()
+        visible_tiles = np.zeros((10, 10), dtype=bool)
+        visible_tiles[5, 3] = True
+        entity.visible_tiles = visible_tiles
+        location = TileCoordinate.from_tuple((5, 3))
         
         with patch.object(entity, 'update_visible_tiles'):
             result = entity.is_location_in_fov(location)
         
         assert result is True
     
-    def test_is_location_in_fov_returns_false_when_location_not_visible(self):
-        """Test that is_location_in_fov returns False when location is not in visible tiles"""
+    def test_returns_false_when_location_is_not_visible(self):
         entity = TargetingEntity()
-        entity.visible_tiles = np.array([[False, True], [True, False]])
-        location = TileCoordinate.from_tuple((0, 0))
+        visible_tiles = np.zeros((10, 10), dtype=bool)
+        visible_tiles[5, 3] = False
+        entity.visible_tiles = visible_tiles
+        location = TileCoordinate.from_tuple((5, 3))
         
         with patch.object(entity, 'update_visible_tiles'):
             result = entity.is_location_in_fov(location)
         
         assert result is False
     
-    def test_is_location_in_fov_returns_false_when_location_is_none(self):
-        """Test that is_location_in_fov returns False when location is None"""
+    def test_calls_update_visible_tiles(self):
         entity = TargetingEntity()
-        entity.visible_tiles = np.array([[False, True], [True, False]])
-        
-        with patch.object(entity, 'update_visible_tiles'):
-            result = entity.is_location_in_fov(None)
-        
-        assert result is False
-    
-    def test_is_location_in_fov_returns_false_when_visible_tiles_is_none(self):
-        """Test that is_location_in_fov returns False when visible_tiles is None"""
-        entity = TargetingEntity()
-        entity.visible_tiles = None
-        location = TileCoordinate.from_tuple((1, 0))
-        
-        result = entity.is_location_in_fov(location)
-        
-        assert result is False
-    
-    def test_is_location_in_fov_returns_false_when_visible_tiles_not_ndarray(self):
-        """Test that is_location_in_fov returns False when visible_tiles is not an ndarray"""
-        entity = TargetingEntity()
-        entity.visible_tiles = [[False, True], [True, False]] # type: ignore | Not an ndarray
-        location = TileCoordinate.from_tuple((1, 0))
-        
-        result = entity.is_location_in_fov(location)
-        
-        assert result is False
-    
-    def test_is_location_in_fov_calls_update_visible_tiles(self):
-        """Test that is_location_in_fov calls update_visible_tiles with the location"""
-        entity = TargetingEntity()
-        entity.visible_tiles = np.array([[False, True], [True, False]])
-        location = TileCoordinate.from_tuple((1, 0))
+        visible_tiles = np.ones((10, 10), dtype=bool)
+        entity.visible_tiles = visible_tiles
+        location = TileCoordinate.from_tuple((2, 2))
         
         with patch.object(entity, 'update_visible_tiles') as mock_update:
             entity.is_location_in_fov(location)
-            mock_update.assert_called_once_with(location)
+            mock_update.assert_called_once()
     
-    def test_is_location_in_fov_handles_out_of_bounds_location(self):
-        """Test that is_location_in_fov handles out of bounds location gracefully"""
+    def test_handles_edge_coordinates(self):
         entity = TargetingEntity()
-        entity.visible_tiles = np.array([[False, True], [True, False]])
-        location = TileCoordinate.from_tuple((10, 10))
+        visible_tiles = np.zeros((10, 10), dtype=bool)
+        visible_tiles[0, 0] = True
+        visible_tiles[9, 9] = True
+        entity.visible_tiles = visible_tiles
         
         with patch.object(entity, 'update_visible_tiles'):
-            with pytest.raises(IndexError):
-                entity.is_location_in_fov(location)
+            assert entity.is_location_in_fov(TileCoordinate.from_tuple((0, 0))) is True
+            assert entity.is_location_in_fov(TileCoordinate.from_tuple((9, 9))) is True
+            assert entity.is_location_in_fov(TileCoordinate.from_tuple((0, 9))) is False
+            
+class TestIsLocationInEarshot:
+    
+    def test_returns_false_when_earshot_tiles_is_none(self):
+        entity = TargetingEntity()
+        entity.earshot_tiles = None
+        location = TileCoordinate.from_tuple((5, 5))
+        
+        assert entity.is_location_in_earshot(location) is False
+    
+    def test_returns_false_when_earshot_tiles_is_not_ndarray(self):
+        entity = TargetingEntity()
+        entity.earshot_tiles = [] #type: ignore
+        location = TileCoordinate.from_tuple((5, 5))
+        
+        assert entity.is_location_in_earshot(location) is False
+    
+    def test_returns_false_when_location_is_none(self):
+        entity = TargetingEntity()
+        entity.earshot_tiles = np.zeros((10, 10), dtype=bool)
+        
+        assert entity.is_location_in_earshot(None) is False
+    
+    def test_returns_true_when_location_is_in_earshot(self):
+        entity = TargetingEntity()
+        entity.earshot_tiles = np.zeros((10, 10), dtype=bool)
+        entity.earshot_tiles[5, 5] = True
+        location = TileCoordinate.from_tuple((5, 5))
+        
+        with patch.object(entity, 'update_earshot_tiles'):
+            result = entity.is_location_in_earshot(location)
+        
+        assert result is True
+    
+    def test_returns_false_when_location_is_not_in_earshot(self):
+        entity = TargetingEntity()
+        entity.earshot_tiles = np.zeros((10, 10), dtype=bool)
+        entity.earshot_tiles[5, 5] = False
+        location = TileCoordinate.from_tuple((5, 5))
+        
+        with patch.object(entity, 'update_earshot_tiles'):
+            result = entity.is_location_in_earshot(location)
+        
+        assert result is False
+    
+    def test_calls_update_earshot_tiles_when_earshot_tiles_is_ndarray(self):
+        entity = TargetingEntity()
+        entity.earshot_tiles = np.zeros((10, 10), dtype=bool)
+        entity.earshot_tiles[5, 5] = True
+        location = TileCoordinate.from_tuple((5, 5))
+        
+        with patch.object(entity, 'update_earshot_tiles') as mock_update:
+            entity.is_location_in_earshot(location)
+            mock_update.assert_called_once()
+    
+    def test_accesses_correct_array_indices(self):
+        entity = TargetingEntity()
+        entity.earshot_tiles = np.zeros((10, 10), dtype=bool)
+        entity.earshot_tiles[3, 7] = True
+        location = TileCoordinate.from_tuple((3, 7))
+        
+        with patch.object(entity, 'update_earshot_tiles'):
+            result = entity.is_location_in_earshot(location)
+        
+        assert result is True
+    
+    def test_handles_boundary_coordinates(self):
+        entity = TargetingEntity()
+        entity.earshot_tiles = np.zeros((10, 10), dtype=bool)
+        entity.earshot_tiles[0, 0] = True
+        entity.earshot_tiles[9, 9] = True
+        
+        with patch.object(entity, 'update_earshot_tiles'):
+            assert entity.is_location_in_earshot(TileCoordinate.from_tuple((0, 0))) is True
+            assert entity.is_location_in_earshot(TileCoordinate.from_tuple((9, 9))) is True
+
+class TestTilesInRange:
+    """Test suite for TargetingEntity.tiles_in_range method"""
+    
+    def test_tiles_in_range_no_store(self):
+        """Test tiles_in_range returns None when entity has no store"""
+        entity = TargetingEntity()
+        entity.store = None
+        entity.location = TileCoordinate.from_tuple((5, 5))
+        
+        result = entity.tiles_in_range(radius=6)
+        
+        assert result is None
+    
+    def test_tiles_in_range_no_atlas(self):
+        """Test tiles_in_range returns None when store has no atlas"""
+        entity = TargetingEntity()
+        entity.store = Mock()
+        entity.store.atlas = None
+        entity.location = TileCoordinate.from_tuple((5, 5))
+        
+        result = entity.tiles_in_range(radius=6)
+        
+        assert result is None
+    
+    def test_tiles_in_range_no_location(self):
+        """Test tiles_in_range returns None when entity has no location"""
+        entity = TargetingEntity()
+        entity.store = Mock()
+        entity.store.atlas = Mock()
+        entity.store.atlas.active = Mock()
+        entity.store.atlas.active.blocks_vision = np.array([[False, True], [True, False]])
+        entity.location = None
+        
+        result = entity.tiles_in_range(radius=6)
+        
+        assert result is None
+    
+    def test_tiles_in_range_blocking_tiles_not_ndarray(self):
+        """Test tiles_in_range returns None when blocks_vision is not an ndarray"""
+        entity = TargetingEntity()
+        entity.store = Mock()
+        entity.store.atlas = Mock()
+        entity.store.atlas.active = Mock()
+        entity.store.atlas.active.blocks_vision = [[False, True], [True, False]]
+        entity.location = TileCoordinate.from_tuple((5, 5))
+        
+        result = entity.tiles_in_range(radius=6)
+        
+        assert result is None
+    
+    @patch('entities.library.compute_fov')
+    def test_tiles_in_range_success(self, mock_compute_fov):
+        """Test tiles_in_range successfully computes FOV"""
+        entity = TargetingEntity()
+        entity.store = Mock()
+        entity.store.atlas = Mock()
+        entity.store.atlas.active = Mock()
+        blocking_tiles = np.array([[False, True], [True, False]])
+        entity.store.atlas.active.blocks_vision = blocking_tiles
+        entity.location = TileCoordinate.from_tuple((5, 5))
+        
+        expected_fov = np.array([[True, False], [False, True]])
+        mock_compute_fov.return_value = expected_fov
+        
+        result = entity.tiles_in_range(radius=6)
+        
+        mock_compute_fov.assert_called_once()
+        call_args = mock_compute_fov.call_args
+        assert np.array_equal(call_args[0][0], ~blocking_tiles)
+        assert call_args[0][1] == (5, 5)
+        assert call_args[1]['radius'] == 6
+        assert np.array_equal(result, expected_fov) # type: ignore
+    
+    @patch('entities.library.compute_fov')
+    def test_tiles_in_range_different_radius(self, mock_compute_fov):
+        """Test tiles_in_range with different radius values"""
+        entity = TargetingEntity()
+        entity.store = Mock()
+        entity.store.atlas = Mock()
+        entity.store.atlas.active = Mock()
+        blocking_tiles = np.array([[False, True], [True, False]])
+        entity.store.atlas.active.blocks_vision = blocking_tiles
+        entity.location = TileCoordinate.from_tuple((3, 7))
+        
+        expected_fov = np.array([[True, True], [True, True]])
+        mock_compute_fov.return_value = expected_fov
+        
+        result = entity.tiles_in_range(radius=10)
+        
+        call_args = mock_compute_fov.call_args
+        assert call_args[0][1] == (3, 7)
+        assert call_args[1]['radius'] == 10
 
 def test_entity_combat_entity():
     try:

@@ -15,6 +15,7 @@ from loop_components.player import PlayerCharacter
 
 if TYPE_CHECKING:
     from engine_components.store import GameStore
+    from engine_components.ai import GameAI
 
 M = TypeVar('M', bound=BaseGameEntity)
 
@@ -22,6 +23,7 @@ class Portfolio:
     store: GameStore
     entities: Set[BaseGameEntity]
     spawn: Callable
+    game_ai: GameAI | None = None
 
     PARENT_MAP_SIZE = DEFAULT_TILEMAP_MANIFEST['dimensions']['grid_size']
     PLAYER = PlayerCharacter(   name="Player", 
@@ -31,7 +33,6 @@ class Portfolio:
                                                     parent_map_size=PARENT_MAP_SIZE),
                                 hp=150,
                                 max_hp=150)
-    
     ORC = MobCharacter(     name="Orc", 
                             symbol=chr(65), 
                             color=(63, 127, 63),
@@ -39,7 +40,6 @@ class Portfolio:
                                                     parent_map_size=PARENT_MAP_SIZE),
                             hp=25,
                             max_hp=25)
-    
     TROLL = MobCharacter(   name="Troll", 
                             symbol=chr(65), 
                             color=(0, 127, 0), 
@@ -48,9 +48,12 @@ class Portfolio:
                             hp=35,
                             max_hp=35)
 
-    def __init__(self, store: GameStore | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, game_ai: GameAI | None = None) -> None:
+
         if store is not None:
             self.store = store
+        if game_ai is not None:
+            self.game_ai = game_ai
     
         self.entities = set()    
 
@@ -113,6 +116,8 @@ class Portfolio:
         clone = deepcopy(entity)
         clone.location = location
         clone.store = self.store
+        if isinstance(clone, AICharacter) and self.game_ai is not None:
+            clone.ai = self.game_ai.mob_loop_handler
         self.entities.add(clone)
         return clone
     

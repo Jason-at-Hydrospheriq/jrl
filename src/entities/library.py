@@ -308,7 +308,9 @@ class TargetingEntity(BaseGameEntity):
     target: TargetableEntity | None = None
     focus: TargetingSubState
     _fov_radius: int = 6
+    _earshot_radius: int = 10
     _visible_tiles: np.ndarray | None = None
+    _earshot_tiles: np.ndarray | None = None
     _initial_threat_level: int = 10
     _threat_level: int = 0
     _substates_manifest = (
@@ -349,6 +351,22 @@ class TargetingEntity(BaseGameEntity):
         self._visible_tiles = value
 
     @property
+    def earshot_radius(self) -> int:
+        return self._earshot_radius
+    
+    @earshot_radius.setter
+    def earshot_radius(self, value: int) -> None:
+        self._earshot_radius = value
+
+    @property
+    def earshot_tiles(self) -> np.ndarray | None:
+        return self._earshot_tiles
+    
+    @earshot_tiles.setter
+    def earshot_tiles(self, value: np.ndarray | None) -> None:
+        self._earshot_tiles = value
+
+    @property
     def target_in_fov(self) -> bool:
         if self.target and self.target.location is not None and isinstance(self.visible_tiles, np.ndarray):
             return self.is_location_in_fov(self.target.location)
@@ -373,17 +391,30 @@ class TargetingEntity(BaseGameEntity):
 
         return False
     
+    def is_location_in_earshot(self, location: TileCoordinate | None) -> bool:
+        if isinstance(self.earshot_tiles, np.ndarray):
+            self.update_earshot_tiles()
+            if location and self.earshot_tiles[location.x, location.y]:
+                return True
+        return False
+    
     def update_visible_tiles(self) -> None:
+        self.visible_tiles = self.tiles_in_range(self._fov_radius)
+
+    def update_earshot_tiles(self) -> None:
+        self.earshot_tiles = self.tiles_in_range(self._earshot_radius)
+
+    def tiles_in_range(self, radius: int) -> np.ndarray | None:
         blocking_tiles = None
-        visible_tiles = None
+        tiles_in_range = None
 
         if self.store and self.store.atlas:  # type: ignore Assume store is GameStore
             blocking_tiles = self.store.atlas.active.blocks_vision  # type: ignore
 
-            if isinstance(blocking_tiles, np.ndarray) and self.location is not None and self.location is not None:
-                visible_tiles = compute_fov(~blocking_tiles, (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
+            if isinstance(blocking_tiles, np.ndarray) and self.location is not None:
+                tiles_in_range = compute_fov(~blocking_tiles, (self.location.x, self.location.y), radius=radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
         
-        self.visible_tiles = visible_tiles
+        return tiles_in_range
 
     def set_target(self, target: TargetableEntity) -> None:
         self.threat_level = self._initial_threat_level
@@ -405,11 +436,12 @@ class TargetingEntity(BaseGameEntity):
         selection_list = []
 
         if self.store and self.store.portfolio:  # type: ignore | A TargetingEntity must have a GameStore
+            self.update_visible_tiles()
             visible_targets = [entity for entity in self.store.portfolio.live_actors if entity and self.visible_tiles[entity.location.x, entity.location.y]]  # type: ignore Assume live_actors is List[Character]
     
         if visible_targets:
             for entity in visible_targets:
-                if entity is not self:
+                if entity is not self and not isinstance(entity, self.__class__):
                     self.set_target(entity)
                     distance = self.distance_to_target
                     distances.append((distance, entity))
@@ -454,6 +486,8 @@ class TargetingEntity(BaseGameEntity):
         self.threat_level = threat_level
     
     def update(self) -> None:
+        self.update_visible_tiles()
+        self.update_earshot_tiles()
         self.assess_threat()
         super().update()
 

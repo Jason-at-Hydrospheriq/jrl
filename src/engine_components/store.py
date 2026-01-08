@@ -27,13 +27,12 @@ class GameStore:
         states = [{'name': 'initialized', 'on_enter': '_initialize'},
                   {'name': 'started', 'on_enter': '_start'}, 
                   {'name': 'stopped', 'on_enter': '_stop'}]
-        transitions =[
+        transitions = [
             {'trigger': 'initialize', 'source': ['started', 'stopped'], 'dest': 'initialized'},
             {'trigger': 'start', 'source': ['initialized', 'stopped'], 'dest': 'started'},
             {'trigger': 'stop', 'source': 'started', 'dest': 'stopped'}
             ]
         self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
-        
         self.log = MessageLog()
         
     def _initialize(self):

@@ -45,52 +45,51 @@ class GameEngine:
     def _initialize(self) -> None:
         """Initializes the game state, including the portfolio, atlas, and display."""
         print("Initializing the game.")
-        if not self.store:
-            self.store = GameStore()
-        if not self.display:
-            self.display = GameDisplay()
-        if not self.ai:
-            self.ai = GameAI()
+
+        # Provision Engine Components
+        self.store = GameStore()
+        self.display = GameDisplay(store=self.store)
+        self.ai = GameAI(store=self.store)
+
+        # Set GameAI for Portfolio spawing
+        if self.store and self.ai and self.store.portfolio:
+            self.store.portfolio.game_ai = self.ai
 
         # Propagate the store to all StoredStateObjects
         stores = self._get_all_stores(self)
         for store in self._get_all_stores(self.store):
             stores.append(store)
-            print(len(stores))
-        
+            print(len(stores))   
         for store in stores:
             store.store = self.store
 
-        # Start components
-        if self.store and self.store.state != 'initialized': # type: ignore
-            self.store._initialize() # type: ignore
-            self.store.start() # type: ignore
-            #TODO connect mobloops to portfolio here
+        # Initialize Maps and Entities in the GameStore
+        if self.store and self.store.state != 'initialized': # type: ignore | State machine attribute created dynamically
+            self.store.initialize() # type: ignore | State machine attribute created dynamically
+
+        # Start Display
+        if self.display and self.display.state != 'started':  # type: ignore | State machine attribute created dynamically
+            self.display.start() # type: ignore | State machine attribute created dynamically
             
-        if self.display and self.display.state != 'started': # type: ignore
-            self.display.start() # type: ignore
-
-        if self.ai and self.ai.state != 'started':  # type: ignore
-            self.ai.start() # type: ignore
-
         print(f"Game is {self.state}.") # type: ignore
     
     def _play(self) -> None:
         """Starts the main game loop, processing events and updating the game state."""
         print("Starting the game.")
-        if self.store and self.store.state != 'started': # type: ignore
-            self.store.start() # type: ignore
-        if self.ai and self.ai.state != 'started':  # type: ignore
-            self.ai.start() # type: ignore
-        self.store.portfolio.player.update_fov()  # type: ignore
+        if self.store and self.store.state != 'started': # type: ignore | State machine attribute created dynamically
+            self.store.start() # type: ignore | State machine attribute created dynamically
+        if self.ai and self.ai.state != 'started':  # type: ignore | State machine attribute created dynamically
+            self.ai.start() # type: ignore | State machine attribute created dynamically
+        if self.store and self.store.portfolio and self.store.portfolio.player:
+            self.store.portfolio.player.update_fov()  # type: ignore | The class for this action must be PlayerCharacter.
 
     def _pause(self) -> None:
         """Pauses the game loop, halting event processing and state updates."""
         print("Pausing the game.")
-        if self.store and self.store.state != 'stopped': # type: ignore
-            self.store.stop() # type: ignore
-        if self.ai and self.ai.state != 'paused':  # type: ignore
-            self.ai.pause() # type: ignore
+        if self.store and self.store.state != 'stopped': # type: ignore | State machine attribute created dynamically
+            self.store.stop() # type: ignore | State machine attribute created dynamically
+        if self.ai and self.ai.state != 'paused':  # type: ignore | State machine attribute created dynamically
+            self.ai.pause() # type: ignore | State machine attribute created dynamically
 
     def _shutdown(self) -> None:
         """Cleans up resources and stops the game loop."""
@@ -136,3 +135,4 @@ class GameEngine:
         
         except Exception as e:
             raise Exception(f"Error getting all stores: {e}")
+        

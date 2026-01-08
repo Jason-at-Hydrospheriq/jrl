@@ -115,12 +115,27 @@ class MobCharacter(AICharacter):
 
     def update(self) -> None:
         super().update()
-        if (self.target is None or not self.is_location_in_fov(self.target.location)) and self.ai: 
-            self.ai.handle(AIAcquireTargetEvent(store=self.store, handler=self.ai, entity=self))
-        if self.target:
-            pass
+        if self.ai:
+            if self.ai.events.qsize() < 10 and self.ai.actions.qsize() < 10:
+                if self.store and self.store.portfolio:  # type: ignore | Assume store is GameStore
+                    if self.is_location_in_earshot(self.store.portfolio.player.location):  # type: ignore | The class for this action must be PlayerCharacter.
+                        match self.focus.state:  # type: ignore | State machine attribute created dynamically
+                            case 'idle':
+                                self.ai.handle(AIAcquireTargetEvent(store=self.store, handler=self.ai, entity=self))
+                            case 'tracking':
+                                if self.distance_to_target > 1:
+                                    self.ai.handle(AIPursuitEvent(store=self.store, handler=self.ai, entity=self))
+                            case 'targeting':
+                                if self.distance_to_target > 1:
+                                    self.ai.handle(AIPursuitEvent(store=self.store, handler=self.ai, entity=self))
+                                if self.distance_to_target == 1:
+                                    self.store.log.add(f"The {self.name} kicks {self.target.name}!")  # type: ignore | Entity in this state must have a target.
+                            case _:
+                                pass
 
 
+
+# BEHAVIORS
 class AICharacterEvent(BaseGameEvent):
     _entity: AICharacter | None
     _target: Character | None
@@ -155,13 +170,14 @@ class AICharacterEvent(BaseGameEvent):
             self.handler.handle(cast(StateActionObject, self))
 
 
-# BEHAVIORS
 class AIAcquireTargetEvent(BaseEntityEvent):
     """
     The AIAcquireTargetEvent is the event portion of the AcquireTarget behavior for a TargetingEntity controlled by the GameAI. It is created by the Game AI or directly by an AICharacter.
     Duck Types: StateActionObject, StoredStateObject
     """
-    pass
+    def trigger(self) -> None:
+        if self.handler:
+            self.handler.handle(cast(StateActionObject, self))
 
 
 class AIAcquireTargetAction(BaseActionOnEntity):
@@ -205,7 +221,9 @@ class AIInvestigateEvent(BaseEntityEvent):
     The AIInvestigateEvent is the event portion of the Investigate behavior for a TargetingEntity controlled by the GameAI. It is created by the Game AI or directly by an AICharacter.
     Duck Types: StateActionObject, StoredStateObject
     """
-    pass
+    def trigger(self) -> None:
+        if self.handler:
+            self.handler.handle(cast(StateActionObject, self))
 
 
 class AIInvestigateAction(BaseActionOnEntity):
@@ -244,7 +262,9 @@ class AIPursuitEvent(BaseEntityEvent):
     The AIPursuitEvent is the event portion of the Pursuit behavior for a TargetingEntity controlled by the GameAI. It is created by the Game AI or directly by an AICharacter.
     Duck Types: StateActionObject, StoredStateObject
     """
-    pass
+    def trigger(self) -> None:
+        if self.handler:
+            self.handler.handle(cast(StateActionObject, self))
 
 
 class AIPursuitAction(BaseActionOnEntity):

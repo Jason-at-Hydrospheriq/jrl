@@ -182,50 +182,6 @@ class GameAI:
 
         except Exception as e:
             print(f"Error stopping loops: {e}")
-    
-    def game_action_loop(self) -> None:
-        """
-        Update the state of the game by processing events and updating the roster, map, and UI.
-        """
-        while not self.stop_signal.is_set():  # type: ignore
-            try:
-                if self.state != 'started':  # type: ignore
-                    time.sleep(0.1)
-                    continue
-                next_action = None
-                if self.game_loop_handler and self.game_loop_handler.actions is not None:
-                    next_action = self.game_loop_handler.actions.get_nowait()
-                if next_action is not None and isinstance(next_action, GameAction):
-                    next_action.perform()
-                
-            except queue.Empty:
-                time.sleep(0.05)
-
-            except BaseException as e:
-                print(f"Error processing action: {e}")
-                break
-    
-    def mob_action_loop(self) -> None:
-        """
-        Update the state of the game by processing events and updating the roster, map, and UI.
-        """
-        while not self.stop_signal.is_set():  # type: ignore
-            try:
-                if self.state != 'started':  # type: ignore
-                    time.sleep(0.1)
-                    continue
-                next_action = None
-                if self.mob_loop_handler and self.mob_loop_handler.actions is not None:
-                    next_action = self.mob_loop_handler.actions.get_nowait()
-                if next_action is not None and isinstance(next_action, GameAction):
-                    next_action.perform()
-                
-            except queue.Empty:
-                time.sleep(0.05)
-
-            except BaseException as e:
-                print(f"Error processing action: {e}")
-                break
 
     def game_event_loop(self) -> None:
         """
@@ -249,6 +205,28 @@ class GameAI:
                 print(f"Error processing event: {e}")
                 break
 
+    def game_action_loop(self) -> None:
+        """
+        Update the state of the game by processing events and updating the roster, map, and UI.
+        """
+        while not self.stop_signal.is_set():  # type: ignore
+            try:
+                if self.state != 'started':  # type: ignore
+                    time.sleep(0.1)
+                    continue
+                next_action = None
+                if self.game_loop_handler and self.game_loop_handler.actions is not None:
+                    next_action = self.game_loop_handler.actions.get_nowait()
+                if next_action is not None and isinstance(next_action, GameAction):
+                    next_action.perform()
+                
+            except queue.Empty:
+                time.sleep(0.05)
+
+            except BaseException as e:
+                print(f"Error processing action: {e}")
+                break
+
     def mob_event_loop(self) -> None:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
@@ -269,6 +247,28 @@ class GameAI:
 
             except BaseException as e:
                 print(f"Error processing event: {e}")
+                break
+
+    def mob_action_loop(self) -> None:
+        """
+        Update the state of the game by processing events and updating the roster, map, and UI.
+        """
+        while not self.stop_signal.is_set():  # type: ignore
+            try:
+                if self.state != 'started':  # type: ignore
+                    time.sleep(0.1)
+                    continue
+                next_action = None
+                if self.mob_loop_handler and self.mob_loop_handler.actions is not None:
+                    next_action = self.mob_loop_handler.actions.get_nowait()
+                if next_action is not None and isinstance(next_action, GameAction):
+                    next_action.perform()
+                
+            except queue.Empty:
+                time.sleep(0.05)
+
+            except BaseException as e:
+                print(f"Error processing action: {e}")
                 break
 
     def threaded_exception_handler(self, args):

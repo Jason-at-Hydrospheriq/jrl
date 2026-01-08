@@ -8,7 +8,6 @@ import numpy as np
 import tcod
 
 from atlas_components.tiles import TileCoordinate
-from engine_components.store import GameStore
 from entities.base import action_locked
 from entities.library import Character
 from loop_components.base import BaseGameAction, BaseGameEvent
@@ -126,7 +125,6 @@ class KeyDownAction(BaseGameAction):
                 if destination != (0,0):      
                     self.handler.send(EntityMoveAction(store=self.store, handler=self.handler, entity=self.store.portfolio.player,  # type: ignore | The store for this action must be GameStore.
                                                            destination=TileCoordinate.from_tuple(destination, parent_map_size=self.store.atlas.active.grid.size)))  # type: ignore | The store for this action must be GameStore.
-
 
 
 class PlayerCharacterEvent(BaseGameEvent):
