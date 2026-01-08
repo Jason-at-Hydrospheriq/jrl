@@ -76,35 +76,33 @@ class EntityMoveAction(BaseActionOnDestination):
         if isinstance(self.entity, MobileEntity) and self.store and self.destination:
             self.entity.destination = self.destination
             self.entity.update()
-            wait = 0
+            wait = GLOBAL_ACTION_COOLDOWN_TIME // 2 # Default wait time
             if self.entity.speed:
-                wait = (GLOBAL_ACTION_COOLDOWN_TIME - self.entity.speed) // 2
+                wait = ( - self.entity.speed) // 2
+            
+            EntityWaitAction(wait_time=wait, store=self.store, handler=self.handler, entity=self.entity).perform() # type: ignore | The store for this action must be GameStore.
 
             match self.entity.collision.state:  # type: ignore | State machine attribute created dynamically
                 case 'not_colliding':
-
-                    if not self.entity.action_locked:
-                        EntityWaitAction(wait_time=wait, store=self.store, handler=self.handler, entity=self.entity).perform() # type: ignore | The store for this action must be GameStore.
+                    if not self.entity.action_locked:                        
                         self.entity.move()
-                        self.entity.update()
                 
                 case 'colliding_with_terrain':
                     if hasattr(self.entity, 'path'):
                         self.entity.path = None  # type: ignore
-                    return  # Do nothing on terrain collision for now.
                 
                 case 'colliding_with_boundary':
                     if hasattr(self.entity, 'path'):
                         self.entity.path = None  # type: ignore
-                    return  # Do nothing on map boundary collision for now.
                 
                 case 'colliding_with_entity':
                     if hasattr(self.entity, 'path'):
                         self.entity.path = None  # type: ignore
+                        self.destnation = None  # type: ignore
 
-                    if isinstance(self.entity, TargetingEntity):
+                    elif isinstance(self.entity, TargetingEntity):
                         target = self.store.portfolio.get_entity_at_location(self.entity.destination)[0]  # type: ignore | The store for this action must be GameStore.
                         if not self.entity.action_locked and not isinstance(target, self.entity.__class__):  # Prevent targeting self types
-                            EntityWaitAction(wait_time=wait, store=self.store, handler=self.handler, entity=self.entity).perform() # type: ignore | The store for this action must be GameStore.
                             self.entity.set_target(target)  
-                            self.entity.update()
+            
+            self.entity.update()

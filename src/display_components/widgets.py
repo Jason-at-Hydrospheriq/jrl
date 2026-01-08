@@ -199,10 +199,16 @@ class MainMapDisplay(BaseUIWidget):
 
         if store.portfolio and store.atlas:
             visible = store.atlas.active.visible
+            color = colors.white
+
             for actor in store.portfolio.live_actors:
-                if not actor.perception.is_targeted() and actor.location and visible[*actor.location.to_list]:  # type: ignore | State machine method is dynamically added
-                    console.print(actor.location.x, actor.location.y, actor.symbol, fg=actor.color)
-            
+                if actor.location and visible[*actor.location.to_list]:
+                    if not actor.perception.is_targeted():  # type: ignore | State machine method is dynamically added
+                        color = actor.color
+                    elif actor.perception.is_targeted():  # type: ignore | State machine method is dynamically added
+                        color = colors.enemy_atk
+                    console.print(actor.location.x, actor.location.y, actor.symbol, fg=color)
+
             if player and player.location:
                 console.print(player.location.x, player.location.y, player.symbol, fg=player.color)
 

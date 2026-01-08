@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, List, cast, Tuple
+from unittest import case
 import numpy as np
 from tcod.path import SimpleGraph, Pathfinder
 
@@ -79,9 +80,6 @@ class AICharacter(Character):
 
     def update(self) -> None:
         super().update()
-        if self.focus.state_changed and self.ai:  # type: ignore
-            self.ai.handle(AIInvestigateEvent(store=self.store, handler=self.ai, entity=self))
-            self.focus.state_changed = False
 
 
 @action_locked
@@ -122,12 +120,7 @@ class MobCharacter(AICharacter):
         if self.ai:
             if self.ai.events.qsize() < 10 and self.ai.actions.qsize() < 10:
                 if self.store and self.store.portfolio:  # type: ignore | Assume store is GameStore
-                    if self.is_location_in_earshot(self.store.portfolio.player.location):  # type: ignore | The class for this action must be PlayerCharacter.
-                        match self.focus.state:  # type: ignore | State machine attribute created dynamically
-                            case 'idle':
-                                self.ai.handle(AIAcquireTargetEvent(store=self.store, handler=self.ai, entity=self))
-                            case _:
-                                pass
+                    self.ai.handle(AIUpdateFocusEvent(store=self.store, handler=self.ai, entity=self))
 
 
 # BEHAVIORS
@@ -163,6 +156,59 @@ class AICharacterEvent(BaseGameEvent):
     def trigger(self) -> None:
         if self.handler:
             self.handler.handle(cast(StateActionObject, self))
+
+
+class AIUpdateFocusEvent(BaseEntityEvent):
+    """
+    The AIUpdateFocusEvent is the event portion of the UpdateFocus behavior for a TargetingEntity controlled by the GameAI. It is created by the Game AI or directly by an AICharacter.
+    Duck Types: StateActionObject, StoredStateObject
+    """
+    def trigger(self) -> None:
+        if self.handler:
+            self.handler.handle(cast(StateActionObject, self))
+
+
+class AIUpdateFocusAction(BaseActionOnEntity):
+    """
+    The AIUpdateFocusAction is the action portion of the UpdateFocus behavior for a TargetingEntity controlled by the GameAI. It is performed by an AICharacter.
+    
+    Duck Types: StateActionObject, StoredStateObject
+    """
+    def __init__(self, store: GameStore | None = None, handler:  LoopHandler | None = None, entity: AICharacter | None = None) -> None:
+        super().__init__(store, handler, entity)
+
+    def perform(self) -> None:
+
+        if isinstance(self.entity, AICharacter) and self.store is not None:
+            if not self.entity.action_locked and self.handler:
+
+                match self.entity.focus.state:  # type: ignore | State machine attribute created dynamically
+                    case 'idle':
+                        if self.entity.is_location_in_earshot(self.store.portfolio.player.location):  # type: ignore | Assume store is GameStore
+                            self.handler.handle(AIAcquireTargetEvent(store=self.store, handler=self.handler, entity=self.entity))
+
+                    case 'searching':
+                        pass 
+
+                    case 'tracking':
+                        if self.entity.focus.state_changed:  # type: ignore | State machine attribute created dynamically
+                            self.handler.handle(AIInvestigateEvent(store=self.store, handler=self.handler, entity=self.entity))
+                            self.entity.state_changed = False  # type: ignore | State machine attribute created dynamically
+                        elif self.entity.distance_to_target is not None and self.entity.distance_to_target > 1:
+                            self.entity.set_destination_from_path()
+                            self.handler.handle(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity)) # type: ignore
+
+                    case 'targeting':
+                        if self.entity.distance_to_target is not None and self.entity.distance_to_target > 1:
+                            self.entity.set_destination_from_path()
+                            self.handler.handle(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity)) # type: ignore
+                        elif self.entity.distance_to_target == 1:
+                            self.handler.handle(None)  # type: ignore | Dummy combat event for now
+                            self.store.log.add(f"The {self.entity.name} kicks {self.entity.target.name}!")  # type: ignore | Entity in this state must have a target.
+                    case _:
+                        pass
+
+update_focus = ('aiupdatefocusevent', AIUpdateFocusAction())
 
 
 class AIAcquireTargetEvent(BaseEntityEvent):
@@ -285,7 +331,8 @@ class AIPursuitAction(BaseActionOnEntity):
                 self.entity.set_destination_from_path()
             
             if not self.entity.action_locked:
-               EntityMoveAction(store=self.store, handler=self.handler, entity=self.entity, destination=self.entity.destination).perform()  # type: ignore
+               if self.entity.collision.state == 'not_colliding':  # type: ignore | State machine attribute created dynamically
+                   EntityMoveAction(store=self.store, handler=self.handler, entity=self.entity, destination=self.entity.destination).perform()  # type: ignore
             
             if self.handler:
                 if self.entity.focus.state == 'tracking' or self.entity.focus.state == 'targeting':  # type: ignore | State machine attribute created dynamically

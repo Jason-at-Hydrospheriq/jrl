@@ -7,7 +7,7 @@ from engine import GameEngine
 from loop_components import InputEvent
 import time
 
-GLOBAL_COOLDOWN_TIME = 0.010  # in milliseconds
+GLOBAL_COOLDOWN_TIME = 50  # in milliseconds
 
 def main() -> None:
 

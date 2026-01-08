@@ -29,7 +29,7 @@ mob_behaviors = {
     ('nonevent', NoAction()),
     ('waitevent', WaitAction()),
     ('entitywaitevent', EntityWaitAction()),
-    investigate, pursue, acquire_target
+    update_focus, investigate, pursue, acquire_target
 }
 
 class BaseGameLoop:

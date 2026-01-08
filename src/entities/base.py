@@ -87,8 +87,12 @@ class BaseParentState:
 
     def update(self) -> None:
         for substate in self.substates:
-            substate.set_bits()
-            substate.update() # type: ignore
+            try:
+                substate.set_bits()
+                substate.update() # type: ignore
+                
+            except Exception as e:
+                raise e
     
     def _add_substate(self, substate: BaseSubState) -> None:
         self.substates.append(substate)
