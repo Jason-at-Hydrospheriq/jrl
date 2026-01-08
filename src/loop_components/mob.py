@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds
 
 
+# ENTITIES
 @action_locked
 class AICharacter(Character):
     path: List[TileCoordinate] = []
@@ -112,6 +113,13 @@ class MobCharacter(AICharacter):
     def ai(self, value: LoopHandler | None) -> None:   # type: ignore
         self._ai = value
 
+    def update(self) -> None:
+        super().update()
+        if (self.target is None or not self.is_location_in_fov(self.target.location)) and self.ai: 
+            self.ai.handle(AIAcquireTargetEvent(store=self.store, handler=self.ai, entity=self))
+        if self.target:
+            pass
+
 
 class AICharacterEvent(BaseGameEvent):
     _entity: AICharacter | None
@@ -147,7 +155,8 @@ class AICharacterEvent(BaseGameEvent):
             self.handler.handle(cast(StateActionObject, self))
 
 
-class AIAcquireTargetEvent(AICharacterEvent):
+# BEHAVIORS
+class AIAcquireTargetEvent(BaseEntityEvent):
     """
     The AIAcquireTargetEvent is the event portion of the AcquireTarget behavior for a TargetingEntity controlled by the GameAI. It is created by the Game AI or directly by an AICharacter.
     Duck Types: StateActionObject, StoredStateObject

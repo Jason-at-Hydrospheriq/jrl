@@ -3,9 +3,13 @@
 
 from __future__ import annotations
 from time import sleep
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Tuple, cast
+import numpy as np
 import tcod
 
+from atlas_components.tiles import TileCoordinate
+from engine_components.store import GameStore
+from entities.base import action_locked
 from entities.library import Character
 from loop_components.base import BaseGameAction, BaseGameEvent
 from loop_components.entity import EntityMoveAction
@@ -19,6 +23,49 @@ if TYPE_CHECKING:
 GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds
 
 
+@action_locked
+class PlayerCharacter(Character):
+    action_locked: bool | None = True
+    location: TileCoordinate | None
+
+    def __init__(   self,
+                store: GameStore | None = None,
+                location: TileCoordinate | None = None,
+                *,
+                name: str = "<Unnamed>",
+                symbol: str = '@',
+                color: Tuple[int, int, int]=(255, 255, 255),
+                hp: int = 100,
+                max_hp: int = 100,
+
+                ) -> None:
+
+        self.fov_radius = 6 # Must be set before super().__init__() call to ensure FOV is correct on initialization.
+        self.location = location # Must be set before super().__init__() call to ensure FOV is correct on initialization.
+
+        super().__init__(store=store, symbol=symbol, color=color, name=name)
+        self.hp = hp
+        self.max_hp = max_hp
+        self.update()
+
+    def update_fov(self) -> None:
+        self.update_visible_tiles()
+        if self.store: # type: ignore | Assume store is GameStore
+            if self.visible_tiles is not None:
+                self.store.atlas.active.set_state_bits('visible', self.visible_tiles)  # type: ignore | Assume store is GameStore
+
+            # If a tile is "visible" it should be added to "explored".
+            if self.store.atlas:  # type: ignore | Assume store is GameStore
+                seen_tiles = self.store.atlas.active.seen  # type: ignore | Assume store is GameStore
+                if isinstance(seen_tiles, np.ndarray) and self.visible_tiles is not None: # type: ignore | Assume store is GameStore
+                    newly_seen_tiles = np.logical_or(seen_tiles, self.visible_tiles)
+                    self.store.atlas.active.set_state_bits('seen', newly_seen_tiles)  # type: ignore | Assume store is GameStore
+
+    def update(self) -> None:
+        self.update_fov()
+        super().update()
+
+        
 class InputEvent(BaseGameEvent):
     _input_event: tcod.event.Event | None
 
@@ -114,4 +161,6 @@ class PlayerCharacterEvent(BaseGameEvent):
     def trigger(self) -> None:
         if self.handler:
             self.handler.handle(cast(StateActionObject, self))
+
+
 

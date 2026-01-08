@@ -308,6 +308,7 @@ class TargetingEntity(BaseGameEntity):
     target: TargetableEntity | None = None
     focus: TargetingSubState
     _fov_radius: int = 6
+    _visible_tiles: np.ndarray | None = None
     _initial_threat_level: int = 10
     _threat_level: int = 0
     _substates_manifest = (
@@ -341,20 +342,16 @@ class TargetingEntity(BaseGameEntity):
 
     @property
     def visible_tiles(self) -> np.ndarray | None:
-        blocking_tiles = None
-        if self.store and self.store.atlas:  # type: ignore Assume store is GameStore
-            blocking_tiles = self.store.atlas.active.blocks_vision  # type: ignore
-
-            if isinstance(blocking_tiles, np.ndarray) and self.location is not None:
-                return compute_fov(~blocking_tiles, (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
-        return None
+        return self._visible_tiles
     
+    @visible_tiles.setter
+    def visible_tiles(self, value: np.ndarray | None) -> None:
+        self._visible_tiles = value
+
     @property
     def target_in_fov(self) -> bool:
         if self.target and self.target.location is not None and isinstance(self.visible_tiles, np.ndarray):
-            tx, ty = self.target.location.x, self.target.location.y
-            if self.visible_tiles[tx, ty]:
-                return True
+            return self.is_location_in_fov(self.target.location)
 
         return False
 
@@ -368,6 +365,26 @@ class TargetingEntity(BaseGameEntity):
         
         return 9999
     
+    def is_location_in_fov(self, location: TileCoordinate | None) -> bool:
+        if isinstance(self.visible_tiles, np.ndarray):
+            self.update_visible_tiles()
+            if location and self.visible_tiles[location.x, location.y]:
+                return True
+
+        return False
+    
+    def update_visible_tiles(self) -> None:
+        blocking_tiles = None
+        visible_tiles = None
+
+        if self.store and self.store.atlas:  # type: ignore Assume store is GameStore
+            blocking_tiles = self.store.atlas.active.blocks_vision  # type: ignore
+
+            if isinstance(blocking_tiles, np.ndarray) and self.location is not None and self.location is not None:
+                visible_tiles = compute_fov(~blocking_tiles, (self.location.x, self.location.y), radius=self.fov_radius, algorithm=libtcodpy.FOV_RESTRICTIVE)
+        
+        self.visible_tiles = visible_tiles
+
     def set_target(self, target: TargetableEntity) -> None:
         self.threat_level = self._initial_threat_level
         self.target = target
@@ -532,44 +549,4 @@ class Character(MobileEntity, CombatEntity):
         self.color = (191, 0, 0)
 
 
-@action_locked
-class PlayerCharacter(Character):
-    action_locked: bool | None = True
-    location: TileCoordinate | None
-
-    def __init__(   self,
-                store: GameStore | None = None,
-                location: TileCoordinate | None = None,
-                *,
-                name: str = "<Unnamed>",
-                symbol: str = '@',
-                color: Tuple[int, int, int]=(255, 255, 255),
-                hp: int = 100,
-                max_hp: int = 100,
-
-                ) -> None:
-
-        self.fov_radius = 6 # Must be set before super().__init__() call to ensure FOV is correct on initialization.
-        self.location = location # Must be set before super().__init__() call to ensure FOV is correct on initialization.
-
-        super().__init__(store=store, symbol=symbol, color=color, name=name)
-        self.hp = hp
-        self.max_hp = max_hp
-        self.update()
-
-    def update_fov(self) -> None:
-        if self.store: # type: ignore | Assume store is GameStore
-            if self.visible_tiles is not None:
-                self.store.atlas.active.set_state_bits('visible', self.visible_tiles)  # type: ignore | Assume store is GameStore
-
-            # If a tile is "visible" it should be added to "explored".
-            if self.store.atlas:  # type: ignore | Assume store is GameStore
-                seen_tiles = self.store.atlas.active.seen  # type: ignore | Assume store is GameStore
-                if isinstance(seen_tiles, np.ndarray) and self.visible_tiles is not None: # type: ignore | Assume store is GameStore
-                    newly_seen_tiles = np.logical_or(seen_tiles, self.visible_tiles)
-                    self.store.atlas.active.set_state_bits('seen', newly_seen_tiles)  # type: ignore | Assume store is GameStore
-    
-    def update(self) -> None:
-        self.update_fov()
-        super().update()
 

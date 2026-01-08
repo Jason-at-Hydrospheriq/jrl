@@ -29,6 +29,7 @@ mob_behaviors = {
     ('nonevent', NoAction()),
     ('waitevent', WaitAction()),
     ('entitywaitevent', EntityWaitAction()),
+    investigate, pursue, acquire_target
 }
 
 class BaseGameLoop:
@@ -275,3 +276,7 @@ class GameAI:
         print(f"Exception type: {args.exc_type}")
         print(f"Exception value: {args.exc_value}")
         print(f"Exception traceback: {args.exc_traceback}")
+
+    def update(self) -> None:
+        if self.store and self.store.portfolio:
+            self.store.portfolio.update()

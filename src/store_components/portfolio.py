@@ -7,10 +7,11 @@ import random
 import numpy as np
 from copy import deepcopy
 
-from entities.library import PlayerCharacter, Character, BaseGameEntity
+from entities.library import Character, BaseGameEntity
 from atlas_components.tilemaps.library import DEFAULT_TILEMAP_MANIFEST, DefaultTileMap
 from atlas_components.tiles.base import TileTuple, TileCoordinate
 from loop_components.mob import AICharacter, MobCharacter
+from loop_components.player import PlayerCharacter
 
 if TYPE_CHECKING:
     from engine_components.store import GameStore
@@ -173,3 +174,9 @@ class Portfolio:
                             self.spawn_at_location(entity=self.TROLL, location=spawn_location)
 
                 n_total_mobs_spawned_in_this_map += 1
+    
+    def update(self) -> None:
+        """Update all entities in the portfolio."""
+        for entity in self.entities:
+            if hasattr(entity, 'update') and entity.spawn.is_on_map:  # type: ignore | State machine attribute created dynamically
+                entity.update()

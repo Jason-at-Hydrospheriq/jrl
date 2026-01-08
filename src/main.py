@@ -58,6 +58,9 @@ def main() -> None:
                                             game.ai.game_loop_handler.handle(game_event)
                                         else:
                                             game.store.log.add(f"Events={game.ai.game_loop_handler.events.qsize()}, Actions={game.ai.game_loop_handler.actions.qsize()}")  # type: ignore
+                
+                if game.ai:
+                    game.ai.update()
 
         if game.state == 'shutdown':  # type: ignore
             break
