@@ -190,6 +190,7 @@ class BaseGameEntity(BaseParentState):
     def hp(self, value: int | None) -> None:
         if not self.is_invulnerable:
             self._hp = value
+            self.update()
 
     @property
     def max_hp(self) -> int | None:
@@ -201,3 +202,4 @@ class BaseGameEntity(BaseParentState):
     def max_hp(self, value: int | None) -> None:
         if not self.is_invulnerable:
             self._max_hp = value
+            self.update()

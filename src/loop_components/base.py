@@ -23,6 +23,18 @@ class BaseGameEvent:
         raise NotImplementedError("Subclasses must implement the trigger method.")
         
 
+class BaseEntityEvent(BaseGameEvent):
+    entity: BaseGameEntity | None
+
+    def __init__(self, store: StatefulObject | None = None, handler:  StateHandler | None = None, entity: BaseGameEntity | None = None) -> None:
+        super().__init__(store, handler)
+
+        self.entity = entity
+
+    def trigger(self) -> None:
+        raise NotImplementedError("Subclasses must implement the trigger method.")
+    
+    
 class BaseGameAction:
     store: StatefulObject | None
     handler: StateHandler | None

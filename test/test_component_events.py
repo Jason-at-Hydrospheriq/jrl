@@ -7,12 +7,12 @@ from store_components.atlas import Atlas
 from store_components import Portfolio
 from atlas_components.tiles.base import TileCoordinate
 from entities.base import BaseGameEntity
-from entities.library import AICharacter, Character, PlayerCharacter
+from entities.library import Character, PlayerCharacter
 from game_types import StatefulObject, StoredStateObject
 from game_types import GameLoopObject, StateActionObject, StateHandler, EventTransformer
-from loop_components import BaseGameEvent
+from loop_components.base import BaseGameEvent
 from engine_components.ai import LoopHandler
-from loop_components import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, KeyDownAction
+from loop_components import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, KeyDownAction, AICharacter
 from engine_components.store import GameStore
 from tcod.event import Event
 import tcod

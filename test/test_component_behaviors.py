@@ -14,7 +14,7 @@ from entities.base import BaseGameEntity
 from engine_components.ai import LoopHandler
 from game_types import StateActionObject
 from loop_components.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination, BaseGameEvent
-from loop_components import NoAction, WaitAction, AIAcquireTargetAction, KeyDownAction, EntityWaitAction, EntityMoveAction
+from loop_components import NoAction, WaitAction, AIAcquireTargetAction, KeyDownAction, EntityWaitAction, EntityMoveAction, AIInvestigateAction, EntityWaitEvent, AIPursuitEvent, AIPursuitAction
 from atlas_components.tiles.base import TileCoordinate
 from entities.library import AICharacter, PlayerCharacter
 
@@ -483,3 +483,150 @@ def test_component_keydown_action():
     finally:
         pass
 
+def test_component_investigate_action():
+    try:
+        # Arrange        
+        action = AIInvestigateAction()
+        action.store = GameStore()
+        action.handler = LoopHandler()
+        action.handler.start()  # type: ignore
+        action.store.atlas = Atlas()
+        map_size = action.store.atlas.active.grid.size
+        tile_layout = action.store.atlas.active.get_tile_layout('floor')
+        if tile_layout is not None:
+            tile_layout[0:10,0:10] = True
+        action.store.atlas.active.set_tiles(tile_layout, graphic_name='floor')
+        action.store.portfolio = Portfolio()
+
+        action.entity = AICharacter() 
+        action.entity.name = "Test AI Character"
+        action.entity.store = action.store
+        action.entity.location = TileCoordinate.from_tuple((0, 0), parent_map_size=map_size)
+        action.entity.hp = 100
+        action.entity.max_hp = 100
+
+        target = PlayerCharacter()
+        target.name = "Test Player Character"
+        target.store = action.store
+        target.location = TileCoordinate.from_tuple((3, 3), parent_map_size=map_size)
+        target.hp = 100
+        target.max_hp = 100
+
+        action.entity.set_target(target)
+        
+        # Act 
+        initial_path = action.entity.path
+        initial_state = action.entity.focus.state  # type: ignore | Expect 'tracking'
+        intial_event_queue_size = action.handler.events.qsize()
+        initial_action_queue_size = action.handler.actions.qsize()
+        action.perform()
+        after_investigate_path = action.entity.path
+        after_investigate_state = action.entity.focus.state  # type: ignore | Expect 'tracking'
+        after_investigate_event_queue_size = action.handler.events.qsize()
+        after_investigate_action_queue_size = action.handler.actions.qsize()
+        event1 = action.handler.events.get_nowait()
+        event2 = action.handler.events.get_nowait()
+        final_store_log_size = len(action.store.log.messages)  # type: ignore
+
+        # Assert
+        assert isinstance(action, AIInvestigateAction), "Expected action to be instance of AIInvestigateAction"
+        assert isinstance(action, BaseGameAction), "Expected action to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected action to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected action to duck type as StoredStateObject Protocol"
+
+        assert initial_path == [], "Expected initial path to be empty list"
+        assert initial_state == 'tracking', "Expected initial focus state to be 'tracking'"  # type: ignore
+        assert intial_event_queue_size == 0, "Expected initial event queue size to be 0"
+        assert initial_action_queue_size == 0, "Expected initial action queue size to be 0"
+        assert len(after_investigate_path) > 1, "Expected path to be set after calling investigate action"
+        assert after_investigate_state == 'tracking', "Expected focus state to remain 'tracking' after investigate action"  # type: ignore
+        assert after_investigate_event_queue_size == 2, "Expected event queue size to have two new events after investigate action"
+        assert after_investigate_action_queue_size == 0, "Expected action queue size to remain unchanged after investigate action"
+        assert isinstance(event1, EntityWaitEvent), "Expected first event to be instance of EntityWaitEvent"
+        assert isinstance(event2, AIPursuitEvent), "Expected second event to be instance of AIPursuitEvent"
+        assert final_store_log_size == 1, "Expected one new log message in store after investigate action"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass
+
+def test_component_pursuit_action():
+    try:
+        # Arrange        
+        action = AIPursuitAction()
+        action.store = GameStore()
+        action.handler = LoopHandler()
+        action.handler.start()  # type: ignore
+        action.store.atlas = Atlas()
+        map_size = action.store.atlas.active.grid.size
+        tile_layout = action.store.atlas.active.get_tile_layout('floor')
+        if tile_layout is not None:
+            tile_layout[0:10,0:10] = True
+        action.store.atlas.active.set_tiles(tile_layout, graphic_name='floor')
+        action.store.portfolio = Portfolio()
+
+        action.entity = AICharacter() 
+        action.entity.name = "Test AI Character"
+        action.entity.store = action.store
+        action.entity.location = TileCoordinate.from_tuple((0, 0), parent_map_size=map_size)
+        action.entity.hp = 100
+        action.entity.max_hp = 100
+
+        target = PlayerCharacter()
+        target.name = "Test Player Character"
+        target.store = action.store
+        target.location = TileCoordinate.from_tuple((3, 3), parent_map_size=map_size)
+        target.hp = 100
+        target.max_hp = 100
+
+        action.entity.set_target(target)
+        action.entity.set_path_to_target()
+        action.entity.set_destination_from_path()
+
+        # Act 
+        initial_path = action.entity.path
+        initial_state = action.entity.focus.state  # type: ignore | Expect 'tracking'
+        action.perform()
+        after_perform_path = action.entity.path
+        after_perform_state = action.entity.focus.state  # type: ignore | Expect 'tracking'
+        after_perform_path = action.entity.path
+        after_perform_state = action.entity.focus.state  # type: ignore | Expect 'tracking'
+        after_perform_event_queue_size = action.handler.events.qsize()
+        event1 = action.handler.events.get_nowait()
+        event2 = action.handler.events.get_nowait()
+        after_perform_action_queue_size = action.handler.actions.qsize()
+        action1 = action.handler.actions.get_nowait()
+        final_store_log_size = len(action.store.log.messages)  # type: ignore
+
+        # Assert
+        assert isinstance(action, AIPursuitAction), "Expected action to be instance of AIPursuitAction"
+        assert isinstance(action, BaseGameAction), "Expected action to be instance of BaseGameAction"
+        assert isinstance(action, StateActionObject), "Expected action to duck type as StateActionObject Protocol"
+        assert isinstance(action, StoredStateObject), "Expected action to duck type as StoredStateObject Protocol"
+
+        assert initial_path != [], "Expected initial path to be empty list"
+        assert initial_state == 'tracking', "Expected initial focus state to be 'tracking'"  # type: ignore
+        assert len(after_perform_path) > 1, "Expected path to be set after calling pursuit action"
+        assert after_perform_state == 'tracking', "Expected focus state to remain 'tracking' after pursuit action"  # type: ignore
+        assert after_perform_event_queue_size == 2, "Expected event queue size to have two new events after pursuit action"
+        assert after_perform_action_queue_size == 1, "Expected action queue size to remain unchanged after pursuit action"
+        assert isinstance(event1, EntityWaitEvent), "Expected first event to be instance of EntityWaitEvent"
+        assert isinstance(event2, AIPursuitEvent), "Expected second event to be instance of AIPursuitEvent"
+        assert isinstance(action1, EntityMoveAction), "Expected first action to be instance of EntityMoveAction"
+        assert final_store_log_size == 1, "Expected one new log message in store after pursuit action"
+
+    except AssertionError as e:
+        pytest.fail(str(e))
+
+    except Exception as e:
+        pytest.fail(f"Test failed due to unexpected error: {e}")
+    
+    # Atavise
+    finally:
+        pass

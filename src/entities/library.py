@@ -16,7 +16,6 @@ if TYPE_CHECKING:
 from atlas_components.tiles import TileCoordinate
 from entities.base import BaseGameSubState, BaseGameEntity, action_locked
 
-
 class CollisionSubState(BaseGameSubState):
     """The CollisionSubState is a class that defines and runs the 'collision' state machine for a Game Entity.
     This state machine tracks whether an Entity is colliding with another object or not. It manages the 
@@ -55,6 +54,9 @@ class CollisionSubState(BaseGameSubState):
                     self.store.state_vector['in_terrain_collision'] or  # type: ignore
                     self.store.state_vector['in_boundary_collision'])  # type: ignore
     
+    def is_colliding(self) -> bool:
+        return not self.is_not_colliding()
+
 
 class TargetedSubState(BaseGameSubState):
     """The TargetedSubState is a class that defines and runs the 'perception' state machine for a Game Entity.
@@ -89,21 +91,26 @@ class TargetingSubState(BaseGameSubState):
     
     threat_level_threshold: int = 60
 
+    state_changed: bool = False
     _state_bits = ('target_in_fov', 'target_is_hostile', 'has_target')
     _states = ({'name':'stopped', 'on_enter':['update']},
                 {'name':'idle', 'on_enter':['update']},
                 {'name':'searching', 'on_enter':['update']}, 
-                {'name':'tracking', 'on_enter':['update']},
+                {'name':'tracking', 'on_enter':['state_transition']},
                 {'name':'targeting', 'on_enter':['update']},
                 {'name':'unknown', 'on_enter':['update']},)
     _transitions = (
             {'trigger':'update', 'source':['unknown', 'searching', 'tracking', 'targeting'], 'dest':'idle', 'conditions':['is_on_map', 'has_no_target']},
             {'trigger':'update', 'source':['unknown', 'idle', 'tracking', 'targeting'], 'dest':'searching', 'conditions':['is_on_map', 'has_target', 'has_no_visible_target', 'has_no_hostile_target']},
-            {'trigger':'update', 'source':['idle', 'searching', 'targeting'], 'dest':'tracking', 'conditions':['is_on_map', 'has_target', 'has_visible_target', 'has_no_hostile_target',]},
-            {'trigger':'update', 'source':['idle', 'searching', 'tracking'], 'dest':'targeting', 'conditions':['is_on_map', 'has_target', 'has_visible_target', 'has_hostile_target']},
+            {'trigger':'update', 'source':['unknown', 'idle', 'searching', 'targeting'], 'dest':'tracking', 'conditions':['is_on_map', 'has_target', 'has_visible_target', 'has_no_hostile_target',]},
+            {'trigger':'update', 'source':['unknown', 'idle', 'searching', 'tracking'], 'dest':'targeting', 'conditions':['is_on_map', 'has_target', 'has_visible_target', 'has_hostile_target']},
             {'trigger':'update', 'source':['idle', 'searching', 'tracking', 'targeting'], 'dest':'unknown', 'conditions':['is_not_on_map']},
             )
     _initial_state = 'idle'
+
+    def state_transition(self) -> None:
+        self.state_changed = True
+        self.set_bits()
 
     def set_bits(self) -> None: # Interprets store data to set state bits
         self.store.state_vector['target_in_fov'] = self.store.target_in_fov  # type: ignore
@@ -128,7 +135,7 @@ class TargetingSubState(BaseGameSubState):
     
     def has_no_hostile_target(self) -> bool:
         return not self.store.state_vector['target_is_hostile']  # type: ignore
-
+    
 
 class CombatSubState(BaseGameSubState):
     """The CombatSubState is a class that defines and runs the 'combat' state machine for a Game Entity.
@@ -566,70 +573,3 @@ class PlayerCharacter(Character):
         self.update_fov()
         super().update()
 
-
-@action_locked
-class AICharacter(Character):
-    path: List[TileCoordinate] = []
-    _ai: LoopHandler | None = None
-    
-    def __init__(   self,
-                    store: GameStore | None = None,
-                        *,
-                    location: TileCoordinate | None = None,
-                    name: str = "<Unnamed>",
-                    symbol: str = '?',
-                    color: Tuple[int, int, int]=(255, 255, 255),
-                    ai_cls: LoopHandler | None = None,
-                    ) -> None:
-        
-        if ai_cls:
-            self._ai = ai_cls
-            
-        super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-
-
-    @property
-    def ai(self) -> LoopHandler | None:
-        return self._ai
-
-    @ai.setter
-    def ai(self, value: LoopHandler | None) -> None:
-        self._ai = value
-
-    def die(self) -> None:
-        super().die()
-        self._ai = None
-
-
-@action_locked
-class MobCharacter(AICharacter):
-    action_locked: bool | None = False
-    location: TileCoordinate | None
-
-    def __init__(   self,
-                    store: GameStore | None = None,
-                    *,
-                    location: TileCoordinate | None = None,
-                    name: str = "<Unnamed>",
-                    symbol: str = '?',
-                    color: Tuple[int, int, int]=(255, 255, 255),
-                    hp: int = 50,
-                    max_hp: int = 50,
-                    ) -> None:
-
-        self.fov_radius = 5 # Must be set before super().__init__() call to ensure FOV is correct on initialization.
-        self.location = location # Must be set before super().__init__() call to ensure FOV is correct on initialization.
-
-        super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-        
-        self.hp = hp
-        self.max_hp = max_hp
-        self.update()
-
-    @property
-    def ai(self) -> LoopHandler | None:
-        return self._ai
-    
-    @ai.setter
-    def ai(self, value: LoopHandler | None) -> None:   # type: ignore
-        self._ai = value

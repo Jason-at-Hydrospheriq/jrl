@@ -4,11 +4,12 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from transitions import Machine 
 
 from entities.base  import BaseGameSubState, BaseGameEntity, BaseParentState
-from entities.library import CharacterHealthSubState, CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character, AICharacter, PlayerCharacter
+from entities.library import CharacterHealthSubState, CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character, PlayerCharacter
 from game_types import GameEntity, EntityParentState
 from atlas_components.tiles.base import TileCoordinate
 from atlas_components.tilemaps.library import DefaultTileMap
 from store_components import Atlas
+from loop_components import AICharacter, investigate
 from engine_components.store import GameStore
 from engine_components.ai import LoopHandler
 
@@ -270,6 +271,7 @@ def test_entity_targeting_substate():
         substate.set_bits()
         substate.update() # type: ignore
         actual_has_visible_target_state = substate.state # type: ignore
+        actual_state_changed = substate.state_changed
 
         store.threat_level = 95
         substate.set_bits()
@@ -294,6 +296,7 @@ def test_entity_targeting_substate():
         assert actual_new_target_state == 'searching', "Expected state to be 'searching' when target is set that is not visible or hostile"
 
         assert actual_has_visible_target_state == 'tracking', "Expected state to be 'tracking' when target is visible but not hostile"
+        assert actual_state_changed == True, "Expected state_changed to be True after state transition"
 
         assert actual_has_hostile_target_state == 'targeting', "Expected state to be 'targeting' when target is hostile"
 
@@ -917,14 +920,35 @@ def test_entity_player_character():
 def test_entity_ai_character():
     try:
         # Arrange
-        character = AICharacter(name='character_entity', symbol='@', color=(255, 255, 255))
-        character.ai = LoopHandler()
+        store = GameStore()
+        store.atlas = Atlas(store=store)
+        tile_layout = store.atlas.active.get_tile_layout('floor')
+        if tile_layout is not None:
+            tile_layout[0:10,0:10] = True
+        store.atlas.active.set_tiles(tile_layout, graphic_name='floor')
+        map_size = store.atlas.active.grid.size
+        store.portfolio = DummyPortfolio() # type: ignore
         
+        character = AICharacter(store=store, name='character_entity', symbol='@', color=(255, 255, 255), ai=LoopHandler(behaviors={investigate,}))
+        character.location = TileCoordinate.from_tuple((0,0), parent_map_size=map_size)
+        character.ai.start()  # type: ignore | Expect LoopHandler to have start() method
+        target = DummyTarget()
+        target.location = TileCoordinate.from_tuple((3,0), parent_map_size=map_size)
+        character.set_target(target) # type: ignore
+        character.hp = 100
+        character.max_hp = 100
+
         # Act
+        initial_path = character.path
+        initial_state = character.focus.state  # type: ignore | Expect 'tracking'
+        character.set_path_to_target()
+        after_set_path = character.path
+        after_set_state = character.focus.state  # type: ignore | Expect 'tracking'
+        actions_queue_size = character.ai.actions.qsize() if character.ai else None
+        state_changed = character.focus.state_changed  # type: ignore
+
         initial_ai = character.ai
-
         character.die()
-
         after_death_ai = character.ai
 
         character.action_locked = True
@@ -941,6 +965,22 @@ def test_entity_ai_character():
         assert isinstance(character, BaseParentState), "Expected character be an instance of BaseParentState"
         assert isinstance(character, GameEntity), "Expected character to duck type to GameEntity"
         assert isinstance(character, EntityParentState), "Expected character to duck type to EntityParentState"
+
+        assert len(character._substates_manifest) == 6, "Expected six substates in _substates_manifest"
+        assert isinstance(character.substates[0], BaseGameSubState), "Expected first substate to be instance of BaseGameSubState"
+        assert isinstance(character.substates[1], TargetedSubState), "Expected second substate to be instance of TargetedSubState"
+        assert isinstance(character.substates[2], TargetingSubState), "Expected third substate to be instance of TargetingSubState"
+        assert isinstance(character.substates[3], CombatSubState), "Expected fourth substate to be instance of CombatSubState"
+        assert isinstance(character.substates[4], CharacterHealthSubState), "Expected fifth substate to be instance of CharacterHealthSubState"
+        assert isinstance(character.substates[5], CollisionSubState), "Expected sixth substate to be instance of CollisionSubState"
+        assert actions_queue_size == 1, "Expected AI actions queue size to be 1 after setting path to target"
+        
+        assert initial_path == [], "Expected initial path to be empty list"
+        assert initial_state == 'tracking', "Expected initial focus state to be 'tracking'"  # type: ignore
+        assert len(after_set_path) > 1, "Expected path to be set after calling set_path_to_target()"
+        assert after_set_path[0] == character.location, "Expected first element of path to be character's current location"
+        assert after_set_state == 'tracking', "Expected focus state to remain 'tracking' after setting path"  # type: ignore
+        assert state_changed == False, "Expected state_changed to be False after setting path"
 
         assert isinstance(initial_ai, LoopHandler), "Expected initial AI to be BaseLoopHandler()"
         assert after_death_ai == None, "Expected AI to be None after death"
