@@ -78,7 +78,7 @@ class EntityMoveAction(BaseActionOnDestination):
             self.entity.update()
             wait = GLOBAL_ACTION_COOLDOWN_TIME // 2 # Default wait time
             if self.entity.speed:
-                wait = ( - self.entity.speed) // 2
+                wait = (GLOBAL_ACTION_COOLDOWN_TIME- self.entity.speed) // 2
             
             EntityWaitAction(wait_time=wait, store=self.store, handler=self.handler, entity=self.entity).perform() # type: ignore | The store for this action must be GameStore.
 

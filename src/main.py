@@ -7,7 +7,7 @@ from engine import GameEngine
 from loop_components import InputEvent
 import time
 
-GLOBAL_COOLDOWN_TIME = 50  # in milliseconds
+GLOBAL_COOLDOWN_TIME = 10  # in milliseconds
 
 def main() -> None:
 
@@ -59,9 +59,9 @@ def main() -> None:
                                         else:
                                             game.store.log.add(f"Events={game.ai.game_loop_handler.events.qsize()}, Actions={game.ai.game_loop_handler.actions.qsize()}")  # type: ignore
                 
-            if game.ai:
-                time.sleep(GLOBAL_COOLDOWN_TIME / 1000)  # Small delay to prevent high CPU usage
-                game.ai.update()
+                if game.ai:
+                    time.sleep(GLOBAL_COOLDOWN_TIME / 1000)  # Small delay to prevent high CPU usage
+                    game.ai.update()
 
         if game.state == 'shutdown':  # type: ignore | State machine attribute created dynamically
             break

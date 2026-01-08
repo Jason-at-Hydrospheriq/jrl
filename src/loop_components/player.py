@@ -36,7 +36,7 @@ class PlayerCharacter(Character):
                 color: Tuple[int, int, int]=(255, 255, 255),
                 hp: int = 100,
                 max_hp: int = 100,
-
+                speed: int = 20,
                 ) -> None:
 
         self.fov_radius = 6 # Must be set before super().__init__() call to ensure FOV is correct on initialization.
@@ -45,6 +45,7 @@ class PlayerCharacter(Character):
         super().__init__(store=store, symbol=symbol, color=color, name=name)
         self.hp = hp
         self.max_hp = max_hp
+        self.speed = speed
         self.update()
 
     def update_fov(self) -> None:
