@@ -8,8 +8,8 @@ import traceback
 from typing import TYPE_CHECKING, cast
 
 from entities import MobileEntity, TargetableEntity, TargetingEntity, CombatEntity
-from entities.behaviors.base import BaseActionOnDestination, BaseGameEvent, BaseActionOnEntity, BaseActionOnTarget, GLOBAL_ACTION_COOLDOWN_TIME
-from game_baseclasses import BaseGameEntity
+from delays import GLOBAL_ACTION_COOLDOWN_TIME
+from game_baseclasses import BaseActionOnDestination, BaseActionOnEntity, BaseActionOnTarget, BaseGameEntity, BaseGameEvent
 from game_types import StateActionObject, StateHandler
 from game_types import TileCoordinate
 

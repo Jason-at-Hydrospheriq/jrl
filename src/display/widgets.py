@@ -12,7 +12,7 @@ from game_baseclasses import BaseUIWidget
 if TYPE_CHECKING:
     from store import GameStore
 
-from display.graphics import colors
+from display import colors
 from game_types import SHROUD
 
 class HealthBarWidget(BaseUIWidget):

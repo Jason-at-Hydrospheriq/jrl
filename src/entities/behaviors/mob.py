@@ -5,19 +5,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple, cast
 from unittest import case
 
+from delays import GLOBAL_ACTION_COOLDOWN_TIME
 from game_types import TileCoordinate
-from game_baseclasses import action_locked
+from game_baseclasses import BaseEntityEvent, BaseGameEvent, action_locked
 from entities import Character, AICharacter
-from entities.behaviors.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent
+from game_baseclasses import BaseActionOnEntity
 from entities.behaviors.entity import EntityWaitEvent, EntityMoveAction
 from game_types import StateActionObject
 
 if TYPE_CHECKING:
     from store import GameStore
     from loop.components import SubLoopHandler
-
-GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds
-
 
 # BEHAVIORS
 class AICharacterEvent(BaseGameEvent):

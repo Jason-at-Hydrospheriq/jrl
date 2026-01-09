@@ -6,7 +6,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from tcod.event import Event
 
 from loop import *
-from entities.behaviors.base import BaseGameEvent
+from game_baseclasses import BaseGameEvent
 from loop.components import SubLoopHandler
 from atlas import Atlas
 from store.components import Portfolio

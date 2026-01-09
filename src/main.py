@@ -3,11 +3,10 @@
 
 from __future__ import annotations
 import tcod
+from delays import GLOBAL_COOLDOWN_TIME
 from engine import GameEngine
 from entities import InputEvent
 import time
-
-GLOBAL_COOLDOWN_TIME = 10  # in milliseconds
 
 def main() -> None:
 

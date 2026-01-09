@@ -6,9 +6,9 @@ import threading
 import tcod
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from game_baseclasses import BaseGameEntity
+from game_baseclasses import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseGameEntity
 from loop import *
-from entities.behaviors.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
+from game_baseclasses import BaseActionOnDestination
 from loop.components import SubLoopHandler
 from portfolio import Portfolio
 from atlas import Atlas

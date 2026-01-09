@@ -6,8 +6,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 import tcod
 
-from entities.behaviors.base import BaseGameEvent, BaseGameAction
+from game_baseclasses import BaseGameAction
 from time import sleep
+from game_baseclasses import BaseGameEvent
 from game_types import StateActionObject, StateHandler
 
 if TYPE_CHECKING:
