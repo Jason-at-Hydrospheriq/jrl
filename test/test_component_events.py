@@ -1,5 +1,7 @@
 import pytest
 from sys import path
+
+from game_baseclasses import BaseGameEntity
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from tcod.event import Event
 
@@ -9,7 +11,7 @@ from loop.components import SubLoopHandler
 from atlas import Atlas
 from store.components import Portfolio
 from game_types import TileCoordinate
-from entities import BaseGameEntity, AICharacter, Character
+from entities import AICharacter, Character
 from game_types import StatefulObject, StoredStateObject, GameLoopObject, StateActionObject, StateHandler, EventTransformer
 
 from store import GameStore

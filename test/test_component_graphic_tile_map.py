@@ -1,13 +1,14 @@
 import pytest
 from sys import path
 
+from manifests import DEFAULT_TILEMAP_MANIFEST
 from game_types import BaseTileGrid, TileTuple
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 import itertools
 
 from display_components.graphics.tile_types import ascii_graphic
-from atlas.components.tilemaps.library import DefaultTileMap, DEFAULT_TILEMAP_MANIFEST
+from atlas.components.tilemaps.library import DefaultTileMap
 from game_types import TileCoordinate
 
 

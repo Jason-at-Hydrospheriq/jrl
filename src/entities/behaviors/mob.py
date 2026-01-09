@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Tuple, cast
 from unittest import case
 
 from game_types import TileCoordinate
-from entities.base import action_locked
+from game_baseclasses import action_locked
 from entities import Character, AICharacter
 from entities.behaviors.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent
 from entities.behaviors.entity import EntityWaitEvent, EntityMoveAction

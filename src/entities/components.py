@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from entities.base import BaseGameSubState
+from game_baseclasses import BaseGameSubState
 
 
 class CollisionSubState(BaseGameSubState):

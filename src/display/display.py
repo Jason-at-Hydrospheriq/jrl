@@ -10,7 +10,7 @@ import os
 import numpy as np
 
 from display.widgets import MainMapDisplay, HealthBarWidget, MessageLogWidget
-from atlas.components.tilemaps import DEFAULT_TILEMAP_MANIFEST
+from manifests import DEFAULT_TILEMAP_MANIFEST
 from game_baseclasses import BaseUI
 from game_types import UIManifestDict
 

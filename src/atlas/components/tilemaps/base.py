@@ -10,7 +10,7 @@ from copy import deepcopy
 import numpy as np
 
 from game_types import TileArea
-from display.graphics.tile_types import ascii_graphic
+from game_types import ascii_graphic
 from game_types import BaseTileGrid, GraphicsManifestDict, TileCoordinate
 
 # Helper functions to create GraphicManifestDict

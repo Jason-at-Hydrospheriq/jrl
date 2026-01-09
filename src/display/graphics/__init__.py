@@ -1,1 +1,1 @@
-from display.graphics.tile_types import ascii_graphic
+from game_types import ascii_graphic

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from entities import BaseGameEntity
+from game_baseclasses import BaseGameEntity
 from game_types import *
 
 GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds

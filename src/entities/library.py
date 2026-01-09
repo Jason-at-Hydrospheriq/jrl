@@ -8,6 +8,8 @@ import numpy as np
 from tcod import libtcodpy
 from tcod.map import compute_fov
 
+from game_baseclasses import BaseGameSubState, action_locked
+
 if TYPE_CHECKING:
     from entities.library import TargetingEntity
     from store import GameStore
@@ -16,7 +18,7 @@ if TYPE_CHECKING:
 from tcod.path import Pathfinder, SimpleGraph
 from game_types import TileCoordinate
 from display.graphics.colors import enemy_die
-from entities.base import BaseGameEntity, BaseGameSubState, action_locked
+from game_baseclasses import BaseGameEntity
 from entities.components import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState
 
 

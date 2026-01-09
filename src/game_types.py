@@ -651,3 +651,15 @@ class BaseTileGrid(TileCoordinateSystem):
     def _initialize_grid(self) -> None:
         """This method should be overridden by subclasses to initialize the tile grid."""
         self._tiles = np.zeros((self.width, self.height), dtype=self._dtype)
+
+
+# Tile graphic dtype definition
+ascii_graphic = np.dtype(
+    [
+        ("ch", np.int32),  # Unicode codepoint.
+        ("fg", "3B"),  # 3 unsigned bytes, for RGB colors.
+        ("bg", "3B"),
+    ], metadata={"__name__": "ascii_graphic"}
+)
+# SHROUD represents unexplored, unseen tiles
+SHROUD = np.array((ord(" "), (255, 255, 255), (0, 0, 0)), dtype=ascii_graphic)

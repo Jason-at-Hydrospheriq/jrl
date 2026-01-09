@@ -4,16 +4,15 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from entities.base import BaseGameEntity
+from game_baseclasses import BaseGameEntity
 
 
 if TYPE_CHECKING:
-    from entity_components.substates import Charactor, AICharactor
+    from entities.library import Character, AICharacter
 
 
 class BaseStats:
-    entity: BaseGameEntity | Charactor | AICharactor
-
+    entity: BaseGameEntity | Character | AICharacter
 
 class PhysicalStats(BaseStats):
     constitution: int

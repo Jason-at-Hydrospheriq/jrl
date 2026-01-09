@@ -1,13 +1,15 @@
 import pytest
 from sys import path
+
+from game_baseclasses import BaseGameEntity, BaseParentState
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from transitions import Machine 
 from unittest.mock import Mock, MagicMock, patch
 import numpy as np
 
 
-from entities import BaseGameEntity, AICharacter, Character, CombatEntity, MobileEntity, TargetableEntity, TargetingEntity
-from entities.base import BaseGameSubState, BaseParentState
+from entities import AICharacter, Character, CombatEntity, MobileEntity, TargetableEntity, TargetingEntity
+from game_baseclasses import BaseGameSubState
 from entities.components  import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState
 from game_types import GameEntity, EntityParentState
 from game_types import TileCoordinate

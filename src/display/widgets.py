@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from store import GameStore
 
 from display.graphics import colors
-from display.graphics.tile_types import SHROUD
+from game_types import SHROUD
 
 class HealthBarWidget(BaseUIWidget):
     """ A simple health bar widget to display an entity's health. """
