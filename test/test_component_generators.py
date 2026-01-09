@@ -4,7 +4,7 @@ from sys import path
 from game_types import TileTuple
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from atlas.components.generators.library import DEFAULT_MAP_TEMPLATE, DungeonGenerator, CIRCULAR_ROOM_TEMPLATE, RECTANGULAR_ROOM_TEMPLATE
+from atlas.components.generators.generators import DEFAULT_MAP_TEMPLATE, DungeonGenerator, CIRCULAR_ROOM_TEMPLATE, RECTANGULAR_ROOM_TEMPLATE
 from atlas.components.tilemaps.tilemaps import DefaultTileMap
 from game_types import TileCoordinate 
 

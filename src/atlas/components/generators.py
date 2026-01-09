@@ -8,7 +8,7 @@ from typing import Generator
 import random
 
 from atlas.components.tiles import *
-from game_types import BaseMapGenerator
+from game_types import BaseMapGenerator, GraphicTileMap
 from atlas.components.tilemaps import DefaultTileMap
 from game_types import TileCoordinate, TileTuple
 
@@ -21,12 +21,11 @@ class DungeonGenerator(BaseMapGenerator):
     """Generates dungeons using various algorithms."""
     width: int
     height: int
-    map_template: DefaultTileMap
     rectangular_room_template: RectangularRoom
     circular_room_template: CircularRoom
     corridor_template: GenericCorridor
 
-    def __init__(self, template: DefaultTileMap=DEFAULT_MAP_TEMPLATE) -> None:
+    def __init__(self, template: GraphicTileMap=DEFAULT_MAP_TEMPLATE) -> None:
             
         self.map_template = template
         self.width = template.grid.width
@@ -38,7 +37,7 @@ class DungeonGenerator(BaseMapGenerator):
     def generate(self, 
                  max_rooms: int=10, 
                  min_room_size: int=5, 
-                 max_room_size: int=20) -> DefaultTileMap:
+                 max_room_size: int=20) -> GraphicTileMap:
         #TODO Use LLM to generate more complex dungeons
         dungeon = self.spawn_map()
         
@@ -50,7 +49,7 @@ class DungeonGenerator(BaseMapGenerator):
 
         return dungeon
     
-    def spawn_map(self) -> DefaultTileMap:
+    def spawn_map(self) -> GraphicTileMap:
         """Spawn a new map instance based on the generator's template."""
         dungeon = deepcopy(self.map_template)
         self.width = dungeon.grid.width
@@ -60,7 +59,7 @@ class DungeonGenerator(BaseMapGenerator):
         
         return dungeon
 
-    def add_rooms(self, dungeon: DefaultTileMap, max_rooms: int, min_room_size: int, max_room_size: int) -> None:
+    def add_rooms(self, dungeon: GraphicTileMap, max_rooms: int, min_room_size: int, max_room_size: int) -> None:
         """Add rooms to the tile map."""
         rooms = self.room_generator(dungeon=dungeon, max_rooms=max_rooms, min_room_size=min_room_size, max_room_size=max_room_size)
         map_rooms = []
@@ -73,7 +72,7 @@ class DungeonGenerator(BaseMapGenerator):
                     map_rooms.append(new_room)
                     dungeon.areas[str(idx)] = new_room
 
-    def add_corridors(self, dungeon: DefaultTileMap) -> None:
+    def add_corridors(self, dungeon: GraphicTileMap) -> None:
         """Carve out a corridor between two points in the tile map."""
         area_idx = list(dungeon.areas.keys())
         for idx, area_name in enumerate(area_idx):
@@ -96,7 +95,7 @@ class DungeonGenerator(BaseMapGenerator):
 
             dungeon.areas[str(f'_corridor_{idx}')] = corridor
             
-    def room_generator(self, dungeon: DefaultTileMap, max_rooms: int, min_room_size: int, max_room_size: int) -> Generator[GenericMapArea | None]:
+    def room_generator(self, dungeon: GraphicTileMap, max_rooms: int, min_room_size: int, max_room_size: int) -> Generator[TileArea | None]:
 
         for _ in range(max_rooms):
             room_type = random.choice(['rectangular', 'circular'])
