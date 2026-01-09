@@ -7,18 +7,17 @@ from typing import List, Tuple, TYPE_CHECKING
 import numpy as np    
 from tcod import libtcodpy
 from tcod.map import compute_fov
+from tcod.path import Pathfinder, SimpleGraph
 
-from game_baseclasses import BaseGameSubState, action_locked
 
 if TYPE_CHECKING:
-    from entities.library import TargetingEntity
     from store import GameStore
     from loop.components import SubLoopHandler
 
-from tcod.path import Pathfinder, SimpleGraph
+from baseclasses import BaseGameSubState, action_locked
 from game_types import TileCoordinate
 from display.colors import enemy_die
-from game_baseclasses import BaseGameEntity
+from baseclasses import BaseGameEntity
 from entities.components import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState
 
 
@@ -72,7 +71,7 @@ class TargetableEntity(BaseGameEntity):
     It has a 'perception' substate that is an instance of TargetedSubState that manages its targeted states.
     A Targetable Entity can be damaged."""
 
-    targeter: "TargetingEntity | None" = None
+    targeter: TargetingEntity | None = None
     perception: TargetedSubState
     _substates_manifest = (
         ("spawn", BaseGameSubState),
@@ -87,7 +86,7 @@ class TargetableEntity(BaseGameEntity):
                  color: Tuple[int, int, int]=(0,0,0)) -> None:
         super().__init__(store=store, location=location, name=name, symbol=symbol, color=color)
 
-    def set_targeter(self, targeter: "TargetingEntity") -> None:
+    def set_targeter(self, targeter: TargetingEntity) -> None:
         self.targeter = targeter
         self.update()
 
@@ -482,6 +481,5 @@ class AICharacter(Character):
 
     def update(self) -> None:
         super().update()
-
 
 

@@ -3,21 +3,45 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple, cast
-from unittest import case
 
 from delays import GLOBAL_ACTION_COOLDOWN_TIME
-from game_types import TileCoordinate
-from game_baseclasses import BaseEntityEvent, BaseGameEvent, action_locked
-from entities import Character, AICharacter
-from game_baseclasses import BaseActionOnEntity
-from entities.behaviors.entity import EntityWaitEvent, EntityMoveAction
-from game_types import StateActionObject
+from game_types import TileCoordinate, StateActionObject
+from baseclasses import BaseActionOnEntity, BaseEntityEvent, BaseGameEvent, action_locked
+from entities.library import Character, AICharacter, CombatEntity
 
 if TYPE_CHECKING:
     from store import GameStore
     from loop.components import SubLoopHandler
 
-# BEHAVIORS
+###
+# A BEHAVIOR is the pair of an EVENT and an ACTION that together define a discrete unit of functionality for an entity.
+# The EVENT encapsulates the occurrence that triggers an ACTION, while the ACTION defines the specific operations.
+# An EVENT can only be linked to one ACTION, but an ACTION can be triggered by multiple EVENTS.
+# This design allows for modular and reusable behavior definitions that can be easily managed within the game loop
+# architecture.
+###
+
+###
+# An EVENT should follow this pattern:
+# CALLED BY: An entity or system when a specific condition occurs that requires handling.
+# 1. Encapsulate all relevant information about the occurrence that needs to be passed to the associated ACTION in the behavior.
+# 2. Implement a trigger method that, when called, sends the EVENT to the appropriate loop handler for processing.
+###
+
+####
+# An ACTION should follow this pattern:
+# CALLED BY: An EVENT that is created by an entity or system OR directly called by another ACTION to form a chained sequence of ACTIONS.
+# 1. Check pre-conditions (e.g., is the entity able to perform the action? At least the action_locked check should be done here)
+# 2. Perform the action's main logic.
+#    - Typically involves running through the entity's state machine to determine outcomes based on current state and action parameters.
+#    - Should NOT directly trigger state updates. These triggers should be handled by the enity's state machine as a result of the action's effects.
+# 3. Handle post-action effects (e.g. trigger follow-up events, log outcomes).
+#    - Chained ACTIONS have two options:
+#       a) Directly call the next ACTION in the sequence. This creates a synchronous flow between actions.
+#       b) Create and an EVENT or ACTION and send it to the loop handler. This allows for asynchronous and flexible action sequences.
+####
+
+
 class AICharacterEvent(BaseGameEvent):
     _entity: AICharacter | None
     _target: Character | None
@@ -69,7 +93,7 @@ class AIUpdateFocusAction(BaseActionOnEntity):
     Duck Types: StateActionObject, StoredStateObject
     """
     def __init__(self, store: GameStore | None = None, handler:  SubLoopHandler | None = None, entity: AICharacter | None = None) -> None:
-        super().__init__(store, handler, entity)
+        super().__init__(store=store, handler=handler, entity=entity)
 
     def perform(self) -> None:
 
@@ -206,7 +230,9 @@ class AIPursuitAction(BaseActionOnEntity):
         super().__init__(store, handler, entity)
 
     def perform(self) -> None:
-
+        if self.entity and self.entity.action_locked:
+            return
+        
         if isinstance(self.entity, AICharacter) and self.store is not None:
             step_size = 0
             if self.entity.location and self.entity.destination: # Calculate step size for movement
@@ -217,19 +243,26 @@ class AIPursuitAction(BaseActionOnEntity):
             if step_size <= 0 or step_size > 1: # Recalculate the path if step_size is invalid
                 self.entity.set_destination_from_path()
             
-            if not self.entity.action_locked:
-               if self.entity.collision.state == 'not_colliding':  # type: ignore | State machine attribute created dynamically
-                   EntityMoveAction(store=self.store, handler=self.handler, entity=self.entity, destination=self.entity.destination).perform()  # type: ignore
-            
-            if self.handler:
-                if self.entity.focus.state == 'tracking' or self.entity.focus.state == 'targeting':  # type: ignore | State machine attribute created dynamically
-                    if self.entity.distance_to_target > 1:
+            EntityMoveAction(store=self.store, handler=self.handler, entity=self.entity, destination=self.entity.destination).perform()  # type: ignore
+
+            match self.entity.focus.state:  # type: ignore | State machine attribute created dynamically
+                case 'idle':
+                    pass
+
+                case 'searching':
+                    pass
+
+                case 'tracking':
+                    if self.entity.distance_to_target is not None and self.entity.distance_to_target > 1: # If not adjacent to target, recalculate path, and continue pursuit
                         self.entity.set_destination_from_path() # If not adjacent to target, recalculate path, and continue pursuit
-                        self.handler.handle(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity))
+                        AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity).trigger()
                         self.store.log.add(text=f"The {self.entity.name} is pursuing {self.entity.target.name}.")  # type: ignore | Entity in this state must have a target.
 
-                if self.entity.focus.state == 'targeting' and self.entity.distance_to_target == 1: # # type: ignore | State machine attribute created dynamically | Dummy combat action for now
-                    self.store.log.add(f"The {self.entity.name} kicks {self.entity.target.name}!")  # type: ignore | Entity in this state must have a target.
+                case 'targeting':
+                    if self.entity.distance_to_target == 1: # # type: ignore | State machine attribute created dynamically | Dummy combat action for now
+                        if isinstance(self.entity, CombatEntity) and self.entity.target:
+                            if not isinstance(self.entity.target, self.entity.__class__):  # Prevent attacking self types
+                                EntityAttackAction(store=self.store, handler=self.handler, entity=self.entity, target=self.entity.target).perform()  # type: ignore | The store for this action must be GameStore.
 
 pursue = ('aipursuitevent', AIPursuitAction())
 
@@ -273,3 +306,4 @@ class MobCharacter(AICharacter):
             if self.ai.events.qsize() < 10 and self.ai.actions.qsize() < 10:
                 if self.store and self.store.portfolio:  # type: ignore | Assume store is GameStore
                     self.ai.handle(AIUpdateFocusEvent(store=self.store, handler=self.ai, entity=self))
+

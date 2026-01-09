@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, cast
 
 from entities import MobileEntity, TargetableEntity, TargetingEntity, CombatEntity
 from delays import GLOBAL_ACTION_COOLDOWN_TIME
-from game_baseclasses import BaseActionOnDestination, BaseActionOnEntity, BaseActionOnTarget, BaseGameEntity, BaseGameEvent
+from baseclasses import BaseActionOnDestination, BaseActionOnEntity, BaseActionOnTarget, BaseGameEntity, BaseGameEvent
 from game_types import StateActionObject, StateHandler
 from game_types import TileCoordinate
 
@@ -76,9 +76,9 @@ class EntityMoveAction(BaseActionOnDestination):
             initial_state = self.entity.collision.state  # type: ignore | State machine attribute created dynamically
             recalculate = False
 
-            wait = GLOBAL_ACTION_COOLDOWN_TIME // 2 # Default wait time
+            wait = GLOBAL_ACTION_COOLDOWN_TIME * 2 # Default wait time
             if self.entity.speed:
-                wait = (GLOBAL_ACTION_COOLDOWN_TIME - self.entity.speed) // 2
+                wait = (GLOBAL_ACTION_COOLDOWN_TIME - self.entity.speed) * 2
             
             EntityWaitAction(wait_time=wait, store=self.store, handler=self.handler, entity=self.entity).perform() # type: ignore | The store for this action must be GameStore.
 

@@ -11,7 +11,7 @@ import numpy as np
 
 from display.widgets import MainMapDisplay, HealthBarWidget, MessageLogWidget
 from manifests import DEFAULT_TILEMAP_MANIFEST
-from game_baseclasses import BaseUI
+from baseclasses import BaseUI
 from game_types import UIManifestDict
 
 if TYPE_CHECKING:

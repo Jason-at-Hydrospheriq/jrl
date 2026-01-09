@@ -7,7 +7,7 @@ from tcod.console import Console
 from tcod.context import Context
 import numpy as np
 
-from game_baseclasses import BaseUIWidget
+from baseclasses import BaseUIWidget
 
 if TYPE_CHECKING:
     from store import GameStore

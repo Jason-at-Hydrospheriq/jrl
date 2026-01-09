@@ -1,12 +1,12 @@
 import pytest
 from sys import path
 
-from game_baseclasses import BaseGameEntity
+from baseclasses import BaseGameEntity
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from tcod.event import Event
 
 from loop import *
-from game_baseclasses import BaseGameEvent
+from baseclasses import BaseGameEvent
 from loop.components import SubLoopHandler
 from atlas import Atlas
 from store.components import Portfolio

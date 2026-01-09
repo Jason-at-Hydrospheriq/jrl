@@ -8,9 +8,9 @@ import numpy as np
 import tcod
 
 from game_types import TileCoordinate
-from game_baseclasses import BaseGameEvent, action_locked
+from baseclasses import BaseGameEvent, action_locked
 from entities import Character
-from game_baseclasses import BaseGameAction
+from baseclasses import BaseGameAction
 from entities.behaviors.entity import EntityMoveAction
 from game_types import StateActionObject, TileCoordinate
 
