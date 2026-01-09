@@ -3,9 +3,9 @@ from sys import path
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from tcod.event import Event
 
-from loop_resources import *
-from loop_resources.behaviors.base import BaseGameEvent
-from loop_resources.components import SubLoopHandler
+from loop import *
+from loop.behaviors.base import BaseGameEvent
+from loop.components import SubLoopHandler
 from atlas import Atlas
 from store.components import Portfolio
 from game_types import TileCoordinate

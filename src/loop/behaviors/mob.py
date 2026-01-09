@@ -8,13 +8,13 @@ from unittest import case
 from game_types import TileCoordinate
 from entities.base import action_locked
 from entities import Character, AICharacter
-from loop_resources.behaviors.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent
-from loop_resources.behaviors.entity import EntityWaitEvent, EntityMoveAction
+from loop.behaviors.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent
+from loop.behaviors.entity import EntityWaitEvent, EntityMoveAction
 from game_types import StateActionObject
 
 if TYPE_CHECKING:
     from engine_components import GameStore
-    from loop_resources.components import SubLoopHandler
+    from loop.components import SubLoopHandler
 
 GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds
 

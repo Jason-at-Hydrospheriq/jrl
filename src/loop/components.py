@@ -8,7 +8,7 @@ from transitions import Machine
 from queue import Queue
 
 from game_types import GameAction, GameEvent, StateActionObject, StatefulObject
-from loop_resources.behaviors import *
+from loop.behaviors import *
 
 class BaseGameLoop:
     store: StatefulObject | None

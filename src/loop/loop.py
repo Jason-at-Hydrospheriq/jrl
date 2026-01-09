@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, List
 import time
 import queue
 
-from loop_resources import *
-from loop_resources.components import SubLoopHandler
+from loop import *
+from loop.components import SubLoopHandler
 from game_types import GameAction, GameEvent
 
 if TYPE_CHECKING:

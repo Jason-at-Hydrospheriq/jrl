@@ -12,9 +12,9 @@ from entities.components  import CollisionSubState, CombatSubState, TargetedSubS
 from game_types import GameEntity, EntityParentState
 from game_types import TileCoordinate
 from store.components import Atlas
-from loop_resources import investigate, PlayerCharacter
+from loop import investigate, PlayerCharacter
 from store import GameStore
-from loop_resources.components import SubLoopHandler
+from loop.components import SubLoopHandler
 
 
 class DummyGameStore:

@@ -10,14 +10,14 @@ import tcod
 from game_types import TileCoordinate
 from entities.base import action_locked
 from entities import Character
-from loop_resources.behaviors.base import BaseGameAction, BaseGameEvent
-from loop_resources.behaviors.entity import EntityMoveAction
+from loop.behaviors.base import BaseGameAction, BaseGameEvent
+from loop.behaviors.entity import EntityMoveAction
 from game_types import StateActionObject
 from game_types import TileCoordinate
 
 if TYPE_CHECKING:
     from engine_components import GameStore
-    from loop_resources.components import SubLoopHandler
+    from loop.components import SubLoopHandler
 
 GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds
 

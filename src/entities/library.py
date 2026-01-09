@@ -11,7 +11,7 @@ from tcod.map import compute_fov
 if TYPE_CHECKING:
     from entities.library import TargetingEntity
     from store import GameStore
-    from loop_resources.components import SubLoopHandler
+    from loop.components import SubLoopHandler
 
 from tcod.path import Pathfinder, SimpleGraph
 from game_types import TileCoordinate
