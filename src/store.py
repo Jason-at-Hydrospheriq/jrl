@@ -4,8 +4,8 @@
 from __future__ import annotations
 from transitions import Machine
 
-from store.components import Portfolio
-from store.components import Atlas
+from portfolio import Portfolio
+from atlas import Atlas
 from display_components.widgets import MessageLog
 
 class GameStore:
