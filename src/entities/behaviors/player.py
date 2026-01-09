@@ -11,9 +11,8 @@ from game_types import TileCoordinate
 from entities.base import action_locked
 from entities import Character
 from entities.behaviors.base import BaseGameAction, BaseGameEvent
-from entities.behaviors import EntityMoveAction
-from game_types import StateActionObject
-from game_types import TileCoordinate
+from entities.behaviors.entity import EntityMoveAction
+from game_types import StateActionObject, TileCoordinate
 
 if TYPE_CHECKING:
     from store import GameStore
