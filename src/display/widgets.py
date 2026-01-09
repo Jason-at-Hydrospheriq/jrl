@@ -13,8 +13,8 @@ from game_types import UIManifestDict
 if TYPE_CHECKING:
     from store import GameStore
 
-from display_components.graphics import colors
-from display_components.graphics.tile_types import SHROUD
+from display.graphics import colors
+from display.graphics.tile_types import SHROUD
 from atlas.components.tilemaps import DEFAULT_TILEMAP_MANIFEST
 
 class BaseUI:

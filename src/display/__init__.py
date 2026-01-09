@@ -19,3 +19,4 @@ __maintainer__ = "Jason Nichols"
 __email__ = "guumbarahma@gmail.com"
 __status__ = "Prototype"
 
+from display.display import GameDisplay

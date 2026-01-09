@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 from tcod.path import Pathfinder, SimpleGraph
 from game_types import TileCoordinate
-from display_components.graphics.colors import enemy_die
+from display.graphics.colors import enemy_die
 from entities.base import BaseGameEntity, BaseGameSubState, action_locked
 from entities.components import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState
 

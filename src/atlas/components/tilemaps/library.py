@@ -7,7 +7,7 @@ import numpy as np
 
 from atlas.components.tilemaps import GraphicTileMap
 from game_types import TileTuple
-from display_components.graphics import ascii_graphic
+from display.graphics import ascii_graphic
 from game_types import GraphicsManifestDict
 
 DEFAULT_TILEMAP_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': TileTuple(([50], [50]))},

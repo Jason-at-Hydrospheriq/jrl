@@ -9,7 +9,7 @@ from PIL import Image
 import os
 import numpy as np
 
-from display_components.widgets import MainMapDisplay, HealthBarWidget, MessageLogWidget, BaseUI
+from display.widgets import MainMapDisplay, HealthBarWidget, MessageLogWidget, BaseUI
 from atlas.components.tilemaps import DEFAULT_TILEMAP_MANIFEST
 from game_types import UIManifestDict
 
@@ -49,17 +49,17 @@ class GameDisplay(BaseUI):
     WIDTH, HEIGHT = 200, 96  # Window pixel resolution (when not maximized.)
     FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
     src_path = os.path.dirname(os.path.abspath(__file__))
-    TILESET = tcod.tileset.load_truetype_font("C:\\Users\\jason\\workspaces\\repos\\jrl\\src\\display_components\\graphics\\resources\\GoogleSansCode-SemiBold.ttf", 25, 25)
+    TILESET = tcod.tileset.load_truetype_font("C:\\Users\\jason\\workspaces\\repos\\jrl\\src\\display\\graphics\\resources\\GoogleSansCode-SemiBold.ttf", 25, 25)
 
     def __init__(self, context: Context | None = None, ui_manifest: UIManifestDict | None = DEFAULT_UI_MANIFEST, store: GameStore | None = None) -> None:
         super().__init__(context=context, ui_manifest=ui_manifest)  
         self.store = store
 
         # Load Tileset Resources
-        img = Image.open(os.path.join("display_components", "graphics", "resources", "player", "test-5.png"))
+        img = Image.open(os.path.join("display", "graphics", "resources", "player", "test-5.png"))
         img = img.convert("RGBA")
         self.TILESET.set_tile(64, np.array(img))
-        img = Image.open(os.path.join("display_components", "graphics", "resources", "mob", "test-3.png"))
+        img = Image.open(os.path.join("display", "graphics", "resources", "mob", "test-3.png"))
         img = img.convert("RGBA")
         self.TILESET.set_tile(65, np.array(img))
 

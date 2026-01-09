@@ -6,7 +6,7 @@ from transitions import Machine
 
 from portfolio import Portfolio
 from atlas import Atlas
-from display_components.widgets import MessageLog
+from display.widgets import MessageLog
 
 class GameStore:
     """
