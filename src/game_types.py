@@ -9,7 +9,7 @@ from warnings import warn
 from transitions import Machine
 from queue import Queue
 import numpy as np
-from numpy import random    
+from numpy import random  
 
 
 @runtime_checkable
@@ -993,3 +993,30 @@ class GraphicTileMap(Protocol):
 
     def is_blocked(self, location: TileCoordinate) -> bool:
         return bool(self.tiles['blocks_movement'][location.x, location.y])
+
+
+class BaseMapGenerator(Protocol):
+    map_template: GraphicTileMap
+
+    """
+    The BaseMapGenerator Protocol defines the methods that all map generators must implement. This protocol ensures that all map generators can be used 
+    interchangeably in the game engine. The generator is a component of the Atlas object and is responsible for creating and populating the map with rooms, 
+    corridors, and other elements. The generator does NOT handle the placement of entities or items on the map. It only creates the map object and returns a copy
+    of it to the Atlas object.
+
+    For a full implementation, see the `core_components.generators` module.
+    """
+
+    def generate(self) -> GraphicTileMap:
+        raise NotImplementedError()
+
+    def add(self,
+                area: TileArea,
+                center: TileCoordinate,
+                size: TileTuple) -> TileArea | None:
+
+        method_name = "_add_" + area.__class__.__name__.lower()
+        method = getattr(self, method_name, None)
+        if method:
+            return method(area, center, size)
+        return None

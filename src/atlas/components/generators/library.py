@@ -8,7 +8,7 @@ from typing import Generator
 import random
 
 from atlas.components.tiles import *
-from atlas.components.generators.base import BaseMapGenerator
+from game_types import BaseMapGenerator
 from atlas.components.tilemaps import DefaultTileMap
 from game_types import TileCoordinate, TileTuple
 

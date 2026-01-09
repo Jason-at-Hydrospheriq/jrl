@@ -4,8 +4,9 @@
 from __future__ import annotations
 from collections import OrderedDict
 from typing import TYPE_CHECKING
-from atlas.components.generators import BaseMapGenerator, DungeonGenerator
+from atlas.components.generators import DungeonGenerator
 from atlas.components.tilemaps import DefaultTileMap
+from game_types import BaseMapGenerator
 
 if TYPE_CHECKING:
     from store import GameStore        
