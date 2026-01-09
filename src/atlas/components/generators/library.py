@@ -7,9 +7,9 @@ import numpy as np
 from typing import Generator
 import random
 
-from atlas_components.tiles import *
-from atlas_components.generators.base import BaseMapGenerator
-from atlas_components.tilemaps import DefaultTileMap
+from atlas.components.tiles import *
+from atlas.components.generators.base import BaseMapGenerator
+from atlas.components.tilemaps import DefaultTileMap
 
 RECTANGULAR_ROOM_TEMPLATE = RectangularRoom()
 CIRCULAR_ROOM_TEMPLATE = CircularRoom()

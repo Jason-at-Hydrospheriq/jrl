@@ -4,7 +4,7 @@
 from __future__ import annotations
 from entities import BaseGameEntity
 from game_types import StateHandler
-from atlas_components.tiles.base import TileCoordinate
+from atlas.components.tiles.base import TileCoordinate
 from game_types import *
 
 

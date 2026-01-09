@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple, cast
 from unittest import case
 
-from atlas_components.tiles import TileCoordinate
+from atlas.components.tiles import TileCoordinate
 from entities.base import action_locked
 from entities import Character, AICharacter
 from loop_resources.behaviors.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent

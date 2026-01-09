@@ -1,2 +1,2 @@
-from store.components.atlas import Atlas
+from atlas import Atlas
 from store.components.portfolio import Portfolio

@@ -9,7 +9,7 @@ from typing import Any, List, Protocol, Dict, Tuple, TypedDict, OrderedDict
 from copy import deepcopy
 import numpy as np
 
-from atlas_components.tiles import BaseTileGrid, TileTuple, TileArea, TileCoordinate
+from atlas.components.tiles import BaseTileGrid, TileTuple, TileArea, TileCoordinate
 from display_components.graphics.tile_types import ascii_graphic
 
 # A typed dictionary for map graphics
@@ -98,7 +98,7 @@ class GraphicTileMap(Protocol):
     Implementations of this protocol are responsible for managing the state and graphics of the tiles on the map bases on the specific definitions in the graphics 
     manifest. Each new map should have its own associated graphics manifest standard.
 
-    For a full implementation, see the `atlas_components.library` module.
+    For a full implementation, see the `atlas.components.library` module.
     """
     _graphics_manifest: GraphicsManifestDict
     _graphics_resources: Dict[str, Any | None]

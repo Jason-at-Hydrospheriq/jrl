@@ -10,7 +10,7 @@ import os
 import numpy as np
 
 from display_components.widgets import MainMapDisplay, HealthBarWidget, MessageLogWidget, BaseUI
-from atlas_components.tilemaps import DEFAULT_TILEMAP_MANIFEST
+from atlas.components.tilemaps import DEFAULT_TILEMAP_MANIFEST
 from display_components.widgets import UIManifestDict
 
 if TYPE_CHECKING:

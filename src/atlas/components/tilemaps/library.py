@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Tuple
 import numpy as np
 
-from atlas_components.tilemaps import GraphicTileMap, GraphicsManifestDict
-from atlas_components.tiles import TileTuple
+from atlas.components.tilemaps import GraphicTileMap, GraphicsManifestDict
+from atlas.components.tiles import TileTuple
 from display_components.graphics import ascii_graphic
 
 DEFAULT_TILEMAP_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': TileTuple(([50], [50]))},

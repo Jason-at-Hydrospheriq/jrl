@@ -5,8 +5,8 @@ import numpy as np
 import itertools
 
 from display_components.graphics.tile_types import ascii_graphic
-from atlas_components.tilemaps.library import DefaultTileMap, DEFAULT_TILEMAP_MANIFEST
-from atlas_components.tiles.base import BaseTileGrid, TileCoordinate, TileTuple
+from atlas.components.tilemaps.library import DefaultTileMap, DEFAULT_TILEMAP_MANIFEST
+from atlas.components.tiles.base import BaseTileGrid, TileCoordinate, TileTuple
 
 
 # Test Cases for ascii_graphic dtype

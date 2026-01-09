@@ -8,7 +8,7 @@ from transitions import Machine
 from queue import Queue
 import numpy as np
 
-from atlas_components.tiles.base import TileCoordinate
+from atlas.components.tiles.base import TileCoordinate
 
 
 @runtime_checkable

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 
 from core_components.tiles.base import TileCoordinate
-from atlas_components.base import BaseTileGrid
+from atlas.components.base import BaseTileGrid
 from core_components.generators.base import BaseMapGenerator
 from core_components.generators.library import DEFAULT_MAP_TEMPLATE, CIRCULAR_ROOM_TEMPLATE, RECTANGULAR_ROOM_TEMPLATE, DungeonGenerator
 

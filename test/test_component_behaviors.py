@@ -10,12 +10,12 @@ from loop_resources import *
 from loop_resources.behaviors.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
 from loop_resources.components import SubLoopHandler
 from store.components.portfolio import Portfolio
-from store.components.atlas import Atlas
+from atlas import Atlas
 from game_types import StoredStateObject
 from store import GameStore
 from entities import BaseGameEntity, AICharacter
 from game_types import StateActionObject
-from atlas_components.tiles.base import TileCoordinate
+from atlas.components.tiles.base import TileCoordinate
 
 
 class DummyTarget:

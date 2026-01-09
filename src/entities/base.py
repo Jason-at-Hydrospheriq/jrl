@@ -10,7 +10,7 @@ from transitions import Machine
 if TYPE_CHECKING:
     from store import GameStore
 
-from atlas_components.tiles.base import TileCoordinate, TileTuple
+from atlas.components.tiles.base import TileCoordinate, TileTuple
 from game_types import StatefulObject
 
 

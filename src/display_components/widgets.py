@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 from display_components.graphics import colors
 from display_components.graphics.tile_types import SHROUD
-from atlas_components.tilemaps import DEFAULT_TILEMAP_MANIFEST
+from atlas.components.tilemaps import DEFAULT_TILEMAP_MANIFEST
 
 class BaseUI:
     store: GameStore | None

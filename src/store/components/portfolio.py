@@ -8,8 +8,8 @@ import numpy as np
 from copy import deepcopy
 
 from entities import BaseGameEntity, AICharacter, Character
-from atlas_components.tilemaps.library import DEFAULT_TILEMAP_MANIFEST, DefaultTileMap
-from atlas_components.tiles.base import TileTuple, TileCoordinate
+from atlas.components.tilemaps.library import DEFAULT_TILEMAP_MANIFEST, DefaultTileMap
+from atlas.components.tiles.base import TileTuple, TileCoordinate
 from loop_resources import MobCharacter, PlayerCharacter
 
 if TYPE_CHECKING:
