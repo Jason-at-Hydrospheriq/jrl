@@ -1,0 +1,436 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+from __future__ import annotations
+from functools import wraps
+from typing import TYPE_CHECKING, Dict, Set, Tuple
+from transitions import Machine
+import numpy as np
+from tcod.console import Console
+from tcod.context import Context
+
+from manifests import DEFAULT_TILEMAP_MANIFEST
+from game_types import StateHandler, StatefulObject, TileCoordinate, TileTuple, UIManifestDict
+
+if TYPE_CHECKING:
+    from store import GameStore
+
+
+
+
+
+def is_locked(func):
+    """A decorator to wrap each method with a condition check."""
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        # Access the condition from the instance (self)
+        if self.action_locked:
+            return None # Or raise an exception, or handle as needed
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
+def action_locked(cls):
+    """A class decorator to apply the condition_checker to all methods."""
+    for attr_name, attr_value in cls.__dict__.items():
+        if callable(attr_value) and not attr_name.startswith('__'):
+            # Wrap the method with the condition checker
+            setattr(cls, attr_name, is_locked(attr_value))
+
+        if isinstance(attr_value, property):
+            if attr_value.fset:
+                # Wrap the setter method of the property
+                setter = attr_value.fset
+                if setter and callable(setter):
+                    wrapped_setter = is_locked(setter)
+                else:
+                    wrapped_setter = setter
+
+                # Create a new property with the wrapped methods
+                new_property = property(attr_value.fget, wrapped_setter)
+                setattr(cls, attr_name, new_property)
+
+    return cls
+
+
+class BaseUIWidget:
+    name: str
+    upper_Left_x: int
+    upper_Left_y: int
+    lower_Right_x: int
+    lower_Right_y: int
+    width: int
+    height: int
+
+    def __init__(self, name: str, x: int, y: int, width: int, height: int):
+        self.name = name
+        self.upper_Left_x = x
+        self.upper_Left_y = y
+        self.lower_Right_x = x + width
+        self.lower_Right_y = y + height
+        self.width = width
+        self.height = height
+
+
+    def render(self, context: Context, console: Console, store: GameStore) -> None:
+        """ Render the UI component """
+        raise NotImplementedError()
+
+
+class BaseUI:
+    store: GameStore | None
+    machine: Machine
+    context: Context | None
+    console: Console | None
+    widgets: Set[BaseUIWidget]
+    context_width: int
+    context_height: int
+    console_width: int
+    console_height: int
+
+    """ The UI Manager handles the various UI components and their interactions. """
+
+    def __init__(self, context: Context | None = None, store: GameStore | None = None, ui_manifest: UIManifestDict | None = None, *, context_width: int = 80, context_height: int = 50) -> None:
+
+        if context is not None:
+            self.context = context
+
+        if store is not None:
+            self.store = store
+
+        self.widgets = set()
+        self.context_width = context_width
+        self.context_height = context_height
+        # if self.state.map.active is not None:
+        #     self.console_width, self.console_height = self.state.map.active.tiles.shape
+        # else:
+        #     self.console_width = context_width
+        #     self.console_height = context_height
+
+        if ui_manifest is not None:
+            self.console_width = DEFAULT_TILEMAP_MANIFEST['dimensions']['grid_size'][0][0]
+            self.console_height = DEFAULT_TILEMAP_MANIFEST['dimensions']['grid_size'][1][0]
+
+            for widget_name, widget_info in ui_manifest['widgets'].items():
+                widget_cls = widget_info['cls']
+                x = widget_info.get('x', 0)
+                y = widget_info.get('y', 0)
+                width = widget_info.get('width', 10)
+                height = widget_info.get('height', 5)
+                widget = widget_cls(widget_name, upper_Left_x=x, upper_Left_y=y, width=width, height=height)
+                self.add_widget(widget=widget, x=x, y=y)
+
+
+        states = ['idle',
+                    {'name': 'started', 'on_enter': '_start'},
+                    {'name': 'stopped', 'on_enter': '_stop'}]
+        transitions =[
+            {'trigger': 'start', 'source': 'stopped', 'dest': 'started'},
+            {'trigger': 'stop', 'source': 'started', 'dest': 'stopped'}
+            ]
+        self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
+
+    def _start(self) -> None:
+        ...
+
+    def _stop(self) -> None:
+        ...
+
+    def add_widget(self, *, widget: BaseUIWidget, x: int = -1, y: int = -1) -> None:
+        """Spawn a copy of this entity at the given location."""
+        widget.upper_Left_x = x
+        widget.upper_Left_y = y
+        widget.lower_Right_x = x + widget.width
+        widget.lower_Right_y = y + widget.height
+        self.widgets.add(widget)
+
+    def get_widget_by_name(self, name: str) -> BaseUIWidget | None:
+        """Retrieve a UI element by its name."""
+        for widget in self.widgets:
+            if widget.name == name:
+                return widget
+        return None
+
+    def get_widgets_by_type(self, widget_type: type) -> Set[BaseUIWidget]:
+        """Retrieve all UI elements of a specific type."""
+        return {widget for widget in self.widgets if isinstance(widget, widget_type)}
+
+    def render(self) -> None:
+        if self.context and self.store:
+            if self.context.sdl_window is not None:
+                # console_width, console_height = self.context.sdl_window.size
+                self.console = self.context.new_console(self.console_width, self.console_height, order="F")
+                for widget in self.widgets:
+                    widget.render(self.context, self.console, self.store)
+                self.context.present(self.console)
+                self.console.clear()
+
+
+class BaseSubState:
+    machine: Machine
+    name: str
+    store: StatefulObject
+
+    # Set defaults in subclasses
+    _state_bits: Tuple[str, ...]
+    _states: Tuple[Dict, ...]
+    _transitions: Tuple[Dict, ...]
+    _initial_state: str
+
+    def __init__(self, name: str, store: StatefulObject):
+        self.name = name
+        self.store = store
+
+        machine = Machine(model=self, states=self._states, transitions=self._transitions, initial=self._initial_state)
+        self.machine = machine
+
+    def set_bits(self) -> None:
+        pass # Define in subclasses
+
+
+class BaseParentState:
+    machine: Machine
+    substates: list[BaseSubState]
+    state_vector: Dict[str, bool]
+    state_vector_dtype: np.dtype
+    # Define in subclasses
+    _substates_manifest: Tuple[Tuple[str, type[BaseSubState]], ...]
+
+    def __init__(self):
+        self.substates = []
+        self.state_vector = {}
+        self.machine = Machine(model=self, states=[], transitions=[])
+
+        for name, substate in self._substates_manifest:
+            self._add_substate(substate(name=name, store=self))
+
+    def update(self) -> None:
+        for substate in self.substates:
+            try:
+                substate.set_bits()
+                substate.update() # type: ignore
+
+            except Exception as e:
+                raise e
+
+    def _add_substate(self, substate: BaseSubState) -> None:
+        self.substates.append(substate)
+        for bit in substate._state_bits:
+            self.state_vector[bit] = False
+        self.__setattr__(substate.name.lower(), substate) #type: ignore
+
+
+class BaseGameSubState(BaseSubState):
+    """
+    A generic substate for game entity_components
+
+    Duck Types: EntitySubState, BaseSubState
+    """
+    _state_bits = ('on_map',)
+    _states = ({'name': 'in_play'},
+               {'name': 'not_in_play'})
+    _transitions = (
+        {'trigger':'update', 'source':'not_in_play', 'dest':'in_play', 'conditions':['is_on_map']},
+        {'trigger':'update', 'source':'in_play', 'dest':'not_in_play', 'conditions':['is_not_on_map']})
+    _initial_state = 'not_in_play'
+
+    def set_bits(self) -> None:
+        self.store.state_vector['on_map'] = self.store.location is not None #type: ignore
+
+    # All substates must have the primary state bit methods
+    def is_on_map(self) -> bool:
+        return self.store.state_vector['on_map'] # type: ignore
+
+    def is_not_on_map(self) -> bool:
+        return not self.store.state_vector['on_map'] # type: ignore
+
+
+@action_locked
+class BaseGameEntity(BaseParentState):
+    """
+    A generic object to represent players, enemies, items, etc.
+
+    Duck Types: StatefulObject, StateStoreObject, GameEntity, BaseParentState
+    """
+    store: StatefulObject | None
+    machine: Machine
+    location: TileCoordinate | None
+    blocks_movement: bool | None
+    is_invulnerable: bool | None
+    action_locked: bool | None
+    _hp: int | None
+    _max_hp: int | None
+    name: str
+    symbol: str
+    color: Tuple[int, int, int] # Do this like the maps. Numpy datatypes mapped to state.
+
+    # Substate definition
+    _substates_manifest = (
+        ("spawn", BaseGameSubState),
+    )
+
+    def __init__(self,
+                 store: GameStore | None = None,
+                 *,
+                 location: TileCoordinate | None = None,
+                 name: str="<Unnamed>",
+                 symbol: str=' ',
+                 color: Tuple[int, int, int]=(0,0,0)) -> None:
+        super().__init__()
+
+        self.store = store
+        parent_map_size = TileTuple(([100], [100]))
+
+        if self.store:
+            parent_map_size = self.store.atlas.active.grid.size  # type: ignore
+
+        if not hasattr(self, 'location'):
+            self.location = location
+
+        if not hasattr(self, 'symbol'):
+            self.symbol = symbol
+
+        if not hasattr(self, 'color'):
+            self.color = color
+
+        if not hasattr(self, 'name'):
+            self.name = name
+
+        self.blocks_movement = True
+        self.is_invulnerable = False
+        self._hp = 0
+        self._max_hp = 1
+        self.action_locked = False
+
+        self.update()
+
+    @property
+    def hp(self) -> int | None:
+        if not self.is_invulnerable:
+            return self._hp
+        return None
+
+    @hp.setter
+    def hp(self, value: int | None) -> None:
+        if not self.is_invulnerable:
+            self._hp = value
+            self.update()
+
+    @property
+    def max_hp(self) -> int | None:
+        if not self.is_invulnerable:
+            return self._max_hp
+        return None
+
+    @max_hp.setter
+    def max_hp(self, value: int | None) -> None:
+        if not self.is_invulnerable:
+            self._max_hp = value
+            self.update()
+
+
+###
+# A BEHAVIOR is the pair of an EVENT and an ACTION that together define a discrete unit of functionality for an entity.
+# The EVENT encapsulates the occurrence that triggers an ACTION, while the ACTION defines the specific operations.
+# An EVENT can only be linked to one ACTION, but an ACTION can be triggered by multiple EVENTS.
+# This design allows for modular and reusable behavior definitions that can be easily managed within the game loop
+# architecture.
+###
+
+###
+# An EVENT should follow this pattern:
+# CALLED BY: An entity or system when a specific condition occurs that requires handling.
+# 1. Encapsulate all relevant information about the occurrence that needs to be passed to the associated ACTION in the behavior.
+# 2. Implement a trigger method that, when called, sends the EVENT to the appropriate loop handler for processing.
+###
+
+####
+# An ACTION should follow this pattern:
+# CALLED BY: An EVENT that is created by an entity or system OR directly called by another ACTION to form a chained sequence of ACTIONS.
+# 1. Check pre-conditions (e.g., is the entity able to perform the action? At least the action_locked check should be done here)
+# 2. Perform the action's main logic.
+#    - Typically involves running through the entity's state machine to determine outcomes based on current state and action parameters.
+#    - Should NOT directly trigger state updates. These triggers should be handled by the enity's state machine as a result of the action's effects.
+# 3. Handle post-action effects (e.g. trigger follow-up events, log outcomes).
+#    - Chained ACTIONS have two options:
+#       a) Directly call the next ACTION in the sequence. This creates a synchronous flow between actions.
+#       b) Create and an EVENT or ACTION and send it to the loop handler. This allows for asynchronous and flexible action sequences.
+####
+
+
+class BaseGameEvent:
+    store: StatefulObject | None
+    handler: StateHandler | None
+
+    def __init__(self, store: StatefulObject | None = None, handler: StateHandler | None = None) -> None:
+        self.store = store
+        self.handler = handler
+
+    def trigger(self) -> None:
+        raise NotImplementedError("Subclasses must implement the trigger method.")
+
+
+class BaseEntityEvent(BaseGameEvent):
+    entity: BaseGameEntity | None
+
+    def __init__(self, store: StatefulObject | None = None, handler:  StateHandler | None = None, entity: BaseGameEntity | None = None) -> None:
+        super().__init__(store, handler)
+
+        self.entity = entity
+
+    def trigger(self) -> None:
+        raise NotImplementedError("Subclasses must implement the trigger method.")
+
+
+class BaseGameAction:
+    store: StatefulObject | None
+    handler: StateHandler | None
+
+    def __init__(self, store: StatefulObject | None = None, handler: StateHandler | None = None) -> None:
+        self.store = store
+        self.handler = handler
+
+    def perform(self) -> None:
+        raise NotImplementedError("Subclasses must implement the perform method.")
+
+
+class BaseActionOnEntity(BaseGameAction):
+    entity: BaseGameEntity | None
+
+    def __init__(self, store: StatefulObject | None = None, handler:  StateHandler | None = None, entity: BaseGameEntity | None = None) -> None:
+        super().__init__(store, handler)
+
+        self.entity = entity
+
+    def perform(self) -> None:
+        raise NotImplementedError("Subclasses must implement the perform method.")
+
+
+class BaseActionOnTarget(BaseGameAction):
+    entity: BaseGameEntity | None = None
+    target: BaseGameEntity | None = None
+
+    def __init__(self, store: StatefulObject | None = None, handler:  StateHandler | None = None, entity: BaseGameEntity | None = None,
+                 target: BaseGameEntity | None = None) -> None:
+        super().__init__(store, handler)
+
+        self.entity = entity
+        self.target = target
+
+    def perform(self) -> None:
+        raise NotImplementedError("Subclasses must implement the perform method.")
+
+
+class BaseActionOnDestination(BaseGameAction):
+    entity: BaseGameEntity | None = None
+    destination: TileCoordinate | None = None
+
+    def __init__(self, store: StatefulObject | None = None, handler:  StateHandler | None = None, entity: BaseGameEntity | None = None,
+                 destination: TileCoordinate | None = None) -> None:
+        super().__init__(store, handler)
+
+        self.entity = entity
+        self.destination = destination
+
+    def perform(self) -> None:
+        raise NotImplementedError("Subclasses must implement the perform method.")

@@ -1,9 +1,11 @@
 import pytest
 from sys import path
+
+from game_types import BaseTileGrid, TileCoordinate, TileCoordinateSystem, TileCoordinateSystemElement, TileTuple
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
-from core_components.tiles.base import TileCoordinate, TileArea, TileCoordinateSystem, TileTuple, BaseTileGrid, TileCoordinateSystemElement
+from game_types import TileArea
 
 PARENT_MAP_SIZE = TileTuple( ([10], [10]) )
 TOP_LEFT = TileCoordinate(TileTuple(([1], [2])), PARENT_MAP_SIZE)

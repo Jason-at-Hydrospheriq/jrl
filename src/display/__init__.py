@@ -1,12 +1,12 @@
 __doc__ ="""
-Module Name: jrl
+Module Name: interfaces
 
 Description:
-    This module provides all classes and functions related to Jay's Roguelike game.
+    This module provides all interfaces related to Jay's Roguelike game.
 
 Author: Jason Nichols
 Organization: Jason Nichols
-Date: 2025-11-30
+Date: 2025-12-2
 Version: 0.1.0
 License: None
 """
@@ -19,6 +19,4 @@ __maintainer__ = "Jason Nichols"
 __email__ = "guumbarahma@gmail.com"
 __status__ = "Prototype"
 
-from game_types import *
-
-#  import actions, components, dungeon_factory, entities, engine, event_handlers, game_map, main, mob_factory, tile_types
+from display.display import GameDisplay

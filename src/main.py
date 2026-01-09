@@ -3,47 +3,66 @@
 
 from __future__ import annotations
 import tcod
-from PIL import Image
-import numpy as np
-import os
-
-from engine import Engine
-
-TITLE = "JRL - Jay's Roguelike"
-WIDTH, HEIGHT = 200, 96  # Window pixel resolution (when not maximized.)
-FLAGS = tcod.context.SDL_WINDOW_RESIZABLE | tcod.context.SDL_WINDOW_MAXIMIZED
+from delays import GLOBAL_COOLDOWN_TIME
+from engine import GameEngine
+from entities import InputEvent
+import time
 
 def main() -> None:
 
-    tileset = tcod.tileset.load_truetype_font(os.path.join("core_components", "ui", "graphics", "resources", "GoogleSansCode-SemiBold.ttf"), 25, 25)
-    img = Image.open(os.path.join("core_components", "ui", "graphics", "resources", "player", "test-5.png"))
-    img = img.convert("RGBA")
-    tileset.set_tile(64, np.array(img))
-    img = Image.open(os.path.join("core_components", "ui", "graphics", "resources", "mob", "test-3.png"))
-    img = img.convert("RGBA")
-    tileset.set_tile(65, np.array(img))
-
-    game = Engine()    
-    game.start()
-    
-    game.ui.context = tcod.context.new(columns = WIDTH, rows = HEIGHT, tileset=tileset, title=TITLE, vsync=True, sdl_window_flags=FLAGS)
-    game.state.log.add("Welcome to Jay's Roguelike!")
-    game.ui.render()
+    game = GameEngine()    
+    game.start() # type: ignore | State machine attribute created dynamically
 
     while True:
-        # Update Internal State
-        game.map.update_state()
+        
+        # Update Display
+        if game.display:
+            game.display.render()
 
-        # Update Console
-        game.ui.render()
+        # Update Inputs
+        for event in tcod.event.wait():
+            #time.sleep(GLOBAL_COOLDOWN_TIME / 1000)  # Small delay to prevent high CPU usage
+            if event.type in ( "QUIT", "KEYDOWN" ):
+                match event.type:
+                    case "QUIT":
+                        game.stop()  # type: ignore
+                
+                    case "KEYDOWN":
+                        key_sim = event.sym
+                        if game.ai and game.ai.player_loop_handler:
+                            match key_sim:
+                                case tcod.event.KeySym.ESCAPE:
+                                    game.reset()  # type: ignore
 
-        # Update State Inputs
-        for game_event in tcod.event.wait():
-            if isinstance(game_event, tcod.event.KeyDown):
-                game.state.events.put(game_event)
+                                case tcod.event.KeySym.P:
+                                    msg = "Game is now "
 
-        if game.state.game_over.is_set():
-            game.ui.context.close()   
+                                    if game.state == 'playing':  # type: ignore
+                                        game.pause()  # type: ignore
+                                        msg = msg + f"{game.state}."  # type: ignore | State machine attribute created dynamically
+                                    elif game.state == 'paused':  # type: ignore
+                                        game.play()  # type: ignore
+                                        msg = msg + f"{game.state}."  # type: ignore | State machine attribute created dynamically
+                                    elif game.state == 'idle':  # type: ignore
+                                        game.play()  # type: ignore
+                                        msg = msg + f"{game.state}."  # type: ignore | State machine attribute created dynamically
+                                    
+                                    if game.store and msg != "Game is now ":
+                                        game.store.log.add(msg)
+                                        print(msg)
+                                case _:
+                                    if game.state not in ('idle', 'paused', 'shutdown'):  # type: ignore
+                                        if game.ai.player_loop_handler.events.qsize() < 10 and game.ai.player_loop_handler.actions.qsize() < 10:
+                                            game_event = InputEvent(store=game.store, handler=game.ai.player_loop_handler, input_event=event)
+                                            game.ai.player_loop_handler.handle(game_event)
+                                        else:
+                                            game.store.log.add(f"Events={game.ai.player_loop_handler.events.qsize()}, Actions={game.ai.player_loop_handler.actions.qsize()}")  # type: ignore
+                
+                if game.ai:
+                    time.sleep(GLOBAL_COOLDOWN_TIME / 1000)  # Small delay to prevent high CPU usage
+                    game.ai.update()
+
+        if game.state == 'shutdown':  # type: ignore | State machine attribute created dynamically
             break
 
 if __name__ == "__main__":

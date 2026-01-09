@@ -1,14 +1,15 @@
-from copy import deepcopy
-import itertools
 import pytest
 from sys import path
 
-from core_components.graphics.tile_types import ascii_graphic
+from manifests import DEFAULT_TILEMAP_MANIFEST
+from game_types import BaseTileGrid, TileTuple
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
+import itertools
 
-from core_components.maps.library import DefaultTileMap, DEFAULT_MANIFEST
-from core_components.tiles.base import BaseTileGrid, TileCoordinate, TileTuple
+from display_components.graphics.tile_types import ascii_graphic
+from atlas.components.tilemaps.tilemaps import DefaultTileMap
+from game_types import TileCoordinate
 
 
 # Test Cases for ascii_graphic dtype
@@ -448,7 +449,7 @@ def test_default_tile_map_reset_tiles():
         finally:
             pass
 
-def test_graphic_tile_map_object_collision():
+def test_graphic_tile_map_is_blocked():
     # Arrange
     tile_map = DefaultTileMap()
     collision_layout = np.full([*tile_map.tiles.shape], fill_value=False)
@@ -461,7 +462,7 @@ def test_graphic_tile_map_object_collision():
 
     # Assert
     try:
-        assert tile_map.object_collision(destination), "Expected get_object_collision to return a non-None value"
+        assert tile_map.is_blocked(destination), "Expected get_object_collision to return a non-None value"
      
     except AssertionError as e:
         pytest.fail(str(e))

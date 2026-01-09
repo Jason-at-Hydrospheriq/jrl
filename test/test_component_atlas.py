@@ -5,8 +5,8 @@ import tcod
 
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from core_components.atlas import Atlas
-from core_components.maps.library import DefaultTileMap
+from atlas import Atlas
+from atlas.components.tilemaps.tilemaps import DefaultTileMap
 
 def test_component_atlas_initialization():
     atlas = Atlas()
