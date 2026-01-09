@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, Dict, Tuple, Set, TypedDict
+from typing import TYPE_CHECKING, Tuple, Set
 from tcod.console import Console
 from tcod.context import Context
 import numpy as np
 from transitions import Machine
+
+from game_types import UIManifestDict
 
 if TYPE_CHECKING:
     from store import GameStore
@@ -263,5 +265,3 @@ class MessageLogWidget(BaseUIWidget):
             y -= 1
 
 
-class UIManifestDict(TypedDict):
-    widgets: Dict[str, Dict[str, Any]]

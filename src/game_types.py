@@ -3,11 +3,12 @@
 
 from __future__ import annotations
 
-from typing import Protocol, AbstractSet, Tuple, TypeVar, runtime_checkable
+from typing import Any, Dict, Protocol, AbstractSet, Tuple, TypeVar, TypedDict, runtime_checkable
 from transitions import Machine
 from queue import Queue
 import numpy as np
 
+from atlas.components.tiles import TileTuple
 from atlas.components.tiles.base import TileCoordinate
 
 
@@ -154,3 +155,16 @@ class GameEntity(Protocol):
     machine: Machine
     location: TileCoordinate | None
     blocks_movement: bool | None
+
+
+# A typed dictionary for map graphics
+class GraphicsManifestDict(TypedDict):
+    dimensions: Dict[str,TileTuple]
+    statespace: Dict[str, Tuple[str, ...] | Tuple[tuple, ...] | Dict[str, Any]] | None
+    colors: Dict[str, Tuple[int, Tuple[int, int, int], Tuple[int, int, int]]]
+    dtypes: Dict[str, np.dtype | None ]
+    graphics: Dict[str, Any]
+
+
+class UIManifestDict(TypedDict):
+    widgets: Dict[str, Dict[str, Any]]

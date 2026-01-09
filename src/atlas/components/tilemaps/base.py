@@ -5,20 +5,13 @@ from __future__ import annotations
 from warnings import warn
 import numpy as np
 import itertools
-from typing import Any, List, Protocol, Dict, Tuple, TypedDict, OrderedDict
+from typing import Any, List, Protocol, Dict, OrderedDict
 from copy import deepcopy
 import numpy as np
 
-from atlas.components.tiles import BaseTileGrid, TileTuple, TileArea, TileCoordinate
+from atlas.components.tiles import BaseTileGrid, TileArea, TileCoordinate
 from display_components.graphics.tile_types import ascii_graphic
-
-# A typed dictionary for map graphics
-class GraphicsManifestDict(TypedDict):
-    dimensions: Dict[str,TileTuple]
-    statespace: Dict[str, Tuple[str, ...] | Tuple[tuple, ...] | Dict[str, Any]] | None
-    colors: Dict[str, Tuple[int, Tuple[int, int, int], Tuple[int, int, int]]]
-    dtypes: Dict[str, np.dtype | None ]
-    graphics: Dict[str, Any]
+from game_types import GraphicsManifestDict
 
 # Helper functions to create GraphicManifestDict
 def create_states(n: int) -> List[str]:

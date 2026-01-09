@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import Tuple
 import numpy as np
 
-from atlas.components.tilemaps import GraphicTileMap, GraphicsManifestDict
+from atlas.components.tilemaps import GraphicTileMap
 from atlas.components.tiles import TileTuple
 from display_components.graphics import ascii_graphic
+from game_types import GraphicsManifestDict
 
 DEFAULT_TILEMAP_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': TileTuple(([50], [50]))},
                                          'statespace': {    'bits': ('blocks_movement', 'blocks_vision', 'visible', 'seen'),
