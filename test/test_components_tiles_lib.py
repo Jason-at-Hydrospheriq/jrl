@@ -5,7 +5,7 @@ from game_types import TileTuple
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 import numpy as np
 
-from atlas.components.tiles.library import DEFAULT_CENTER_LOCATION, RectangularRoom, CircularRoom, DEFAULT_CENTER_COORDINATE, DEFAULT_GRID_SIZE
+from atlas.components.tiles.tiles import DEFAULT_CENTER_LOCATION, RectangularRoom, CircularRoom, DEFAULT_CENTER_COORDINATE, DEFAULT_GRID_SIZE
 from game_types import TileCoordinate
 
 def test_rectangular_room_empty_init():

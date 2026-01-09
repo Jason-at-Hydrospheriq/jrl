@@ -9,8 +9,9 @@ from PIL import Image
 import os
 import numpy as np
 
-from display.widgets import MainMapDisplay, HealthBarWidget, MessageLogWidget, BaseUI
+from display.widgets import MainMapDisplay, HealthBarWidget, MessageLogWidget
 from atlas.components.tilemaps import DEFAULT_TILEMAP_MANIFEST
+from game_baseclasses import BaseUI
 from game_types import UIManifestDict
 
 if TYPE_CHECKING:
