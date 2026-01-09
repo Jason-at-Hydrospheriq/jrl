@@ -10,14 +10,14 @@ import tcod
 from atlas_components.tiles import TileCoordinate
 from entity_components.base import action_locked
 from entity_components.library import Character
-from loop_components.base import BaseGameAction, BaseGameEvent
-from loop_components.entity import EntityMoveAction
+from loop_behaviors.base import BaseGameAction, BaseGameEvent
+from loop_behaviors.entity import EntityMoveAction
 from game_types import StateActionObject
 from atlas_components.tiles.base import TileCoordinate
 
 if TYPE_CHECKING:
     from engine_components import GameStore
-    from engine_components.ai import LoopHandler
+    from engine_components.loop import SubLoopHandler
 
 GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds
 
@@ -69,7 +69,7 @@ class PlayerCharacter(Character):
 class InputEvent(BaseGameEvent):
     _input_event: tcod.event.Event | None
 
-    def __init__(self, store: GameStore | None = None, handler: LoopHandler | None = None, input_event: tcod.event.Event | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler: SubLoopHandler | None = None, input_event: tcod.event.Event | None = None) -> None:
         super().__init__(store, handler)
         self._input_event = input_event
 
@@ -91,7 +91,7 @@ class InputEvent(BaseGameEvent):
 class KeyDownAction(BaseGameAction):
     input_event: tcod.event.Event | None
 
-    def __init__(self, store: GameStore | None = None, handler: LoopHandler | None = None, input_event: tcod.event.KeyboardEvent | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler: SubLoopHandler | None = None, input_event: tcod.event.KeyboardEvent | None = None) -> None:
         super().__init__(store, handler)
         self.input_event = input_event
 
@@ -132,7 +132,7 @@ class PlayerCharacterEvent(BaseGameEvent):
     _entity: Character | None
     _target: Character | None
     
-    def __init__(self, store: GameStore | None = None, handler: LoopHandler | None = None, entity: Character | None = None, target: Character | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler: SubLoopHandler | None = None, entity: Character | None = None, target: Character | None = None) -> None:
         super().__init__(store, handler)
         self._entity = entity
         self._target = target

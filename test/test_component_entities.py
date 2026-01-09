@@ -12,9 +12,9 @@ from entity_components.library import CharacterHealthSubState, CollisionSubState
 from game_types import GameEntity, EntityParentState
 from atlas_components.tiles.base import TileCoordinate
 from store_components import Atlas
-from loop_components import AICharacter, investigate, PlayerCharacter
+from loop_behaviors import AICharacter, investigate, PlayerCharacter
 from engine_components.store import GameStore
-from engine_components.ai import LoopHandler
+from engine_components.loop import SubLoopHandler
 
 
 class DummyGameStore:
@@ -1430,7 +1430,7 @@ def test_entity_ai_character():
         map_size = store.atlas.active.grid.size
         store.portfolio = DummyPortfolio() # type: ignore
         
-        character = AICharacter(store=store, name='character_entity', symbol='@', color=(255, 255, 255), ai=LoopHandler(behaviors={investigate,}))
+        character = AICharacter(store=store, name='character_entity', symbol='@', color=(255, 255, 255), ai=SubLoopHandler(behaviors={investigate,}))
         character.location = TileCoordinate.from_tuple((0,0), parent_map_size=map_size)
         character.ai.start()  # type: ignore | Expect LoopHandler to have start() method
         target = DummyTarget()
@@ -1483,7 +1483,7 @@ def test_entity_ai_character():
         assert after_set_state == 'tracking', "Expected focus state to remain 'tracking' after setting path"  # type: ignore
         assert state_changed == False, "Expected state_changed to be False after setting path"
 
-        assert isinstance(initial_ai, LoopHandler), "Expected initial AI to be BaseLoopHandler()"
+        assert isinstance(initial_ai, SubLoopHandler), "Expected initial AI to be BaseLoopHandler()"
         assert after_death_ai == None, "Expected AI to be None after death"
         assert final_hp == None, "Expected hp to be the death value of None after action_locked state"
 

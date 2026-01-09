@@ -6,16 +6,16 @@ import threading
 import tcod
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from loop_components.player import PlayerCharacter
+from loop_behaviors.player import PlayerCharacter
 from store_components.portfolio import Portfolio
 from store_components.atlas import Atlas
 from game_types import StoredStateObject
 from engine_components.store import GameStore
 from entity_components.base import BaseGameEntity
-from engine_components.ai import LoopHandler
+from engine_components.loop import SubLoopHandler
 from game_types import StateActionObject
-from loop_components.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination, BaseGameEvent
-from loop_components import NoAction, WaitAction, AIAcquireTargetAction, KeyDownAction, EntityWaitAction, EntityMoveAction, AIInvestigateAction, EntityWaitEvent, AIPursuitEvent, AIPursuitAction
+from loop_behaviors.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination, BaseGameEvent
+from loop_behaviors import NoAction, WaitAction, AIAcquireTargetAction, KeyDownAction, EntityWaitAction, EntityMoveAction, AIInvestigateAction, EntityWaitEvent, AIPursuitEvent, AIPursuitAction
 from atlas_components.tiles.base import TileCoordinate
 from entity_components.library import AICharacter
 
@@ -179,7 +179,7 @@ def test_component_wait_action():
     try:
         # Arrange        
         wait_time = 500  # 500 milliseconds
-        handler = LoopHandler()
+        handler = SubLoopHandler()
         handler.start()  # type: ignore
         store = GameStore()  
         action = WaitAction(wait_time=wait_time)
@@ -214,7 +214,7 @@ def test_component_entity_wait_action():
     try:
         # Arrange        
         wait_time = 300  # 300 milliseconds
-        handler = LoopHandler()
+        handler = SubLoopHandler()
         handler.start()  # type: ignore
         store = GameStore()  
         entity = BaseGameEntity()
@@ -269,7 +269,7 @@ def test_component_entity_acquire_target_action():
         # Arrange        
         action = AIAcquireTargetAction()
         action.store = GameStore()
-        action.handler = LoopHandler()
+        action.handler = SubLoopHandler()
         action.handler.start()  # type: ignore
         action.store.atlas = Atlas()
         tile_layout = action.store.atlas.active.get_tile_layout('floor')
@@ -342,7 +342,7 @@ def test_component_move_action():
         # Arrange        
         action = EntityMoveAction()
         action.store = GameStore()
-        action.handler = LoopHandler()
+        action.handler = SubLoopHandler()
         action.handler.start()  # type: ignore
         action.store.atlas = Atlas()
         tile_layout = action.store.atlas.active.get_tile_layout('floor')
@@ -446,7 +446,7 @@ def test_component_keydown_action():
         store = GameStore()
         store.atlas = Atlas()
         store.portfolio = Portfolio()
-        handler = LoopHandler()
+        handler = SubLoopHandler()
         player = PlayerCharacter(store=store, location=TileCoordinate.from_tuple((1, 1), parent_map_size=store.atlas.active.grid.size))
 
         store.portfolio.player = player
@@ -489,7 +489,7 @@ def test_component_investigate_action():
         # Arrange        
         action = AIInvestigateAction()
         action.store = GameStore()
-        action.handler = LoopHandler()
+        action.handler = SubLoopHandler()
         action.handler.start()  # type: ignore
         action.store.atlas = Atlas()
         map_size = action.store.atlas.active.grid.size
@@ -562,7 +562,7 @@ def test_component_pursuit_action():
         # Arrange        
         action = AIPursuitAction()
         action.store = GameStore()
-        action.handler = LoopHandler()
+        action.handler = SubLoopHandler()
         action.handler.start()  # type: ignore
         action.store.atlas = Atlas()
         map_size = action.store.atlas.active.grid.size

@@ -8,15 +8,15 @@ import numpy as np
 from tcod.path import SimpleGraph, Pathfinder
 
 from entity_components.library import Character
-from loop_components.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent
-from loop_components.entity import EntityWaitEvent, EntityMoveAction
+from loop_behaviors.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent
+from loop_behaviors.entity import EntityWaitEvent, EntityMoveAction
 from game_types import StateActionObject
 from atlas_components.tiles import TileCoordinate
 from entity_components.base import action_locked
 
 if TYPE_CHECKING:
     from engine_components import GameStore
-    from engine_components.ai import LoopHandler
+    from engine_components.loop import SubLoopHandler
 
 GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds
 
@@ -25,7 +25,7 @@ GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds
 @action_locked
 class AICharacter(Character):
     path: List[TileCoordinate] = []
-    _ai: LoopHandler | None = None
+    _ai: SubLoopHandler | None = None
     
     def __init__(   self,
                     store: GameStore | None = None,
@@ -34,7 +34,7 @@ class AICharacter(Character):
                     name: str = "<Unnamed>",
                     symbol: str = '?',
                     color: Tuple[int, int, int]=(255, 255, 255),
-                    ai: LoopHandler | None = None,
+                    ai: SubLoopHandler | None = None,
                     ) -> None:
         
         if ai:
@@ -43,11 +43,11 @@ class AICharacter(Character):
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
 
     @property
-    def ai(self) -> LoopHandler | None:
+    def ai(self) -> SubLoopHandler | None:
         return self._ai
 
     @ai.setter
-    def ai(self, value: LoopHandler | None) -> None:
+    def ai(self, value: SubLoopHandler | None) -> None:
         self._ai = value
 
     def set_path_to_target(self) -> None:
@@ -108,11 +108,11 @@ class MobCharacter(AICharacter):
         self.update()
 
     @property
-    def ai(self) -> LoopHandler | None:
+    def ai(self) -> SubLoopHandler | None:
         return self._ai
     
     @ai.setter
-    def ai(self, value: LoopHandler | None) -> None:   # type: ignore
+    def ai(self, value: SubLoopHandler | None) -> None:   # type: ignore
         self._ai = value
 
     def update(self) -> None:
@@ -128,7 +128,7 @@ class AICharacterEvent(BaseGameEvent):
     _entity: AICharacter | None
     _target: Character | None
 
-    def __init__(self, store: GameStore | None = None, handler: LoopHandler | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler: SubLoopHandler | None = None, entity: AICharacter | None = None, target: Character | None = None) -> None:
         super().__init__(store, handler)
         self._entity = entity
         self._target = target
@@ -174,7 +174,7 @@ class AIUpdateFocusAction(BaseActionOnEntity):
     
     Duck Types: StateActionObject, StoredStateObject
     """
-    def __init__(self, store: GameStore | None = None, handler:  LoopHandler | None = None, entity: AICharacter | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler:  SubLoopHandler | None = None, entity: AICharacter | None = None) -> None:
         super().__init__(store, handler, entity)
 
     def perform(self) -> None:
@@ -227,7 +227,7 @@ class AIAcquireTargetAction(BaseActionOnEntity):
     
     Duck Types: StateActionObject, StoredStateObject
     """
-    def __init__(self, store: GameStore | None = None, handler:  LoopHandler | None = None, entity: AICharacter | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler:  SubLoopHandler | None = None, entity: AICharacter | None = None) -> None:
         super().__init__(store, handler, entity)
 
     def perform(self) -> None:
@@ -274,7 +274,7 @@ class AIInvestigateAction(BaseActionOnEntity):
     
     Duck Types: StateActionObject, StoredStateObject
     """
-    def __init__(self, store: GameStore | None = None, handler:  LoopHandler | None = None, entity: AICharacter | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler:  SubLoopHandler | None = None, entity: AICharacter | None = None) -> None:
         super().__init__(store, handler, entity)
 
     def perform(self) -> None:
@@ -308,7 +308,7 @@ class AIPursuitAction(BaseActionOnEntity):
     
     Duck Types: StateActionObject, StoredStateObject
     """
-    def __init__(self, store: GameStore | None = None, handler:  LoopHandler | None = None, entity: AICharacter | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, handler:  SubLoopHandler | None = None, entity: AICharacter | None = None) -> None:
         super().__init__(store, handler, entity)
 
     def perform(self) -> None:

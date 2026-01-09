@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, List, AbstractSet, Tuple, TypeVar
 import time
 import queue
 
-from loop_components import *
+from loop_behaviors import *
 from game_types import StatefulObject, StateActionObject,  GameAction, GameEvent
 
 if TYPE_CHECKING:
@@ -86,7 +86,7 @@ class BaseGameTransformer:
         raise ValueError(f"State behaviors object not found: {name}")
 
 
-class LoopHandler(BaseGameLoop, BaseGameTransformer):
+class SubLoopHandler(BaseGameLoop, BaseGameTransformer):
     """The LoopHandler is responsible for tranforming Game Inputs and AI Actions into Game Events
     and sending them to the appropriate Queue."""
     machine: Machine
@@ -110,7 +110,7 @@ class LoopHandler(BaseGameLoop, BaseGameTransformer):
         return False
 
 
-class GameAI:
+class GameLoops:
     """
     The GameHandler manages all of the game loops, processing events and actions in separate threads. It has a list of managed threads and provides an API for starting and stopping the loops. 
     It uses a GameLoopHandler to handle the transformation and dispatching of events and actions.
@@ -119,15 +119,15 @@ class GameAI:
     """
     store: GameStore | None
     machine: Machine
-    game_loop_handler: LoopHandler | None
-    mob_loop_handler: LoopHandler | None
+    player_loop_handler: SubLoopHandler | None
+    mob_loop_handler: SubLoopHandler | None
     threads: List[threading.Thread | None]
     stop_signal: threading.Event
 
     def __init__(self, store: GameStore | None = None) -> None:
         self.store = store
-        self.game_loop_handler = LoopHandler(store=store, behaviors=game_behaviors)
-        self.mob_loop_handler = LoopHandler(store=store, behaviors=mob_behaviors)
+        self.player_loop_handler = SubLoopHandler(store=store, behaviors=game_behaviors)
+        self.mob_loop_handler = SubLoopHandler(store=store, behaviors=mob_behaviors)
         self.threads = []
         self.stop_signal = threading.Event()
         #threading.excepthook = self.threaded_exception_handler
@@ -148,13 +148,13 @@ class GameAI:
     def _start(self) -> None:
         """Starts the loop threads."""
         try:
-            self.game_loop_handler.start() # type: ignore | State machine attribute created dynamically
+            self.player_loop_handler.start() # type: ignore | State machine attribute created dynamically
             self.mob_loop_handler.start()  # type: ignore | State machine attribute created dynamically
             self.stop_signal.clear()
 
             if not self.threads:
-                self.threads.append(threading.Thread(target=self.game_event_loop))
-                self.threads.append(threading.Thread(target=self.game_action_loop))
+                self.threads.append(threading.Thread(target=self.player_event_loop))
+                self.threads.append(threading.Thread(target=self.player_action_loop))
                 self.threads.append(threading.Thread(target=self.mob_event_loop))
                 self.threads.append(threading.Thread(target=self.mob_action_loop))
                 for thread in self.threads:
@@ -166,7 +166,7 @@ class GameAI:
             print(f"Error starting loops: {e}")
 
     def _pause(self) -> None:
-        self.game_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
+        self.player_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
         self.mob_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
 
     def _stop(self) -> None:
@@ -176,13 +176,13 @@ class GameAI:
             for thread in self.threads:
                 if thread is not None:
                     thread.join()
-            self.game_loop_handler.stop() # type: ignore | State machine attribute created dynamically
+            self.player_loop_handler.stop() # type: ignore | State machine attribute created dynamically
             self.mob_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
 
         except Exception as e:
             print(f"Error stopping loops: {e}")
 
-    def game_event_loop(self) -> None:
+    def player_event_loop(self) -> None:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
@@ -192,8 +192,8 @@ class GameAI:
                     time.sleep(0.1)
                     continue
                 next_event = None
-                if self.game_loop_handler and self.game_loop_handler.events is not None:
-                    next_event = self.game_loop_handler.events.get_nowait()
+                if self.player_loop_handler and self.player_loop_handler.events is not None:
+                    next_event = self.player_loop_handler.events.get_nowait()
                 if next_event is not None and isinstance(next_event, GameEvent):
                     next_event.trigger()
                 
@@ -204,7 +204,7 @@ class GameAI:
                 print(f"Error processing game event: {e}")
                 break
 
-    def game_action_loop(self) -> None:
+    def player_action_loop(self) -> None:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
@@ -214,8 +214,8 @@ class GameAI:
                     time.sleep(0.1)
                     continue
                 next_action = None
-                if self.game_loop_handler and self.game_loop_handler.actions is not None:
-                    next_action = self.game_loop_handler.actions.get_nowait()
+                if self.player_loop_handler and self.player_loop_handler.actions is not None:
+                    next_action = self.player_loop_handler.actions.get_nowait()
                 if next_action is not None and isinstance(next_action, GameAction):
                     next_action.perform()
                 

@@ -6,7 +6,7 @@ from transitions import Machine
 
 from engine_components import GameStore
 from engine_components import GameDisplay
-from engine_components  import GameAI
+from engine_components  import GameLoops
 from game_types import StoredStateObject
 
 class GameEngine:
@@ -17,11 +17,11 @@ class GameEngine:
     Duck Types: StatefulObject, StoredStateObject
     """
     machine: Machine
-    ai: GameAI | None
+    ai: GameLoops | None
     store: GameStore | None
     display: GameDisplay | None
 
-    def __init__(self, ai: GameAI | None = None, display: GameDisplay | None = None, store: GameStore | None = None) -> None:
+    def __init__(self, ai: GameLoops | None = None, display: GameDisplay | None = None, store: GameStore | None = None) -> None:
         self.ai = ai
         self.display = display
         self.store = store
@@ -49,7 +49,7 @@ class GameEngine:
         # Provision Engine Components
         self.store = GameStore()
         self.display = GameDisplay(store=self.store)
-        self.ai = GameAI(store=self.store)
+        self.ai = GameLoops(store=self.store)
 
         # Set GameAI for Portfolio spawing
         if self.store and self.ai and self.store.portfolio:

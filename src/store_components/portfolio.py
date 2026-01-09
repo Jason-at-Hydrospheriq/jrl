@@ -10,12 +10,12 @@ from copy import deepcopy
 from entity_components.library import Character, BaseGameEntity
 from atlas_components.tilemaps.library import DEFAULT_TILEMAP_MANIFEST, DefaultTileMap
 from atlas_components.tiles.base import TileTuple, TileCoordinate
-from loop_components.mob import AICharacter, MobCharacter
-from loop_components.player import PlayerCharacter
+from loop_behaviors.mob import AICharacter, MobCharacter
+from loop_behaviors.player import PlayerCharacter
 
 if TYPE_CHECKING:
     from engine_components.store import GameStore
-    from engine_components.ai import GameAI
+    from engine_components.loop import GameLoops
 
 M = TypeVar('M', bound=BaseGameEntity)
 
@@ -23,7 +23,7 @@ class Portfolio:
     store: GameStore
     entities: Set[BaseGameEntity]
     spawn: Callable
-    game_ai: GameAI | None = None
+    game_ai: GameLoops | None = None
 
     PARENT_MAP_SIZE = DEFAULT_TILEMAP_MANIFEST['dimensions']['grid_size']
     PLAYER = PlayerCharacter(   name="Player", 
@@ -48,7 +48,7 @@ class Portfolio:
                             hp=35,
                             max_hp=35)
 
-    def __init__(self, store: GameStore | None = None, game_ai: GameAI | None = None) -> None:
+    def __init__(self, store: GameStore | None = None, game_ai: GameLoops | None = None) -> None:
 
         if store is not None:
             self.store = store

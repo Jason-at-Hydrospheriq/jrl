@@ -3,7 +3,7 @@ from sys import path
 
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from loop_components.player import PlayerCharacter
+from loop_behaviors.player import PlayerCharacter
 from store_components.atlas import Atlas
 from store_components import Portfolio
 from atlas_components.tiles.base import TileCoordinate
@@ -11,9 +11,9 @@ from entity_components.base import BaseGameEntity
 from entity_components.library import Character
 from game_types import StatefulObject, StoredStateObject
 from game_types import GameLoopObject, StateActionObject, StateHandler, EventTransformer
-from loop_components.base import BaseGameEvent
-from engine_components.ai import LoopHandler
-from loop_components import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, KeyDownAction, AICharacter
+from loop_behaviors.base import BaseGameEvent
+from engine_components.loop import SubLoopHandler
+from loop_behaviors import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, KeyDownAction, AICharacter
 from engine_components.store import GameStore
 from tcod.event import Event
 import tcod
@@ -22,7 +22,7 @@ def test_component_base_game_event():
     try:
         # Arrange
         store = GameStore()
-        handler = LoopHandler()
+        handler = SubLoopHandler()
         event = BaseGameEvent(store=store, handler=handler)
 
         # Act
@@ -49,7 +49,7 @@ def test_component_system_event():
         # Arrange        
         store = GameStore()
         behaviors = set((('systemevent', NoAction()),))
-        handler = LoopHandler(behaviors=behaviors)
+        handler = SubLoopHandler(behaviors=behaviors)
         event = SystemEvent(store=store, handler=handler)
         handler.start()  # type: ignore
         
@@ -85,7 +85,7 @@ def test_component_input_event():
         # Arrange        
         store = GameStore()
         behaviors = set((('inputevent', KeyDownAction()),))
-        handler = LoopHandler(behaviors=behaviors)
+        handler = SubLoopHandler(behaviors=behaviors)
         event = InputEvent(store=store, handler=handler)
 
         handler.start()  # type: ignore
@@ -128,7 +128,7 @@ def test_component_entity_event():
         # Arrange        
         store = GameStore()
         behaviors = set((('entityevent', NoAction()),))
-        handler = LoopHandler(behaviors=behaviors)
+        handler = SubLoopHandler(behaviors=behaviors)
         event = EntityEvent(store=store, handler=handler)
         
         handler.start()  # type: ignore
@@ -171,7 +171,7 @@ def test_component_player_character_event():
         # Arrange        
         store = GameStore()
         behaviors = set((('playercharacterevent', NoAction()),))
-        handler = LoopHandler(behaviors=behaviors)
+        handler = SubLoopHandler(behaviors=behaviors)
         event = PlayerCharacterEvent(store=store, handler=handler)
         handler.start()  # type: ignore
 
@@ -219,7 +219,7 @@ def test_component_ai_character_event():
         # Arrange        
         store = GameStore()
         behaviors = set((('aicharacterevent', NoAction()),))
-        handler = LoopHandler(behaviors=behaviors)
+        handler = SubLoopHandler(behaviors=behaviors)
         event = AICharacterEvent(store=store, handler=handler)
         handler.start()  # type: ignore
 

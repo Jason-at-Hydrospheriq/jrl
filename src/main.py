@@ -4,7 +4,7 @@
 from __future__ import annotations
 import tcod
 from engine import GameEngine
-from loop_components import InputEvent
+from loop_behaviors import InputEvent
 import time
 
 GLOBAL_COOLDOWN_TIME = 10  # in milliseconds
@@ -30,7 +30,7 @@ def main() -> None:
                 
                     case "KEYDOWN":
                         key_sim = event.sym
-                        if game.ai and game.ai.game_loop_handler:
+                        if game.ai and game.ai.player_loop_handler:
                             match key_sim:
                                 case tcod.event.KeySym.ESCAPE:
                                     game.reset()  # type: ignore
@@ -53,11 +53,11 @@ def main() -> None:
                                         print(msg)
                                 case _:
                                     if game.state not in ('idle', 'paused', 'shutdown'):  # type: ignore
-                                        if game.ai.game_loop_handler.events.qsize() < 10 and game.ai.game_loop_handler.actions.qsize() < 10:
-                                            game_event = InputEvent(store=game.store, handler=game.ai.game_loop_handler, input_event=event)
-                                            game.ai.game_loop_handler.handle(game_event)
+                                        if game.ai.player_loop_handler.events.qsize() < 10 and game.ai.player_loop_handler.actions.qsize() < 10:
+                                            game_event = InputEvent(store=game.store, handler=game.ai.player_loop_handler, input_event=event)
+                                            game.ai.player_loop_handler.handle(game_event)
                                         else:
-                                            game.store.log.add(f"Events={game.ai.game_loop_handler.events.qsize()}, Actions={game.ai.game_loop_handler.actions.qsize()}")  # type: ignore
+                                            game.store.log.add(f"Events={game.ai.player_loop_handler.events.qsize()}, Actions={game.ai.player_loop_handler.actions.qsize()}")  # type: ignore
                 
                 if game.ai:
                     time.sleep(GLOBAL_COOLDOWN_TIME / 1000)  # Small delay to prevent high CPU usage
