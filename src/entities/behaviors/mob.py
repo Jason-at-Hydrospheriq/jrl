@@ -13,7 +13,7 @@ from entities.behaviors.entity import EntityWaitEvent, EntityMoveAction
 from game_types import StateActionObject
 
 if TYPE_CHECKING:
-    from engine_components import GameStore
+    from store import GameStore
     from loop.components import SubLoopHandler
 
 GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds

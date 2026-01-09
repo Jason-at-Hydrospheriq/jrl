@@ -11,7 +11,7 @@ from time import sleep
 from game_types import StateActionObject, StateHandler
 
 if TYPE_CHECKING:
-    from engine_components import GameStore
+    from store import GameStore
 
 
 class SystemEvent(BaseGameEvent):

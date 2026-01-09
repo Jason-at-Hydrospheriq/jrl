@@ -13,7 +13,7 @@ from game_types import StateActionObject, StateHandler
 from game_types import TileCoordinate
 
 if TYPE_CHECKING:
-    from engine_components import GameStore
+    from store import GameStore
 
 
 class EntityEvent(BaseGameEvent):
