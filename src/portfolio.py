@@ -11,7 +11,7 @@ from entities import BaseGameEntity, AICharacter, Character
 from atlas.components.tilemaps.library import DEFAULT_TILEMAP_MANIFEST, DefaultTileMap
 from game_types import TileCoordinate
 from game_types import TileTuple
-from loop import MobCharacter, PlayerCharacter
+from entities import MobCharacter, PlayerCharacter
 
 if TYPE_CHECKING:
     from store import GameStore

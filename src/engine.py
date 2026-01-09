@@ -4,9 +4,9 @@
 from __future__ import annotations
 from transitions import Machine
 
-from engine_components import GameStore
-from engine_components import GameDisplay
-from engine_components  import GameLoops
+from store import GameStore
+from display import GameDisplay
+from loop  import GameLoops
 from game_types import StoredStateObject
 
 class GameEngine:

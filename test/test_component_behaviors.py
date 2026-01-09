@@ -7,7 +7,7 @@ import tcod
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
 from loop import *
-from loop.behaviors.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
+from entities.behaviors.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
 from loop.components import SubLoopHandler
 from portfolio import Portfolio
 from atlas import Atlas

@@ -98,7 +98,7 @@ def test_component_mob_loop_handler():
 # from loop import BaseGameTransformer, EntityStateTableDict, manifest_example
 # from entity_components.library import AICharacter
 # from core_components.events import AIEvent, EntityEvent
-# from engine_components.store import GameStore
+# from store import GameStore
 
 # def test_component_base_ai_empty_init():
 #     # Arrange & Act

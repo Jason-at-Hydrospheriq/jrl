@@ -8,8 +8,8 @@ from unittest import case
 from game_types import TileCoordinate
 from entities.base import action_locked
 from entities import Character, AICharacter
-from loop.behaviors.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent
-from loop.behaviors.entity import EntityWaitEvent, EntityMoveAction
+from entities.behaviors.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent
+from entities.behaviors.entity import EntityWaitEvent, EntityMoveAction
 from game_types import StateActionObject
 
 if TYPE_CHECKING:

@@ -10,8 +10,8 @@ import tcod
 from game_types import TileCoordinate
 from entities.base import action_locked
 from entities import Character
-from loop.behaviors.base import BaseGameAction, BaseGameEvent
-from loop.behaviors.entity import EntityMoveAction
+from entities.behaviors.base import BaseGameAction, BaseGameEvent
+from entities.behaviors.entity import EntityMoveAction
 from game_types import StateActionObject
 from game_types import TileCoordinate
 
