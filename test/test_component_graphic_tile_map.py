@@ -8,7 +8,7 @@ import numpy as np
 import itertools
 
 from display_components.graphics.tile_types import ascii_graphic
-from atlas.components.tilemaps.library import DefaultTileMap
+from atlas.components.tilemaps.tilemaps import DefaultTileMap
 from game_types import TileCoordinate
 
 

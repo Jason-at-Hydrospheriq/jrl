@@ -9,7 +9,7 @@ from copy import deepcopy
 
 from manifests import DEFAULT_TILEMAP_MANIFEST
 from entities import AICharacter, Character
-from atlas.components.tilemaps.library import DefaultTileMap
+from atlas.components.tilemaps import DefaultTileMap
 from game_baseclasses import BaseGameEntity
 from game_types import TileCoordinate
 from game_types import TileTuple

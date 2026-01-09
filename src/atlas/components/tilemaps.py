@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Tuple
 import numpy as np
 
-from atlas.components.tilemaps import GraphicTileMap
+from game_types import GraphicTileMap
 from manifests import DEFAULT_TILEMAP_MANIFEST
 
 class DefaultTileMap(GraphicTileMap):
