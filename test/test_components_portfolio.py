@@ -5,7 +5,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from atlas import Atlas
 from store.components import Portfolio
 from store import GameStore
-from atlas.components.tiles.base import TileCoordinate
+from game_types import TileCoordinate
 
 def test_component_portfolio_initialization():
     try:

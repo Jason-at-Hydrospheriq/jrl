@@ -6,7 +6,7 @@ from typing import Tuple
 import numpy as np
 
 from atlas.components.tilemaps import GraphicTileMap
-from atlas.components.tiles import TileTuple
+from game_types import TileTuple
 from display_components.graphics import ascii_graphic
 from game_types import GraphicsManifestDict
 

@@ -15,7 +15,7 @@ from game_types import StoredStateObject
 from store import GameStore
 from entities import BaseGameEntity, AICharacter
 from game_types import StateActionObject
-from atlas.components.tiles.base import TileCoordinate
+from game_types import TileCoordinate
 
 
 class DummyTarget:

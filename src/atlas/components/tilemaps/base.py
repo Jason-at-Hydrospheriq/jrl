@@ -9,9 +9,9 @@ from typing import Any, List, Protocol, Dict, OrderedDict
 from copy import deepcopy
 import numpy as np
 
-from atlas.components.tiles import BaseTileGrid, TileArea, TileCoordinate
+from game_types import TileArea
 from display_components.graphics.tile_types import ascii_graphic
-from game_types import GraphicsManifestDict
+from game_types import BaseTileGrid, GraphicsManifestDict, TileCoordinate
 
 # Helper functions to create GraphicManifestDict
 def create_states(n: int) -> List[str]:

@@ -10,7 +10,7 @@ from entities import BaseGameEntity, AICharacter, Character, CombatEntity, Mobil
 from entities.base import BaseGameSubState, BaseParentState
 from entities.components  import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState
 from game_types import GameEntity, EntityParentState
-from atlas.components.tiles.base import TileCoordinate
+from game_types import TileCoordinate
 from store.components import Atlas
 from loop_resources import investigate, PlayerCharacter
 from store import GameStore

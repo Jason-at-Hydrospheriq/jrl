@@ -10,8 +10,8 @@ from transitions import Machine
 if TYPE_CHECKING:
     from store import GameStore
 
-from atlas.components.tiles.base import TileCoordinate, TileTuple
-from game_types import StatefulObject
+from game_types import TileCoordinate
+from game_types import StatefulObject, TileTuple
 
 
 def is_locked(func):

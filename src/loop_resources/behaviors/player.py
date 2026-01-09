@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING, Tuple, cast
 import numpy as np
 import tcod
 
-from atlas.components.tiles import TileCoordinate
+from game_types import TileCoordinate
 from entities.base import action_locked
 from entities import Character
 from loop_resources.behaviors.base import BaseGameAction, BaseGameEvent
 from loop_resources.behaviors.entity import EntityMoveAction
 from game_types import StateActionObject
-from atlas.components.tiles.base import TileCoordinate
+from game_types import TileCoordinate
 
 if TYPE_CHECKING:
     from engine_components import GameStore

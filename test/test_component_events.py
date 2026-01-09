@@ -8,7 +8,7 @@ from loop_resources.behaviors.base import BaseGameEvent
 from loop_resources.components import SubLoopHandler
 from atlas import Atlas
 from store.components import Portfolio
-from atlas.components.tiles.base import TileCoordinate
+from game_types import TileCoordinate
 from entities import BaseGameEntity, AICharacter, Character
 from game_types import StatefulObject, StoredStateObject, GameLoopObject, StateActionObject, StateHandler, EventTransformer
 

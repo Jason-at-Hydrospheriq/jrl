@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, cast
 from entities import BaseGameEntity, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity
 from loop_resources.behaviors.base import BaseActionOnDestination, BaseGameEvent, BaseActionOnEntity, BaseActionOnTarget, GLOBAL_ACTION_COOLDOWN_TIME
 from game_types import StateActionObject, StateHandler
-from atlas.components.tiles.base import TileCoordinate
+from game_types import TileCoordinate
 
 if TYPE_CHECKING:
     from engine_components import GameStore

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from loop_resources.components import SubLoopHandler
 
 from tcod.path import Pathfinder, SimpleGraph
-from atlas.components.tiles import TileCoordinate
+from game_types import TileCoordinate
 from display_components.graphics.colors import enemy_die
 from entities.base import BaseGameEntity, BaseGameSubState, action_locked
 from entities.components import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState

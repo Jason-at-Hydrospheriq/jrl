@@ -9,7 +9,8 @@ from copy import deepcopy
 
 from entities import BaseGameEntity, AICharacter, Character
 from atlas.components.tilemaps.library import DEFAULT_TILEMAP_MANIFEST, DefaultTileMap
-from atlas.components.tiles.base import TileTuple, TileCoordinate
+from game_types import TileCoordinate
+from game_types import TileTuple
 from loop_resources import MobCharacter, PlayerCharacter
 
 if TYPE_CHECKING:

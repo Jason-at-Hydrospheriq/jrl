@@ -7,7 +7,8 @@ from warnings import warn
 from typing import Tuple
 import numpy as np
 
-from atlas.components.tiles.base import BaseTileGrid, TileCoordinate, TileArea, TileTuple
+from game_types import TileArea
+from game_types import BaseTileGrid, TileCoordinate, TileTuple
 
 DEFAULT_GRID_SIZE = TileTuple( ([10], [10]) )
 DEFAULT_CENTER_LOCATION = TileTuple( ([5], [5]) )
