@@ -5,7 +5,7 @@ from __future__ import annotations
 import tcod
 from delays import GLOBAL_COOLDOWN_TIME
 from engine import GameEngine
-from entities import InputEvent
+from entities.behaviors import InputEvent
 import time
 
 def main() -> None:

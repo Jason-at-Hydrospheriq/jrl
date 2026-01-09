@@ -8,11 +8,12 @@ from delays import GLOBAL_ACTION_COOLDOWN_TIME
 from game_types import TileCoordinate, StateActionObject
 from baseclasses import BaseActionOnEntity, BaseEntityEvent, BaseGameEvent, action_locked
 from entities.library import Character, AICharacter, CombatEntity
+from entities.behaviors.entity import EntityWaitEvent, EntityAttackAction, EntityMoveAction
 
 if TYPE_CHECKING:
     from store import GameStore
     from loop.components import SubLoopHandler
-
+    
 ###
 # A BEHAVIOR is the pair of an EVENT and an ACTION that together define a discrete unit of functionality for an entity.
 # The EVENT encapsulates the occurrence that triggers an ACTION, while the ACTION defines the specific operations.
