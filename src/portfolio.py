@@ -79,7 +79,11 @@ class Portfolio:
     @property
     def all_actors(self) -> List[Character]:
         return [entity for entity in self.entities if isinstance(entity, Character)]
-        
+
+    @property
+    def all_ai_actors(self) -> List[AICharacter]:
+        return [entity for entity in self.entities if isinstance(entity, AICharacter)]
+    
     @property
     def all_non_actors(self) -> List[BaseGameEntity]:
         return [entity for entity in self.entities if not isinstance(entity, Character)]
