@@ -21,15 +21,14 @@ GLOBAL_LOOP_COOLDOWN_TIME = 25  # Global cooldown time in milliseconds
 game_behaviors = {
     ('nonevent', NoAction()),
     ('waitevent', WaitAction()),
-    ('entitywaitevent', EntityWaitAction()),
+    entitywait, entityattack,
     ('inputevent', KeyDownAction()),
 }
 
 mob_behaviors = {
     ('nonevent', NoAction()),
     ('waitevent', WaitAction()),
-    ('entitywaitevent', EntityWaitAction()),
-    update_focus, investigate, pursue, acquire_target
+    entitywait, update_focus, investigate, pursue, acquire_target, entityattack
 }
 
 class BaseGameLoop:
@@ -202,7 +201,7 @@ class GameAI:
                 time.sleep(0.05)
 
             except BaseException as e:
-                print(f"Error processing event: {e}")
+                print(f"Error processing game event: {e}")
                 break
 
     def game_action_loop(self) -> None:
@@ -224,7 +223,7 @@ class GameAI:
                 time.sleep(0.05)
 
             except BaseException as e:
-                print(f"Error processing action: {e}")
+                print(f"Error processing game action: {e}")
                 break
 
     def mob_event_loop(self) -> None:
@@ -246,7 +245,7 @@ class GameAI:
                 time.sleep(0.05)
 
             except BaseException as e:
-                print(f"Error processing event: {e}")
+                print(f"Error processing mob event: {e}")
                 break
 
     def mob_action_loop(self) -> None:
@@ -268,7 +267,7 @@ class GameAI:
                 time.sleep(0.05)
 
             except BaseException as e:
-                print(f"Error processing action: {e}")
+                print(f"Error processing mob action: {e}")
                 break
 
     def threaded_exception_handler(self, args):

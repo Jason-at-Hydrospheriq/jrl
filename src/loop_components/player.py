@@ -8,8 +8,8 @@ import numpy as np
 import tcod
 
 from atlas_components.tiles import TileCoordinate
-from entities.base import action_locked
-from entities.library import Character
+from entity_components.base import action_locked
+from entity_components.library import Character
 from loop_components.base import BaseGameAction, BaseGameEvent
 from loop_components.entity import EntityMoveAction
 from game_types import StateActionObject

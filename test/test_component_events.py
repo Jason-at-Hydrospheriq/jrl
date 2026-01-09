@@ -7,8 +7,8 @@ from loop_components.player import PlayerCharacter
 from store_components.atlas import Atlas
 from store_components import Portfolio
 from atlas_components.tiles.base import TileCoordinate
-from entities.base import BaseGameEntity
-from entities.library import Character
+from entity_components.base import BaseGameEntity
+from entity_components.library import Character
 from game_types import StatefulObject, StoredStateObject
 from game_types import GameLoopObject, StateActionObject, StateHandler, EventTransformer
 from loop_components.base import BaseGameEvent

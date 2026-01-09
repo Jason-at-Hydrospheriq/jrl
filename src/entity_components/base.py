@@ -103,7 +103,7 @@ class BaseParentState:
 
 class BaseGameSubState(BaseSubState):
     """
-    A generic substate for game entities.
+    A generic substate for game entity_components
 
     Duck Types: EntitySubState, BaseSubState
     """

@@ -22,7 +22,7 @@ def main() -> None:
 
         # Update Inputs
         for event in tcod.event.wait():
-            time.sleep(GLOBAL_COOLDOWN_TIME / 1000)  # Small delay to prevent high CPU usage
+            #time.sleep(GLOBAL_COOLDOWN_TIME / 1000)  # Small delay to prevent high CPU usage
             if event.type in ( "QUIT", "KEYDOWN" ):
                 match event.type:
                     case "QUIT":

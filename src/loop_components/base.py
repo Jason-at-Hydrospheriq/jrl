@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from entities.base import BaseGameEntity
+from entity_components.base import BaseGameEntity
 from game_types import StateHandler
 from atlas_components.tiles.base import TileCoordinate
 from game_types import *

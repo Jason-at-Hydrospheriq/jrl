@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from entities.library import BaseGameEntity, Charactor, AICharactor
+    from entity_components.library import BaseGameEntity, Charactor, AICharactor
 
 
 class BaseStats:

@@ -7,12 +7,12 @@ from unittest import case
 import numpy as np
 from tcod.path import SimpleGraph, Pathfinder
 
-from entities.library import Character
+from entity_components.library import Character
 from loop_components.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent
 from loop_components.entity import EntityWaitEvent, EntityMoveAction
 from game_types import StateActionObject
 from atlas_components.tiles import TileCoordinate
-from entities.base import action_locked
+from entity_components.base import action_locked
 
 if TYPE_CHECKING:
     from engine_components import GameStore
@@ -283,18 +283,11 @@ class AIInvestigateAction(BaseActionOnEntity):
             if not self.entity.action_locked:
                 if self.entity.focus.is_tracking():  # type: ignore | State machine attribute created dynamically
                     if self.entity.distance_to_target is not None and self.entity.distance_to_target > 1: # Do nothing if adjacent
-                        self.entity.set_path_to_target()
                         self.entity.set_destination_from_path()
-
-                        # while self.entity.collision.is_colliding():  # type: ignore | State machine attribute created dynamically
-                        #     self.entity.set_path_to_target()
-                        #     self.entity.set_destination_from_path()
 
                         self.store.log.add(text=f"The {self.entity.name} is moving to investigate {self.entity.target.name}.")  # type: ignore | Entity in this state must have a target. | If collision detected, recalculate path
 
-                        if self.handler:
-                            self.handler.send(EntityWaitEvent(wait_time=GLOBAL_ACTION_COOLDOWN_TIME, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
-                            self.handler.send(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
+                        AIPursuitAction(store=self.store, handler=self.handler, entity=self.entity).perform()  # type: ignore
 
 investigate = ('aiinvestigateevent', AIInvestigateAction())
 

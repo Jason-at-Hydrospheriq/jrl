@@ -11,13 +11,13 @@ from store_components.portfolio import Portfolio
 from store_components.atlas import Atlas
 from game_types import StoredStateObject
 from engine_components.store import GameStore
-from entities.base import BaseGameEntity
+from entity_components.base import BaseGameEntity
 from engine_components.ai import LoopHandler
 from game_types import StateActionObject
 from loop_components.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination, BaseGameEvent
 from loop_components import NoAction, WaitAction, AIAcquireTargetAction, KeyDownAction, EntityWaitAction, EntityMoveAction, AIInvestigateAction, EntityWaitEvent, AIPursuitEvent, AIPursuitAction
 from atlas_components.tiles.base import TileCoordinate
-from entities.library import AICharacter
+from entity_components.library import AICharacter
 
 
 class DummyTarget:

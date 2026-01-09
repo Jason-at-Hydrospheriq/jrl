@@ -7,15 +7,14 @@ import numpy as np
 from tcod import libtcodpy
 from tcod.map import compute_fov
 
-from entities.attributes import *
+from entity_components.attributes import *
 
 if TYPE_CHECKING:
-    from engine_components.ai import BaseGameTransformer, LoopHandler
     from engine_components.store import GameStore
 
 from atlas_components.tiles import TileCoordinate
-from entities.base import BaseGameSubState, BaseGameEntity, action_locked
-
+from entity_components.base import BaseGameSubState, BaseGameEntity, action_locked
+from display_components.graphics.colors import enemy_die
 class CollisionSubState(BaseGameSubState):
     """The CollisionSubState is a class that defines and runs the 'collision' state machine for a Game Entity.
     This state machine tracks whether an Entity is colliding with another object or not. It manages the 
@@ -264,13 +263,14 @@ class MobileEntity(BaseGameEntity):
     def move(self) -> None:
         self.location = self.destination
         self.destination = None
+        self.update()
 
 
 @action_locked
 class TargetableEntity(BaseGameEntity):
     """A Targetable Entity is any game object that can become the focus of a TargetingEntity.
     It has a 'perception' substate that is an instance of TargetedSubState that manages its targeted states.
-    A Targetable Entity can be damaged. It has a 'take_damage' method to reduce its hit points when damaged."""
+    A Targetable Entity can be damaged."""
 
     targeter: TargetingEntity | None = None
     perception: TargetedSubState
@@ -289,14 +289,11 @@ class TargetableEntity(BaseGameEntity):
 
     def set_targeter(self, targeter: TargetingEntity) -> None:
         self.targeter = targeter
-    
+        self.update()
+
     def clear_targeter(self) -> None:
         self.targeter = None
-
-    def take_damage(self, damage: int) -> None:
-        if self.hp:
-            self.hp -= damage
-            self.hp = max(self.hp, 0)
+        self.update()
 
 
 @action_locked
@@ -399,7 +396,7 @@ class TargetingEntity(BaseGameEntity):
         return False
     
     def update_visible_tiles(self) -> None:
-        self.visible_tiles = self.tiles_in_range(self._fov_radius)
+        self.visible_tiles = self.tiles_in_range(self.fov_radius)
 
     def update_earshot_tiles(self) -> None:
         self.earshot_tiles = self.tiles_in_range(self._earshot_radius)
@@ -484,7 +481,7 @@ class TargetingEntity(BaseGameEntity):
                 threat_level = threat_level * 2 * (not friendly)
 
         self.threat_level = threat_level
-    
+
     def update(self) -> None:
         self.update_visible_tiles()
         self.update_earshot_tiles()
@@ -573,14 +570,57 @@ class Character(MobileEntity, CombatEntity):
 
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
 
-        
+    def take_damage(self, damage: int) -> None:
+        if self.is_alive:
+            initial_health_state = self.health.state  # type: ignore
+
+            if self.hp is not None:
+                hit = self.hp - damage
+
+                match self.health.state:  # type: ignore
+                    case 'healthy':
+                        if hit < 0:
+                            # Survivability check could go here
+                            self.hp = 0
+                        else:
+                            self.hp = hit
+                            
+                    case 'injured':
+                        if hit < 0:
+                            # Survivability check could go here, outcome different from healthy state
+                            self.hp = 0
+                        else:
+                            self.hp = hit
+
+                    case 'critical':
+                        if hit < 0:
+                            # Survivability check could go here, outcome different from injured state
+                            self.hp = 0
+                        else:
+                            self.hp = hit
+
+                    case 'unconscious':
+                        if hit < 0:
+                            # Survivability check could go here, outcome different from critical state
+                            self.die()
+
+                    case 'dead':
+                        pass
+
+                self.update()
+
+            final_health_state = self.health.state  # type: ignore
+            if initial_health_state != final_health_state:
+                self.store.log.add(f"{self.name} is now {final_health_state}.")  # type: ignore
+
     def die(self) -> None:
         self.blocks_movement = False
         self.is_invulnerable = True
         self.is_alive = False
+        self.store.log.add(f"{self.name} has died.")  # type: ignore
         self.name = f"remains of {self.name}"
-        self.symbol = "%"
-        self.color = (191, 0, 0)
+        #self.symbol = "%"
+        self.color = enemy_die
 
 
 

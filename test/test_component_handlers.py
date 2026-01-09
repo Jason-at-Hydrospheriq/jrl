@@ -96,7 +96,7 @@ def test_component_mob_loop_handler():
 # path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
 # from loop_components import BaseGameTransformer, EntityStateTableDict, manifest_example
-# from entities.library import AICharacter
+# from entity_components.library import AICharacter
 # from core_components.events import AIEvent, EntityEvent
 # from engine_components.store import GameStore
 

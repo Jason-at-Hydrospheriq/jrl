@@ -6,9 +6,9 @@ from transitions import Machine
 from unittest.mock import Mock, MagicMock, patch
 import numpy as np
 
-from entities.library import TargetingEntity, TargetableEntity
-from entities.base  import BaseGameSubState, BaseGameEntity, BaseParentState
-from entities.library import CharacterHealthSubState, CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character
+from entity_components.library import TargetingEntity, TargetableEntity
+from entity_components.base  import BaseGameSubState, BaseGameEntity, BaseParentState
+from entity_components.library import CharacterHealthSubState, CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character
 from game_types import GameEntity, EntityParentState
 from atlas_components.tiles.base import TileCoordinate
 from store_components import Atlas
@@ -868,7 +868,7 @@ class TestUpdateVisibleTiles:
         entity.update_visible_tiles()
         assert entity.visible_tiles is None
     
-    @patch('entities.library.compute_fov')
+    @patch('entity_componentslibrary.compute_fov')
     def test_update_visible_tiles_success(self, mock_compute_fov):
         """Test successful computation of visible tiles"""
         entity = TargetingEntity()
@@ -897,7 +897,7 @@ class TestUpdateVisibleTiles:
         assert call_args[1]['radius'] == 6
         assert entity.visible_tiles is expected_visible
     
-    @patch('entities.library.compute_fov')
+    @patch('entity_componentslibrary.compute_fov')
     def test_update_visible_tiles_with_custom_fov_radius(self, mock_compute_fov):
         """Test that custom fov_radius is used in compute_fov"""
         entity = TargetingEntity()
@@ -914,8 +914,8 @@ class TestUpdateVisibleTiles:
         
         assert mock_compute_fov.call_args[1]['radius'] == 12
     
-    @patch('entities.library.compute_fov')
-    @patch('entities.library.libtcodpy')
+    @patch('entity_componentslibrary.compute_fov')
+    @patch('entity_componentslibrary.libtcodpy')
     def test_update_visible_tiles_uses_restrictive_fov(self, mock_libtcodpy, mock_compute_fov):
         """Test that FOV_RESTRICTIVE algorithm is used"""
         entity = TargetingEntity()
@@ -1124,7 +1124,7 @@ class TestTilesInRange:
         
         assert result is None
     
-    @patch('entities.library.compute_fov')
+    @patch('entity_componentslibrary.compute_fov')
     def test_tiles_in_range_success(self, mock_compute_fov):
         """Test tiles_in_range successfully computes FOV"""
         entity = TargetingEntity()
@@ -1147,7 +1147,7 @@ class TestTilesInRange:
         assert call_args[1]['radius'] == 6
         assert np.array_equal(result, expected_fov) # type: ignore
     
-    @patch('entities.library.compute_fov')
+    @patch('entity_componentslibrary.compute_fov')
     def test_tiles_in_range_different_radius(self, mock_compute_fov):
         """Test tiles_in_range with different radius values"""
         entity = TargetingEntity()
