@@ -8,7 +8,7 @@ from atlas_components.generators import BaseMapGenerator, DungeonGenerator
 from atlas_components.tilemaps import DefaultTileMap
 
 if TYPE_CHECKING:
-    from engine_components.store import GameStore        
+    from store import GameStore        
 
 class Atlas:
     """The Atlas component is a collection of map generators and a history of their generated maps. 

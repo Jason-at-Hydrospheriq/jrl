@@ -5,7 +5,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from game_types import StatefulObject, StoredStateObject
 from game_types import GameLoopObject, StateHandler, EventTransformer
 from loop_resources.components import SubLoopHandler
-from engine_components.store import GameStore
+from store import GameStore
 
 
 def test_component_base_handler():

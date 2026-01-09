@@ -61,7 +61,7 @@ class GameEngine:
             stores.append(store)
             print(len(stores))   
         for store in stores:
-            store.store = self.store
+            store = self.store
 
         # Initialize Maps and Entities in the GameStore
         if self.store and self.store.state != 'initialized': # type: ignore | State machine attribute created dynamically

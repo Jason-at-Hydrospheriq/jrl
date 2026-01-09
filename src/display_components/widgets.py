@@ -9,7 +9,7 @@ import numpy as np
 from transitions import Machine
 
 if TYPE_CHECKING:
-    from engine_components.store import GameStore
+    from store import GameStore
 
 from display_components.graphics import colors
 from display_components.graphics.tile_types import SHROUD

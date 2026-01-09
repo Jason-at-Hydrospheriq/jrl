@@ -13,7 +13,7 @@ from atlas_components.tiles.base import TileTuple, TileCoordinate
 from loop_resources import MobCharacter, PlayerCharacter
 
 if TYPE_CHECKING:
-    from engine_components.store import GameStore
+    from store import GameStore
     from engine_components.loop import GameLoops
 
 M = TypeVar('M', bound=BaseGameEntity)

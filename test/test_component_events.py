@@ -6,13 +6,13 @@ from tcod.event import Event
 from loop_resources import *
 from loop_resources.behaviors.base import BaseGameEvent
 from loop_resources.components import SubLoopHandler
-from store_components.atlas import Atlas
-from store_components import Portfolio
+from store.components.atlas import Atlas
+from store.components import Portfolio
 from atlas_components.tiles.base import TileCoordinate
 from entities import BaseGameEntity, AICharacter, Character
 from game_types import StatefulObject, StoredStateObject, GameLoopObject, StateActionObject, StateHandler, EventTransformer
 
-from engine_components.store import GameStore
+from store import GameStore
 
 
 def test_component_base_game_event():

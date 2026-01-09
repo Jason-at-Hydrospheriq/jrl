@@ -10,7 +10,7 @@ from tcod.map import compute_fov
 
 if TYPE_CHECKING:
     from entities.library import TargetingEntity
-    from engine_components.store import GameStore
+    from store import GameStore
     from loop_resources.components import SubLoopHandler
 
 from tcod.path import Pathfinder, SimpleGraph

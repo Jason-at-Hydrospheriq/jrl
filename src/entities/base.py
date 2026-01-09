@@ -8,7 +8,7 @@ import numpy as np
 from transitions import Machine
 
 if TYPE_CHECKING:
-    from engine_components.store import GameStore
+    from store import GameStore
 
 from atlas_components.tiles.base import TileCoordinate, TileTuple
 from game_types import StatefulObject

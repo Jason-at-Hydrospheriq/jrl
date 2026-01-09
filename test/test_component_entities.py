@@ -11,9 +11,9 @@ from entities.base import BaseGameSubState, BaseParentState
 from entities.components  import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState
 from game_types import GameEntity, EntityParentState
 from atlas_components.tiles.base import TileCoordinate
-from store_components import Atlas
+from store.components import Atlas
 from loop_resources import investigate, PlayerCharacter
-from engine_components.store import GameStore
+from store import GameStore
 from loop_resources.components import SubLoopHandler
 
 

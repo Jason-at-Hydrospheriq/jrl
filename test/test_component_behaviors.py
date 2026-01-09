@@ -9,10 +9,10 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from loop_resources import *
 from loop_resources.behaviors.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
 from loop_resources.components import SubLoopHandler
-from store_components.portfolio import Portfolio
-from store_components.atlas import Atlas
+from store.components.portfolio import Portfolio
+from store.components.atlas import Atlas
 from game_types import StoredStateObject
-from engine_components.store import GameStore
+from store import GameStore
 from entities import BaseGameEntity, AICharacter
 from game_types import StateActionObject
 from atlas_components.tiles.base import TileCoordinate
