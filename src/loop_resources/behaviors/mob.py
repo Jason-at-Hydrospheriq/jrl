@@ -2,125 +2,21 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, List, cast, Tuple
+from typing import TYPE_CHECKING, Tuple, cast
 from unittest import case
-import numpy as np
-from tcod.path import SimpleGraph, Pathfinder
 
-from entity_components.library import Character
-from loop_behaviors.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent
-from loop_behaviors.entity import EntityWaitEvent, EntityMoveAction
-from game_types import StateActionObject
 from atlas_components.tiles import TileCoordinate
-from entity_components.base import action_locked
+from entities.base import action_locked
+from entities import Character, AICharacter
+from loop_resources.behaviors.base import BaseGameEvent, BaseActionOnEntity, BaseEntityEvent
+from loop_resources.behaviors.entity import EntityWaitEvent, EntityMoveAction
+from game_types import StateActionObject
 
 if TYPE_CHECKING:
     from engine_components import GameStore
-    from engine_components.loop import SubLoopHandler
+    from loop_resources.components import SubLoopHandler
 
 GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds
-
-
-# ENTITIES
-@action_locked
-class AICharacter(Character):
-    path: List[TileCoordinate] = []
-    _ai: SubLoopHandler | None = None
-    
-    def __init__(   self,
-                    store: GameStore | None = None,
-                        *,
-                    location: TileCoordinate | None = None,
-                    name: str = "<Unnamed>",
-                    symbol: str = '?',
-                    color: Tuple[int, int, int]=(255, 255, 255),
-                    ai: SubLoopHandler | None = None,
-                    ) -> None:
-        
-        if ai:
-            self._ai = ai
-            
-        super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-
-    @property
-    def ai(self) -> SubLoopHandler | None:
-        return self._ai
-
-    @ai.setter
-    def ai(self, value: SubLoopHandler | None) -> None:
-        self._ai = value
-
-    def set_path_to_target(self) -> None:
-        if self.target and self.location and self.store and self.store.atlas and self.target.location is not None:  # type: ignore | Assume store is GameStore
-            map_size = self.store.atlas.active.grid.size  # type: ignore | Assume store is GameStore
-            blocked_tiles = np.array(self.store.atlas.active.blocks_movement, dtype=np.int8) # type: ignore | Assume store is GameStore
-            blocked_tiles += 10
-            cost = SimpleGraph(cost=blocked_tiles, cardinal=2, diagonal=5)
-            finder = Pathfinder(cost)  # type: ignore | Assume store is GameStore
-            finder.add_root(self.location.to_tuple)
-            path = finder.path_to(self.target.location.to_tuple)
-            self.path = [TileCoordinate.from_tuple((step[0], step[1]), parent_map_size=map_size) for step in path]
-        else:
-            self.path = []
-        self.update()
-
-    def set_destination_from_path(self) -> None:
-        if self.path:
-            self.path.pop(0)  # Remove current location from path
-            self.destination = self.path.pop(0) if self.path else None
-        else:
-            self.set_path_to_target()
-            self.set_destination_from_path()
-
-        self.update()
-
-    def die(self) -> None:
-        super().die()
-        self._ai = None
-
-    def update(self) -> None:
-        super().update()
-
-
-@action_locked
-class MobCharacter(AICharacter):
-    action_locked: bool | None = False
-    location: TileCoordinate | None
-
-    def __init__(   self,
-                    store: GameStore | None = None,
-                    *,
-                    location: TileCoordinate | None = None,
-                    name: str = "<Unnamed>",
-                    symbol: str = '?',
-                    color: Tuple[int, int, int]=(255, 255, 255),
-                    hp: int = 50,
-                    max_hp: int = 50,
-                    ) -> None:
-
-        self.fov_radius = 5 # Must be set before super().__init__() call to ensure FOV is correct on initialization.
-        self.location = location # Must be set before super().__init__() call to ensure FOV is correct on initialization.
-
-        super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
-        
-        self.hp = hp
-        self.max_hp = max_hp
-        self.update()
-
-    @property
-    def ai(self) -> SubLoopHandler | None:
-        return self._ai
-    
-    @ai.setter
-    def ai(self, value: SubLoopHandler | None) -> None:   # type: ignore
-        self._ai = value
-
-    def update(self) -> None:
-        super().update()
-        if self.ai:
-            if self.ai.events.qsize() < 10 and self.ai.actions.qsize() < 10:
-                if self.store and self.store.portfolio:  # type: ignore | Assume store is GameStore
-                    self.ai.handle(AIUpdateFocusEvent(store=self.store, handler=self.ai, entity=self))
 
 
 # BEHAVIORS
@@ -338,3 +234,44 @@ class AIPursuitAction(BaseActionOnEntity):
                     self.store.log.add(f"The {self.entity.name} kicks {self.entity.target.name}!")  # type: ignore | Entity in this state must have a target.
 
 pursue = ('aipursuitevent', AIPursuitAction())
+
+
+@action_locked
+class MobCharacter(AICharacter):
+    action_locked: bool | None = False
+    location: TileCoordinate | None
+
+    def __init__(   self,
+                    store: GameStore | None = None,
+                    *,
+                    location: TileCoordinate | None = None,
+                    name: str = "<Unnamed>",
+                    symbol: str = '?',
+                    color: Tuple[int, int, int]=(255, 255, 255),
+                    hp: int = 50,
+                    max_hp: int = 50,
+                    ) -> None:
+
+        self.fov_radius = 5 # Must be set before super().__init__() call to ensure FOV is correct on initialization.
+        self.location = location # Must be set before super().__init__() call to ensure FOV is correct on initialization.
+
+        super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
+
+        self.hp = hp
+        self.max_hp = max_hp
+        self.update()
+
+    @property
+    def ai(self) -> SubLoopHandler | None:
+        return self._ai
+
+    @ai.setter
+    def ai(self, value: SubLoopHandler | None) -> None:   # type: ignore
+        self._ai = value
+
+    def update(self) -> None:
+        super().update()
+        if self.ai:
+            if self.ai.events.qsize() < 10 and self.ai.actions.qsize() < 10:
+                if self.store and self.store.portfolio:  # type: ignore | Assume store is GameStore
+                    self.ai.handle(AIUpdateFocusEvent(store=self.store, handler=self.ai, entity=self))

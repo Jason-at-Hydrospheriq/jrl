@@ -1,22 +1,19 @@
 import pytest
 from sys import path
-
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
+from tcod.event import Event
 
-from loop_behaviors.player import PlayerCharacter
+from loop_resources import *
+from loop_resources.behaviors.base import BaseGameEvent
+from loop_resources.components import SubLoopHandler
 from store_components.atlas import Atlas
 from store_components import Portfolio
 from atlas_components.tiles.base import TileCoordinate
-from entity_components.base import BaseGameEntity
-from entity_components.library import Character
-from game_types import StatefulObject, StoredStateObject
-from game_types import GameLoopObject, StateActionObject, StateHandler, EventTransformer
-from loop_behaviors.base import BaseGameEvent
-from engine_components.loop import SubLoopHandler
-from loop_behaviors import SystemEvent, InputEvent, EntityEvent, PlayerCharacterEvent, AICharacterEvent, NoAction, KeyDownAction, AICharacter
+from entities import BaseGameEntity, AICharacter, Character
+from game_types import StatefulObject, StoredStateObject, GameLoopObject, StateActionObject, StateHandler, EventTransformer
+
 from engine_components.store import GameStore
-from tcod.event import Event
-import tcod
+
 
 def test_component_base_game_event():
     try:

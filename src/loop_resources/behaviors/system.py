@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 import tcod
 
-from loop_behaviors.base import BaseGameEvent, BaseGameAction
+from loop_resources.behaviors.base import BaseGameEvent, BaseGameAction
 from time import sleep
 from game_types import StateActionObject, StateHandler
 

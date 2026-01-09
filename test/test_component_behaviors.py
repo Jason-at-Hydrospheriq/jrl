@@ -6,18 +6,16 @@ import threading
 import tcod
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from loop_behaviors.player import PlayerCharacter
+from loop_resources import *
+from loop_resources.behaviors.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination
+from loop_resources.components import SubLoopHandler
 from store_components.portfolio import Portfolio
 from store_components.atlas import Atlas
 from game_types import StoredStateObject
 from engine_components.store import GameStore
-from entity_components.base import BaseGameEntity
-from engine_components.loop import SubLoopHandler
+from entities import BaseGameEntity, AICharacter
 from game_types import StateActionObject
-from loop_behaviors.base import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseActionOnDestination, BaseGameEvent
-from loop_behaviors import NoAction, WaitAction, AIAcquireTargetAction, KeyDownAction, EntityWaitAction, EntityMoveAction, AIInvestigateAction, EntityWaitEvent, AIPursuitEvent, AIPursuitAction
 from atlas_components.tiles.base import TileCoordinate
-from entity_components.library import AICharacter
 
 
 class DummyTarget:

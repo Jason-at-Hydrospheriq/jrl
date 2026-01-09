@@ -4,9 +4,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from entities.base import BaseGameEntity
+
 
 if TYPE_CHECKING:
-    from entity_components.library import BaseGameEntity, Charactor, AICharactor
+    from entity_components.substates import Charactor, AICharactor
 
 
 class BaseStats:

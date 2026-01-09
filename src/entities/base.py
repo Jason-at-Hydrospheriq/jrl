@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from transitions import Machine
-from game_types import StatefulObject
-from typing import Dict, Tuple, TYPE_CHECKING
+from functools import wraps
+from typing import TYPE_CHECKING, Dict, Tuple
 import numpy as np
-
-from atlas_components.tiles.base import TileCoordinate, TileTuple
+from transitions import Machine
 
 if TYPE_CHECKING:
     from engine_components.store import GameStore
 
-from functools import wraps
+from atlas_components.tiles.base import TileCoordinate, TileTuple
+from game_types import StatefulObject
+
 
 def is_locked(func):
     """A decorator to wrap each method with a condition check."""
@@ -23,6 +23,7 @@ def is_locked(func):
             return None # Or raise an exception, or handle as needed
         return func(self, *args, **kwargs)
     return wrapper
+
 
 def action_locked(cls):
     """A class decorator to apply the condition_checker to all methods."""
@@ -61,7 +62,7 @@ class BaseSubState:
     def __init__(self, name: str, store: StatefulObject):
         self.name = name
         self.store = store
-    
+
         machine = Machine(model=self, states=self._states, transitions=self._transitions, initial=self._initial_state)
         self.machine = machine
 
@@ -81,8 +82,8 @@ class BaseParentState:
         self.substates = []
         self.state_vector = {}
         self.machine = Machine(model=self, states=[], transitions=[])
-        
-        for name, substate in self._substates_manifest:        
+
+        for name, substate in self._substates_manifest:
             self._add_substate(substate(name=name, store=self))
 
     def update(self) -> None:
@@ -90,10 +91,10 @@ class BaseParentState:
             try:
                 substate.set_bits()
                 substate.update() # type: ignore
-                
+
             except Exception as e:
                 raise e
-    
+
     def _add_substate(self, substate: BaseSubState) -> None:
         self.substates.append(substate)
         for bit in substate._state_bits:
@@ -108,7 +109,7 @@ class BaseGameSubState(BaseSubState):
     Duck Types: EntitySubState, BaseSubState
     """
     _state_bits = ('on_map',)
-    _states = ({'name': 'in_play'}, 
+    _states = ({'name': 'in_play'},
                {'name': 'not_in_play'})
     _transitions = (
         {'trigger':'update', 'source':'not_in_play', 'dest':'in_play', 'conditions':['is_on_map']},
@@ -124,7 +125,8 @@ class BaseGameSubState(BaseSubState):
 
     def is_not_on_map(self) -> bool:
         return not self.store.state_vector['on_map'] # type: ignore
-    
+
+
 @action_locked
 class BaseGameEntity(BaseParentState):
     """
@@ -151,28 +153,28 @@ class BaseGameEntity(BaseParentState):
 
     def __init__(self,
                  store: GameStore | None = None,
-                 *,                 
+                 *,
                  location: TileCoordinate | None = None,
-                 name: str="<Unnamed>", 
-                 symbol: str=' ', 
+                 name: str="<Unnamed>",
+                 symbol: str=' ',
                  color: Tuple[int, int, int]=(0,0,0)) -> None:
         super().__init__()
-        
+
         self.store = store
         parent_map_size = TileTuple(([100], [100]))
 
         if self.store:
             parent_map_size = self.store.atlas.active.grid.size  # type: ignore
-        
+
         if not hasattr(self, 'location'):
             self.location = location
 
         if not hasattr(self, 'symbol'):
             self.symbol = symbol
-    
+
         if not hasattr(self, 'color'):
             self.color = color
-        
+
         if not hasattr(self, 'name'):
             self.name = name
 
@@ -183,13 +185,13 @@ class BaseGameEntity(BaseParentState):
         self.action_locked = False
 
         self.update()
-    
+
     @property
     def hp(self) -> int | None:
         if not self.is_invulnerable:
             return self._hp
         return None
-    
+
     @hp.setter
     def hp(self, value: int | None) -> None:
         if not self.is_invulnerable:
@@ -201,9 +203,10 @@ class BaseGameEntity(BaseParentState):
         if not self.is_invulnerable:
             return self._max_hp
         return None
-    
+
     @max_hp.setter
     def max_hp(self, value: int | None) -> None:
         if not self.is_invulnerable:
             self._max_hp = value
             self.update()
+

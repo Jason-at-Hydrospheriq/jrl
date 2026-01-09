@@ -4,7 +4,7 @@ path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
 from game_types import StatefulObject, StoredStateObject
 from game_types import GameLoopObject, StateHandler, EventTransformer
-from engine_components.loop import SubLoopHandler
+from loop_resources.components import SubLoopHandler
 from engine_components.store import GameStore
 
 
@@ -95,7 +95,7 @@ def test_component_mob_loop_handler():
 
 # path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-# from loop_behaviors import BaseGameTransformer, EntityStateTableDict, manifest_example
+# from loop_resources import BaseGameTransformer, EntityStateTableDict, manifest_example
 # from entity_components.library import AICharacter
 # from core_components.events import AIEvent, EntityEvent
 # from engine_components.store import GameStore

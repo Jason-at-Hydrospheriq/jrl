@@ -1,20 +1,20 @@
 import pytest
 from sys import path
-
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 from transitions import Machine 
 from unittest.mock import Mock, MagicMock, patch
 import numpy as np
 
-from entity_components.library import TargetingEntity, TargetableEntity
-from entity_components.base  import BaseGameSubState, BaseGameEntity, BaseParentState
-from entity_components.library import CharacterHealthSubState, CollisionSubState, TargetedSubState, TargetingSubState, CombatSubState, MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character
+
+from entities import BaseGameEntity, AICharacter, Character, CombatEntity, MobileEntity, TargetableEntity, TargetingEntity
+from entities.base import BaseGameSubState, BaseParentState
+from entities.components  import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState
 from game_types import GameEntity, EntityParentState
 from atlas_components.tiles.base import TileCoordinate
 from store_components import Atlas
-from loop_behaviors import AICharacter, investigate, PlayerCharacter
+from loop_resources import investigate, PlayerCharacter
 from engine_components.store import GameStore
-from engine_components.loop import SubLoopHandler
+from loop_resources.components import SubLoopHandler
 
 
 class DummyGameStore:

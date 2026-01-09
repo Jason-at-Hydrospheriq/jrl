@@ -4,7 +4,7 @@
 from __future__ import annotations
 import tcod
 from engine import GameEngine
-from loop_behaviors import InputEvent
+from loop_resources import InputEvent
 import time
 
 GLOBAL_COOLDOWN_TIME = 10  # in milliseconds

@@ -7,11 +7,10 @@ import random
 import numpy as np
 from copy import deepcopy
 
-from entity_components.library import Character, BaseGameEntity
+from entities import BaseGameEntity, AICharacter, Character
 from atlas_components.tilemaps.library import DEFAULT_TILEMAP_MANIFEST, DefaultTileMap
 from atlas_components.tiles.base import TileTuple, TileCoordinate
-from loop_behaviors.mob import AICharacter, MobCharacter
-from loop_behaviors.player import PlayerCharacter
+from loop_resources import MobCharacter, PlayerCharacter
 
 if TYPE_CHECKING:
     from engine_components.store import GameStore
