@@ -5,7 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import AbstractSet, Tuple, TypeVar
 from transitions import Machine
-from queue import Queue
+from queue import Queue, Full
 
 from game_types import GameAction, GameEvent, StateActionObject, StatefulObject
 from entities.behaviors import *
@@ -17,20 +17,23 @@ class BaseGameLoop:
 
     def __init__(self, store: StatefulObject | None = None) -> None:
         self.store = store
-        self.events = Queue()
-        self.actions = Queue()
+        self.events = Queue(maxsize=5)
+        self.actions = Queue(maxsize=5)
 
     def send(self, loop_item: StateActionObject)  -> bool:
         try:
 
             if isinstance(loop_item, GameEvent):
-                self.events.put(loop_item)
+                self.events.put_nowait(loop_item)
                 return True
 
             elif isinstance(loop_item, GameAction):
-                self.actions.put(loop_item)
+                self.actions.put_nowait(loop_item)
                 return True
 
+            return False
+
+        except Full:
             return False
 
         except Exception as e:

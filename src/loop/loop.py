@@ -2,20 +2,19 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
+import traceback
 from transitions import Machine
 import threading
 from typing import TYPE_CHECKING, List
 import time
 import queue
 
-from loop import *
-from loop.components import SubLoopHandler
-from game_types import GameAction, GameEvent
+from delays import GLOBAL_ACTION_COOLDOWN_TIME, GLOBAL_COOLDOWN_TIME
+from loop.components import SubLoopHandler, game_behaviors, mob_behaviors
+from game_types import GameAction, GameEvent, StateActionObject
 
 if TYPE_CHECKING:
     from store import GameStore
-
-GLOBAL_LOOP_COOLDOWN_TIME = 25  # Global cooldown time in milliseconds
 
 class GameLoops:
     """
@@ -30,6 +29,7 @@ class GameLoops:
     mob_loop_handler: SubLoopHandler | None
     threads: List[threading.Thread | None]
     stop_signal: threading.Event
+    last_event_time: dict = {}
 
     def __init__(self, store: GameStore | None = None) -> None:
         self.store = store
@@ -88,28 +88,63 @@ class GameLoops:
 
         except Exception as e:
             print(f"Error stopping loops: {e}")
+    
+    def is_spam(self, loop_item: StateActionObject) -> bool:
+        event_type = type(loop_item)
+        current_time = time.time()
+        
+        # Check if this event type is on cooldown
+        if event_type in self.last_event_time:
+            time_diff = current_time - self.last_event_time[event_type]
+
+            if time_diff < GLOBAL_ACTION_COOLDOWN_TIME / 1000:
+                print(f"Ignoring spam event: {loop_item}, dt: {(time_diff*1000):.2f}ms")
+                return True # Ignore the event (spam)
+
+        # Process the event and update the last event time
+        self.last_event_time[event_type] = current_time
+        print(f"Processing event: {loop_item}")
+        return False
 
     def player_event_loop(self) -> None:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
-        while not self.stop_signal.is_set():  # type: ignore
-            try:
+        last_beat = 0.0
+        ctr = 0
+
+        try:
+            while not self.stop_signal.is_set():  # type: ignore
+                ctr += 1
+                next_event = None
+    
                 if self.state != 'started':  # type: ignore
                     time.sleep(0.1)
                     continue
-                next_event = None
-                if self.player_loop_handler and self.player_loop_handler.events is not None:
-                    next_event = self.player_loop_handler.events.get_nowait()
-                if next_event is not None and isinstance(next_event, GameEvent):
-                    next_event.trigger()
-                
-            except queue.Empty:
-                time.sleep(0.05)
 
-            except BaseException as e:
-                print(f"Error processing game event: {e}")
-                break
+                if ctr % 50 == 0:
+                    current_time = time.time()
+                    if ctr % 100 == 0:
+                        print(f"Player Event Loop <8: {(current_time - last_beat)*1000:.2f}ms")
+                        ctr = 0
+                    else:
+                        print(f"Player Event Loop 8>: {(current_time - last_beat)*1000:.2f}ms")
+                    last_beat = current_time
+                    
+
+                if self.player_loop_handler and self.player_loop_handler.events is not None:
+                    if not self.player_loop_handler.events.empty(): 
+                        next_event = self.player_loop_handler.events.get_nowait()
+
+                if next_event is not None and isinstance(next_event, GameEvent):
+                    if not self.is_spam(next_event):
+                        next_event.trigger()
+
+                time.sleep(0.005)
+
+        except BaseException as e:
+            print(f"Error processing player event: {e}")
+            traceback.print_exc()
 
     def player_action_loop(self) -> None:
         """
@@ -122,15 +157,18 @@ class GameLoops:
                     continue
                 next_action = None
                 if self.player_loop_handler and self.player_loop_handler.actions is not None:
-                    next_action = self.player_loop_handler.actions.get_nowait()
+                    if not self.player_loop_handler.actions.empty():
+                        next_action = self.player_loop_handler.actions.get_nowait()
                 if next_action is not None and isinstance(next_action, GameAction):
-                    next_action.perform()
+                    if not self.is_spam(next_action):
+                        next_action.perform()
                 
             except queue.Empty:
-                time.sleep(0.05)
+                time.sleep(0.005)
 
             except BaseException as e:
-                print(f"Error processing game action: {e}")
+                print(f"Error processing player action: {e}")
+                traceback.print_exc()
                 break
 
     def mob_event_loop(self) -> None:
@@ -138,15 +176,33 @@ class GameLoops:
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
         while not self.stop_signal.is_set():  # type: ignore
+            ctr = 0
+            last_beat = 0.0
+            
             try:
+                ctr += 1
+                next_event = None
+    
                 if self.state != 'started':  # type: ignore
                     time.sleep(0.1)
                     continue
+
+                if ctr % 50 == 0:
+                    current_time = time.time()
+                    if not ctr % 100 == 0:
+                        print(f"Mob Event Loop <8: {(current_time - last_beat)*1000:.2f}ms")
+                        ctr = 0
+                    else:
+                        print(f"Mob Event Loop 8>: {(current_time - last_beat)*1000:.2f}ms")
+                    last_beat = current_time
+
                 next_event = None
                 if self.mob_loop_handler and self.mob_loop_handler.events is not None:
-                    next_event = self.mob_loop_handler.events.get_nowait()
+                    if not self.mob_loop_handler.events.empty(): 
+                        next_event = self.mob_loop_handler.events.get_nowait()
                 if next_event is not None and isinstance(next_event, GameEvent):
-                    next_event.trigger()
+                    if not self.is_spam(next_event):
+                        next_event.trigger()
                 
             except queue.Empty:
                 time.sleep(0.05)
@@ -166,15 +222,19 @@ class GameLoops:
                     continue
                 next_action = None
                 if self.mob_loop_handler and self.mob_loop_handler.actions is not None:
-                    next_action = self.mob_loop_handler.actions.get_nowait()
+                    if not self.mob_loop_handler.actions.empty():
+                        next_action = self.mob_loop_handler.actions.get_nowait()
                 if next_action is not None and isinstance(next_action, GameAction):
-                    next_action.perform()
+                    if not self.is_spam(next_action):
+                        next_action.perform()
                 
             except queue.Empty:
-                time.sleep(0.05)
+                time.sleep(0.005)
 
             except BaseException as e:
+                
                 print(f"Error processing mob action: {e}")
+                traceback.print_exc()
                 break
 
     def threaded_exception_handler(self, args):

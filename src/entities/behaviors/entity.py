@@ -80,7 +80,7 @@ class EntityMoveAction(BaseActionOnDestination):
             if self.entity.speed:
                 wait = (GLOBAL_ACTION_COOLDOWN_TIME - self.entity.speed) * 2
             
-            EntityWaitAction(wait_time=wait, store=self.store, handler=self.handler, entity=self.entity).perform() # type: ignore | The store for this action must be GameStore.
+            # EntityWaitAction(wait_time=wait, store=self.store, handler=self.handler, entity=self.entity).perform() # type: ignore | The store for this action must be GameStore.
 
             match self.entity.collision.state:  # type: ignore | State machine attribute created dynamically
                 case 'not_colliding':                     
@@ -100,7 +100,9 @@ class EntityMoveAction(BaseActionOnDestination):
 
                 case 'colliding_with_entity':
                     if isinstance(self.entity, TargetingEntity):
-                        target = self.store.portfolio.get_entity_at_location(self.entity.destination)[0]  # type: ignore | The store for this action must be GameStore.
+                        target = self.store.portfolio.get_entity_at_location(self.entity.destination)  # type: ignore | The store for this action must be GameStore.
+                        if len(target) > 0:
+                            target = target[0]
                         if not isinstance(target, self.entity.__class__):  # Prevent targeting self types
                             self.entity.set_target(target)  
 
@@ -143,8 +145,9 @@ class EntityWaitAction(BaseActionOnEntity):
 
     def perform(self) -> None:
         if self.entity:
+            wait_time = max(0, self.wait_time)
             self.entity.action_locked = True  # Lock the entity's actions during the wait
-            sleep(self.wait_time / 1000.0) # Convert milliseconds to seconds
+            sleep(wait_time / 1000.0) # Convert milliseconds to seconds
             self.entity.action_locked = False  # Unlock the entity's actions after the wait
 
         if self.handler:
@@ -192,13 +195,21 @@ class EntityAttackAction(BaseActionOnTarget):
                     case 'fighting': 
                         
                         if not self.target.health.is_dead():  # type: ignore | Gotta get types and inheritance straightened out here.         
-                            damage = self.entity.attack()  
+                            attack = 0
                             defend = 0
+                            damage = 0
+
+                            if isinstance(self.entity, CombatEntity):
+                                attack = self.entity.attack()
+
                             if isinstance(self.target, CombatEntity):
                                 defend = self.target.defend()
 
-                            damage = max(0, damage - defend)
-                            
+                            if attack and defend:
+                                damage = max(0, attack - defend)
+                            elif attack:
+                                damage = attack
+
                             if damage > 0:
                                 self.target.take_damage(damage) # type: ignore | Gotta get types and inheritance straightened out here.
                                 if 'remains' not in self.target.name.lower():

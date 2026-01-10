@@ -171,14 +171,16 @@ class TargetingEntity(BaseGameEntity):
 
     @property
     def distance_to_target(self) -> int:
+       return self.distance_to_location(self.target.location if self.target else None)
 
-        if self.target and self.location and self.target.location is not None:
-            dx = self.target.location.x - self.location.x
-            dy = self.target.location.y - self.location.y
+    def distance_to_location(self, location: TileCoordinate | None) -> int:
+        if location and self.location:
+            dx = location.x - self.location.x
+            dy = location.y - self.location.y
             return max(abs(dx), abs(dy))  # Using Chebyshev distance for grid-based movement
 
         return 9999
-
+    
     def is_location_in_fov(self, location: TileCoordinate | None) -> bool:
         if isinstance(self.visible_tiles, np.ndarray):
             self.update_visible_tiles()
@@ -214,8 +216,9 @@ class TargetingEntity(BaseGameEntity):
 
     def set_target(self, target: TargetableEntity) -> None:
         self.threat_level = self._initial_threat_level
-        self.target = target
-        target.set_targeter(self)
+        if isinstance(target, TargetableEntity):
+            self.target = target
+            target.set_targeter(self)
         self.update()
 
     def clear_target(self) -> None:
@@ -413,16 +416,17 @@ class Character(MobileEntity, CombatEntity):
                 self.store.log.add(f"{self.name} is now {final_health_state}.")  # type: ignore
 
     def die(self) -> None:
+        self.target = None
+        self.targeter = None
+        self.color = enemy_die 
+        self.symbol = "%"
         self.blocks_movement = False
         self.is_invulnerable = True
         self.is_alive = False
         self.store.log.add(f"{self.name} has died.")  # type: ignore
         self.name = f"remains of {self.name}"
-        #self.symbol = "%"
-        self.color = enemy_die
 
 
-# ENTITIES
 @action_locked
 class AICharacter(Character):
     path: List[TileCoordinate] = []

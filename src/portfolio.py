@@ -188,6 +188,5 @@ class Portfolio:
     
     def update(self) -> None:
         """Update all entities in the portfolio."""
-        for entity in self.entities:
-            if hasattr(entity, 'update') and entity.spawn.is_on_map:  # type: ignore | State machine attribute created dynamically
-                entity.update()
+        for actor in self.live_ai_actors:
+            actor.update()

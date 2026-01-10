@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
+import traceback
 from typing import TYPE_CHECKING, Tuple, cast
 
 from delays import GLOBAL_ACTION_COOLDOWN_TIME
@@ -97,35 +98,42 @@ class AIUpdateFocusAction(BaseActionOnEntity):
         super().__init__(store=store, handler=handler, entity=entity)
 
     def perform(self) -> None:
+        try:
+            if self.entity and self.entity.action_locked:
+                return
+            
+            if isinstance(self.entity, AICharacter) and self.store is not None:
+                if self.handler:
 
-        if isinstance(self.entity, AICharacter) and self.store is not None:
-            if not self.entity.action_locked and self.handler:
+                    match self.entity.focus.state:  # type: ignore | State machine attribute created dynamically
+                        case 'idle':
+                            if self.entity.is_location_in_earshot(self.store.portfolio.player.location):  # type: ignore | Assume store is GameStore
+                                self.handler.handle(AIAcquireTargetEvent(store=self.store, handler=self.handler, entity=self.entity))
 
-                match self.entity.focus.state:  # type: ignore | State machine attribute created dynamically
-                    case 'idle':
-                        if self.entity.is_location_in_earshot(self.store.portfolio.player.location):  # type: ignore | Assume store is GameStore
-                            self.handler.handle(AIAcquireTargetEvent(store=self.store, handler=self.handler, entity=self.entity))
+                        case 'searching':
+                            pass 
 
-                    case 'searching':
-                        pass 
+                        case 'tracking':
+                            if self.entity.focus.state_changed:  # type: ignore | State machine attribute created dynamically
+                                self.handler.handle(AIInvestigateEvent(store=self.store, handler=self.handler, entity=self.entity))
+                                self.entity.state_changed = False  # type: ignore | State machine attribute created dynamically
+                            elif self.entity.distance_to_target is not None and self.entity.distance_to_target > 1:
+                                self.entity.set_destination_from_path()
+                                self.handler.handle(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity)) # type: ignore
 
-                    case 'tracking':
-                        if self.entity.focus.state_changed:  # type: ignore | State machine attribute created dynamically
-                            self.handler.handle(AIInvestigateEvent(store=self.store, handler=self.handler, entity=self.entity))
-                            self.entity.state_changed = False  # type: ignore | State machine attribute created dynamically
-                        elif self.entity.distance_to_target is not None and self.entity.distance_to_target > 1:
-                            self.entity.set_destination_from_path()
-                            self.handler.handle(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity)) # type: ignore
+                        case 'targeting':
+                            if self.entity.distance_to_target is not None and self.entity.distance_to_target > 1:
+                                self.entity.set_destination_from_path()
+                                self.handler.handle(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity)) # type: ignore
+                            elif self.entity.distance_to_target == 1:
+                                self.handler.handle(None)  # type: ignore | Dummy combat event for now
+                                self.store.log.add(f"The {self.entity.name} kicks {self.entity.target.name}!")  # type: ignore | Entity in this state must have a target.
+                        case _:
+                            pass
 
-                    case 'targeting':
-                        if self.entity.distance_to_target is not None and self.entity.distance_to_target > 1:
-                            self.entity.set_destination_from_path()
-                            self.handler.handle(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity)) # type: ignore
-                        elif self.entity.distance_to_target == 1:
-                            self.handler.handle(None)  # type: ignore | Dummy combat event for now
-                            self.store.log.add(f"The {self.entity.name} kicks {self.entity.target.name}!")  # type: ignore | Entity in this state must have a target.
-                    case _:
-                        pass
+        except Exception as e:
+            print(f"Error in AIUpdateFocusAction.perform: {e}")
+            traceback.print_exc()
 
 update_focus = ('aiupdatefocusevent', AIUpdateFocusAction())
 
@@ -172,8 +180,9 @@ class AIAcquireTargetAction(BaseActionOnEntity):
                     self.store.log.add(text=text)  # type: ignore | AICharacter must have a GameStore to log messages.
             
                     if self.handler:
-                        self.handler.send(EntityWaitEvent(wait_time=GLOBAL_ACTION_COOLDOWN_TIME, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
-
+                        #self.handler.send(EntityWaitEvent(wait_time=GLOBAL_ACTION_COOLDOWN_TIME, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
+                        pass
+                    
 acquire_target = ('aiacquiretargetevent', AIAcquireTargetAction())
 
 
@@ -302,9 +311,10 @@ class MobCharacter(AICharacter):
         self._ai = value
 
     def update(self) -> None:
-        super().update()
-        if self.ai:
-            if self.ai.events.qsize() < 10 and self.ai.actions.qsize() < 10:
+        distance_to_player = self.distance_to_location(self.store.portfolio.player.location if self.store and self.store.portfolio else None)  # type: ignore | Assume store is GameStore
+        if distance_to_player <= self.earshot_radius:
+            super().update()
+            if self.ai:
                 if self.store and self.store.portfolio:  # type: ignore | Assume store is GameStore
                     self.ai.handle(AIUpdateFocusEvent(store=self.store, handler=self.ai, entity=self))
 

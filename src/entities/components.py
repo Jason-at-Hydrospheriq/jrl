@@ -150,7 +150,8 @@ class CombatSubState(BaseGameSubState):
     _initial_state = 'disengaged'
 
     def set_bits(self) -> None: # Interprets distance to target and targeting status into state bits
-        self.store.state_vector[f'in_{self.combat_type}_range'] = self.store.distance_to_target <= self.range_threshold  # type: ignore
+        if self.store.distance_to_target is not None:  # type: ignore
+            self.store.state_vector[f'in_{self.combat_type}_range'] = self.store.distance_to_target <= self.range_threshold  # type: ignore
 
     def is_in_range(self) -> bool:
         return self.store.state_vector[f'in_{self.combat_type}_range']  # type: ignore
