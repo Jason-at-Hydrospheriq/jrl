@@ -55,10 +55,6 @@ def main() -> None:
 
             ctr += 1
 
-            # #Update Display
-            # if game.display:
-            #     game.display.render()
-
             if ctr % 50 == 0:
                 if ctr % 100 == 0:
                     print(f"Main Loop 8>: {(time.time() - LAST_UPDATE_TIME)*1000:.2f}ms")
@@ -80,7 +76,7 @@ def main() -> None:
                         
                             case "KEYDOWN":
                                 key_sim = event.sym
-                                if game.ai and game.ai.player_loop_handler:
+                                if game.loop and game.loop.player_loop_handler:
                                     match key_sim:
                                         case tcod.event.KeySym.ESCAPE:
                                             game.reset()  # type: ignore
@@ -104,17 +100,18 @@ def main() -> None:
                                         case _:
                                             if game.state not in ('idle', 'paused', 'shutdown'):  # type: ignore
                                                 # if game.ai.player_loop_handler.events.not_full and game.ai.player_loop_handler.actions.not_full:
-                                                game_event = InputEvent(store=game.store, handler=game.ai.player_loop_handler, input_event=event)
-                                                game.ai.player_loop_handler.handle(game_event)
+                                                game_event = InputEvent(store=game.store, handler=game.loop.player_loop_handler, input_event=event)
+                                                game.loop.player_loop_handler.handle(game_event)
                                             else:
-                                                game.store.log.add(f"Events={game.ai.player_loop_handler.events.qsize()}, Actions={game.ai.player_loop_handler.actions.qsize()}")  # type: ignore
+                                                game.store.log.add(f"Events={game.loop.player_loop_handler.events.qsize()}, Actions={game.loop.player_loop_handler.actions.qsize()}")  # type: ignore
                 
                 # print("Leaing tcod event loop")
-                if game.ai:
-                    game.ai.update()
+                if game.loop:
+                    game.loop.update()
 
             if game.state == 'shutdown':  # type: ignore | State machine attribute created dynamically
                 break
+
     except Exception as e:
         print(f"Error in main loop: {e}")
         traceback.print_exc()

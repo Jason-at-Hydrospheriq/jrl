@@ -17,12 +17,12 @@ class GameEngine:
     Duck Types: StatefulObject, StoredStateObject
     """
     machine: Machine
-    ai: GameLoops | None
+    loop: GameLoops | None
     store: GameStore | None
     display: GameDisplay | None
 
     def __init__(self, ai: GameLoops | None = None, display: GameDisplay | None = None, store: GameStore | None = None) -> None:
-        self.ai = ai
+        self.loop = ai
         self.display = display
         self.store = store
 
@@ -49,11 +49,15 @@ class GameEngine:
         # Provision Engine Components
         self.store = GameStore()
         self.display = GameDisplay(store=self.store)
-        self.ai = GameLoops(store=self.store)
+        self.loop = GameLoops(store=self.store)
 
         # Set GameAI for Portfolio spawing
-        if self.store and self.ai and self.store.portfolio:
-            self.store.portfolio.game_ai = self.ai
+        if self.store and self.loop and self.store.portfolio:
+            self.store.portfolio.game_ai = self.loop
+
+        # Set Display for GameAI
+        if self.loop and self.display:
+            self.loop.display = self.display
 
         # Propagate the store to all StoredStateObjects
         stores = self._get_all_stores(self)
@@ -70,7 +74,12 @@ class GameEngine:
         # Start Display
         if self.display and self.display.state != 'started':  # type: ignore | State machine attribute created dynamically
             self.display.start() # type: ignore | State machine attribute created dynamically
-            
+
+        # Start Game Loop
+        if self.loop and self.loop.state != 'started':  # type: ignore | State machine attribute created dynamically
+            self.loop.start() # type: ignore | State machine attribute created dynamically
+            self.loop.pause()  # type: ignore | State machine attribute created dynamically
+
         print(f"Game is {self.state}.") # type: ignore
     
     def _play(self) -> None:
@@ -78,8 +87,8 @@ class GameEngine:
         print("Starting the game.")
         if self.store and self.store.state != 'started': # type: ignore | State machine attribute created dynamically
             self.store.start() # type: ignore | State machine attribute created dynamically
-        if self.ai and self.ai.state != 'started':  # type: ignore | State machine attribute created dynamically
-            self.ai.start() # type: ignore | State machine attribute created dynamically
+        if self.loop and self.loop.state != 'started':  # type: ignore | State machine attribute created dynamically
+            self.loop.start() # type: ignore | State machine attribute created dynamically
         if self.store and self.store.portfolio and self.store.portfolio.player:
             self.store.portfolio.player.update_fov()  # type: ignore | The class for this action must be PlayerCharacter.
 
@@ -88,18 +97,18 @@ class GameEngine:
         print("Pausing the game.")
         if self.store and self.store.state != 'stopped': # type: ignore | State machine attribute created dynamically
             self.store.stop() # type: ignore | State machine attribute created dynamically
-        if self.ai and self.ai.state != 'paused':  # type: ignore | State machine attribute created dynamically
-            self.ai.pause() # type: ignore | State machine attribute created dynamically
+        if self.loop and self.loop.state != 'paused':  # type: ignore | State machine attribute created dynamically
+            self.loop.pause() # type: ignore | State machine attribute created dynamically
 
     def _shutdown(self) -> None:
         """Cleans up resources and stops the game loop."""
         print("Shutting down the game.")
-        if self.store and self.store.state != 'stopped': # type: ignore
-            self.store.stop() # type: ignore
-        if self.ai and self.ai.state != 'stopped':  # type: ignore
-            self.ai.stop() # type: ignore
-        if self.display and self.display.state != 'stopped':  # type: ignore
-            self.display.stop() # type: ignore
+        if self.store and self.store.state != 'stopped': # type: ignore | State machine attribute created dynamically
+            self.store.stop() # type: ignore | State machine attribute created dynamically
+        if self.loop and self.loop.state != 'stopped':  # type: ignore | State machine attribute created dynamically
+            self.loop.stop() # type: ignore | State machine attribute created dynamically
+        if self.display and self.display.state != 'stopped':  # type: ignore | State machine attribute created dynamically
+            self.display.stop() # type: ignore | State machine attribute created dynamically
 
     def _reset(self) -> None:
         """Resets the game state to its initial configuration."""

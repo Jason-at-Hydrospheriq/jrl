@@ -3,32 +3,56 @@
 
 from __future__ import annotations
 from copy import deepcopy
+import time
 from typing import AbstractSet, Tuple, TypeVar
 from transitions import Machine
 from queue import Queue, Full
 
 from game_types import GameAction, GameEvent, StateActionObject, StatefulObject
 from entities.behaviors import *
+from delays import GLOBAL_ACTION_COOLDOWN_TIME
 
 class BaseGameLoop:
     store: StatefulObject | None
     events: Queue[StateActionObject]
     actions: Queue[StateActionObject]
+    last_event_time: dict[type[StateActionObject], float] = {}
 
     def __init__(self, store: StatefulObject | None = None) -> None:
         self.store = store
         self.events = Queue(maxsize=5)
         self.actions = Queue(maxsize=5)
+        
+    def is_spam(self, loop_item: StateActionObject) -> bool:
+        global GLOBAL_ACTION_COOLDOWN_TIME
+        event_type = type(loop_item)
+        current_time = time.time()
+        
+        # Check if this event type is on cooldown
+        if event_type in self.last_event_time:
+            time_diff = current_time - self.last_event_time[event_type]
 
+            if time_diff < GLOBAL_ACTION_COOLDOWN_TIME / 1000:
+                print(f"Ignoring spam event: {loop_item}, dt: {(time_diff*1000):.2f}ms")
+                return True # Ignore the event (spam)
+
+        # Process the event and update the last event time
+        self.last_event_time[event_type] = current_time
+        print(f"Processing event: {loop_item}")
+        return False
+
+    
     def send(self, loop_item: StateActionObject)  -> bool:
         try:
 
             if isinstance(loop_item, GameEvent):
-                self.events.put_nowait(loop_item)
-                return True
+                if not self.is_spam(loop_item) and not self.events.full():
+                    self.events.put_nowait(loop_item)
+                    return True
 
             elif isinstance(loop_item, GameAction):
-                self.actions.put_nowait(loop_item)
+                if not self.is_spam(loop_item) and not self.actions.full():
+                    self.actions.put_nowait(loop_item)
                 return True
 
             return False
