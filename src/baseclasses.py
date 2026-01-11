@@ -8,6 +8,7 @@ from transitions import Machine
 import numpy as np
 from tcod.console import Console
 from tcod.context import Context
+from enum import Enum, auto
 
 import colors
 from manifests import DEFAULT_TILEMAP_MANIFEST
@@ -50,12 +51,11 @@ def action_locked(cls):
 
     return cls
 
-from enum import Enum, auto
 
 class EntityRenderOrder(Enum):
      CORPSE = auto()
      ITEM = auto()
-     ACTOR = auto()
+     CHARACTER = auto()
 
 
 class WidgetRenderOrder(Enum):
@@ -173,8 +173,8 @@ class BaseUI:
             if self.context.sdl_window is not None:
                 # console_width, console_height = self.context.sdl_window.size
                 self.console = self.context.new_console(self.console_width, self.console_height, order="F")
-                
-                for widget in self.widgets:
+                sorted_widgets = sorted(self.widgets, key=lambda w: w.render_order.value)
+                for widget in sorted_widgets:
                     widget.render(self.context, self.console, self.store)
                 self.context.present(self.console)
                 self.console.clear()
@@ -277,6 +277,7 @@ class BaseGameEntity(BaseParentState):
     name: str
     symbol: str
     color: Tuple[int, int, int] # Do this like the maps. Numpy datatypes mapped to state.
+    render_order: EntityRenderOrder
 
     # Substate definition
     _substates_manifest = (
@@ -289,7 +290,8 @@ class BaseGameEntity(BaseParentState):
                  location: TileCoordinate | None = None,
                  name: str="<Unnamed>",
                  symbol: str=' ',
-                 color: Tuple[int, int, int]=(0,0,0)) -> None:
+                 color: Tuple[int, int, int]=(0,0,0), 
+                 render_order: EntityRenderOrder=EntityRenderOrder.CORPSE) -> None:
         super().__init__()
 
         self.store = store
@@ -309,6 +311,9 @@ class BaseGameEntity(BaseParentState):
 
         if not hasattr(self, 'name'):
             self.name = name
+
+        if not hasattr(self, 'render_order'):
+            self.render_order = render_order
 
         self.blocks_movement = True
         self.is_invulnerable = False

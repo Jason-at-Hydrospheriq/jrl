@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 from baseclasses import BaseGameSubState, action_locked
 from game_types import TileCoordinate
 from colors import enemy_die
-from baseclasses import BaseGameEntity
+from baseclasses import BaseGameEntity, EntityRenderOrder
 from entities.components import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState
 
 
@@ -372,6 +372,8 @@ class Character(MobileEntity, CombatEntity):
 
         super().__init__(store=store, location=location, symbol=symbol, color=color, name=name)
 
+        self.render_order = EntityRenderOrder.CHARACTER
+
     def take_damage(self, damage: int) -> None:
         if self.is_alive:
             initial_health_state = self.health.state  # type: ignore
@@ -425,7 +427,7 @@ class Character(MobileEntity, CombatEntity):
         self.is_alive = False
         self.store.log.add(f"{self.name} has died.")  # type: ignore
         self.name = f"remains of {self.name}"
-
+        self.render_order = EntityRenderOrder.CORPSE
 
 @action_locked
 class AICharacter(Character):

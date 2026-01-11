@@ -91,8 +91,9 @@ class MainMapDisplay(BaseUIWidget):
         if store.portfolio and store.atlas:
             visible = store.atlas.active.visible
             color = colors.white
-
-            for actor in store.portfolio.all_ai_actors:
+            sorted_actors = sorted(store.portfolio.all_ai_actors, key=lambda x: x.render_order.value)  # type: ignore | Assume store is GameStore
+            
+            for actor in sorted_actors:
                 if actor.location and visible[*actor.location.to_list]:
                     if not actor.perception.is_targeted():  # type: ignore | State machine method is dynamically added
                         color = actor.color
