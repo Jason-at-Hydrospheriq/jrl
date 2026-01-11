@@ -196,31 +196,6 @@ class GameLoops:
             print(f"Error processing player sub loop item: {e}")
             traceback.print_exc()
 
-    # def player_subloop(self) -> None:
-    #     """
-    #     Update the state of the game by processing events and updating the roster, map, and UI.
-    #     """
-    #     while not self.stop_signal.is_set():  # type: ignore
-    #         try:
-    #             if self.state != 'started':  # type: ignore
-    #                 time.sleep(0.1)
-    #                 continue
-    #             next_action = None
-    #             if self.player_loop_handler and self.player_loop_handler.actions is not None:
-    #                 if not self.player_loop_handler.actions.empty():
-    #                     next_action = self.player_loop_handler.actions.get_nowait()
-    #             if next_action is not None and isinstance(next_action, GameAction):
-    #                 if not self.is_spam(next_action):
-    #                     next_action.perform()
-                
-    #         except queue.Empty:
-    #             time.sleep(0.005)
-
-    #         except BaseException as e:
-    #             print(f"Error processing player action: {e}")
-    #             traceback.print_exc()
-    #             break
-
     def mob_subloop(self) -> None:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
@@ -265,32 +240,6 @@ class GameLoops:
                 print(f"Error processing mob sub loop item: {e}")
                 traceback.print_exc()
                 break
-
-    # def mob_action_loop(self) -> None:
-    #     """
-    #     Update the state of the game by processing events and updating the roster, map, and UI.
-    #     """
-    #     while not self.stop_signal.is_set():  # type: ignore
-    #         try:
-    #             if self.state != 'started':  # type: ignore
-    #                 time.sleep(0.1)
-    #                 continue
-    #             next_action = None
-    #             if self.mob_loop_handler and self.mob_loop_handler.actions is not None:
-    #                 if not self.mob_loop_handler.actions.empty():
-    #                     next_action = self.mob_loop_handler.actions.get_nowait()
-    #             if next_action is not None and isinstance(next_action, GameAction):
-    #                 if not self.is_spam(next_action):
-    #                     next_action.perform()
-                
-    #         except queue.Empty:
-    #             time.sleep(0.005)
-
-    #         except BaseException as e:
-                
-    #             print(f"Error processing mob action: {e}")
-    #             traceback.print_exc()
-    #             break
 
     def threaded_exception_handler(self, args):
         print(f"Thread failed: {args.thread.name}")

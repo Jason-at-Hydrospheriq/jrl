@@ -3,7 +3,13 @@
 
 from __future__ import annotations
 from transitions import Machine
+import tcod
+import time
+import gc
+import traceback
 
+from delays import GLOBAL_COOLDOWN_TIME
+from entities.behaviors import InputEvent
 from store import GameStore
 from display import GameDisplay, colors
 from loop  import GameLoops
@@ -20,6 +26,8 @@ class GameEngine:
     loop: GameLoops | None
     store: GameStore | None
     display: GameDisplay | None
+    last_update_time: float = 0.0
+    print_heartbeat: bool = True  # Whether to print heartbeat messages
 
     def __init__(self, ai: GameLoops | None = None, display: GameDisplay | None = None, store: GameStore | None = None) -> None:
         self.loop = ai
@@ -81,6 +89,8 @@ class GameEngine:
         if self.loop and self.loop.state != 'started':  # type: ignore | State machine attribute created dynamically
             self.loop.start() # type: ignore | State machine attribute created dynamically
             self.loop.pause()  # type: ignore | State machine attribute created dynamically
+        
+        # self.main_loop()
 
         print(f"Game is {self.state}.") # type: ignore
     
@@ -146,4 +156,74 @@ class GameEngine:
         
         except Exception as e:
             raise Exception(f"Error getting all stores: {e}")
-        
+
+    def main_loop(self) -> None:
+        try:
+            ctr = 0
+
+            while True:
+                ctr += 1
+
+                if ctr % 50 == 0:
+                    if ctr % 100 == 0:
+                        if self.print_heartbeat:
+                            print(f"Main Loop 8>: {(time.time() - self.last_update_time)*1000:.2f}ms")
+                        ctr = 0
+                    else:
+                        if self.print_heartbeat:
+                            print(f"Main Loop 8>: {(time.time() - self.last_update_time)*1000:.2f}ms")
+                    self.last_update_time = time.time()
+
+                # Update Inputs
+                for event in tcod.event.wait(timeout=GLOBAL_COOLDOWN_TIME / 1000):
+                    if event.type in ( "QUIT", "KEYDOWN" ):
+                        match event.type:
+                            case "QUIT":
+                                self.stop()  # type: ignore
+
+                            case "KEYDOWN":
+                                key_sim = event.sym
+                                if self.loop and self.loop.player_loop_handler:
+                                    match key_sim:
+                                        case tcod.event.KeySym.ESCAPE:
+                                            self.reset()  # type: ignore
+
+                                        case tcod.event.KeySym.P:
+                                            msg = "Game is now "
+
+                                            if self.state == 'playing':  # type: ignore
+                                                self.pause()  # type: ignore
+                                                msg = msg + f"{self.state}."  # type: ignore | State machine attribute created dynamically
+                                            elif self.state == 'paused':  # type: ignore
+                                                self.play()  # type: ignore
+                                                msg = msg + f"{self.state}."  # type: ignore | State machine attribute created dynamically
+                                            elif self.state == 'idle':  # type: ignore
+                                                self.play()  # type: ignore
+                                                msg = msg + f"{self.state}."  # type: ignore | State machine attribute created dynamically
+                                            if self.store and msg != "Game is now ":
+                                                self.store.log.add(msg)
+                                                print(msg)
+
+                                        case _:
+                                            if self.state not in ('idle', 'paused', 'shutdown'):  # type: ignore
+                                                if self.store.portfolio.player.is_alive:  # type: ignore | Assume store is GameStore
+                                                    game_event = InputEvent(store=self.store, handler=self.loop.player_loop_handler, input_event=event)
+                                                    self.loop.player_loop_handler.handle(game_event)
+                                            else:
+                                                self.store.log.add(f"Events={self.loop.player_loop_handler.events.qsize()}, Actions={self.loop.player_loop_handler.actions.qsize()}")  # type: ignore
+
+                if self.state == 'shutdown':  # type: ignore | State machine attribute created dynamically
+                    break
+
+        except Exception as e:
+            print(f"Error in main loop: {e}")
+            traceback.print_exc()
+
+        finally:
+            print("Shutting down game...")
+            if self.state != 'shutdown':  # type: ignore | State machine attribute created dynamically
+                self.stop()  # type: ignore
+            gc.collect()
+            print("Game has been shut down.")
+ 
+       
