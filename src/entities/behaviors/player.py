@@ -64,7 +64,10 @@ class PlayerCharacter(Character):
         self.update_fov()
         super().update()
 
-        
+    def die(self) -> None:
+        self.is_alive = False
+        return super().die()
+
 class InputEvent(BaseGameEvent):
     _input_event: tcod.event.Event | None
 

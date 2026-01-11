@@ -49,8 +49,6 @@ class GameStore:
                 self.portfolio.spawn_player(map)
                 self.portfolio.initialize_random_mobs(map, max_mobs_per_area=3)
 
-            self.log.add("Welcome to JRL - Jay's Roguelike!", fg=(255, 255, 0))
-
     def _start(self):
         pass
 

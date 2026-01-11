@@ -106,8 +106,12 @@ class Message:
         self.plain_text = text
         self.fg= fg
         self.count = 1
+
+    @property
+    def full_text(self) -> str:
         if self.count > 1:
-            self.text = f"{self.plain_text} (x{self.count})"
+            return f"{self.plain_text} (x{self.count})"
+        return self.plain_text
 
 
 class MessageLog:
@@ -144,9 +148,12 @@ class MessageLogWidget(BaseUIWidget):
             console.print(
                 x=self.upper_Left_x,
                 y=y,
-                text=message.plain_text,
+                text=message.full_text,
                 fg=message.fg,
             )
             y -= 1
+
+            if y < self.upper_Left_y:
+                return
 
 

@@ -267,7 +267,7 @@ class TargetingEntity(BaseGameEntity):
     def assess_threat(self) -> None:
         friendly = isinstance(self.target, self.__class__)
         threat_level = self._initial_threat_level
-
+        
         if self.distance_to_target > 8:
             threat_level = self._initial_threat_level * (not friendly)
         if self.distance_to_target <= 8:

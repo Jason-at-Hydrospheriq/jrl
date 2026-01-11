@@ -99,9 +99,9 @@ def main() -> None:
 
                                         case _:
                                             if game.state not in ('idle', 'paused', 'shutdown'):  # type: ignore
-                                                # if game.ai.player_loop_handler.events.not_full and game.ai.player_loop_handler.actions.not_full:
-                                                game_event = InputEvent(store=game.store, handler=game.loop.player_loop_handler, input_event=event)
-                                                game.loop.player_loop_handler.handle(game_event)
+                                                if game.store.portfolio.player.is_alive:  # type: ignore | Assume store is GameStore
+                                                    game_event = InputEvent(store=game.store, handler=game.loop.player_loop_handler, input_event=event)
+                                                    game.loop.player_loop_handler.handle(game_event)
                                             else:
                                                 game.store.log.add(f"Events={game.loop.player_loop_handler.events.qsize()}, Actions={game.loop.player_loop_handler.actions.qsize()}")  # type: ignore
                 

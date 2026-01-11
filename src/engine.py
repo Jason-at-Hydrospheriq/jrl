@@ -5,7 +5,7 @@ from __future__ import annotations
 from transitions import Machine
 
 from store import GameStore
-from display import GameDisplay
+from display import GameDisplay, colors
 from loop  import GameLoops
 from game_types import StoredStateObject
 
@@ -70,6 +70,8 @@ class GameEngine:
         # Initialize Maps and Entities in the GameStore
         if self.store and self.store.state != 'initialized': # type: ignore | State machine attribute created dynamically
             self.store.initialize() # type: ignore | State machine attribute created dynamically
+            self.store.log.add("Welcome to JRL - Jay's Roguelike!", fg=colors.welcome_text)  # type: ignore
+            self.store.log.add("Press P to Play/Pause, ESC to Reset, and Q to Quit.", fg=colors.welcome_text)  # type: ignore
 
         # Start Display
         if self.display and self.display.state != 'started':  # type: ignore | State machine attribute created dynamically

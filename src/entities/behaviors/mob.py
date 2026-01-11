@@ -9,7 +9,7 @@ from delays import GLOBAL_ACTION_COOLDOWN_TIME
 from game_types import TileCoordinate, StateActionObject
 from baseclasses import BaseActionOnEntity, BaseEntityEvent, BaseGameEvent, action_locked
 from entities.library import Character, AICharacter, CombatEntity
-from entities.behaviors.entity import EntityWaitEvent, EntityAttackAction, EntityMoveAction
+from entities.behaviors.entity import EntityWaitEvent, EntityAttackAction, EntityMoveAction, EntityAttackEvent
 
 if TYPE_CHECKING:
     from store import GameStore
@@ -125,9 +125,10 @@ class AIUpdateFocusAction(BaseActionOnEntity):
                             if self.entity.distance_to_target is not None and self.entity.distance_to_target > 1:
                                 self.entity.set_destination_from_path()
                                 self.handler.handle(AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity)) # type: ignore
+
                             elif self.entity.distance_to_target == 1:
-                                self.handler.handle(None)  # type: ignore | Dummy combat event for now
-                                self.store.log.add(f"The {self.entity.name} kicks {self.entity.target.name}!")  # type: ignore | Entity in this state must have a target.
+                                self.handler.handle(EntityAttackEvent(store=self.store, handler=self.handler, entity=self.entity, target=self.entity.target))  # type: ignore 
+                                # self.store.log.add(f"The {self.entity.name} kicks {self.entity.target.name}!")  # type: ignore | Entity in this state must have a target.
                         case _:
                             pass
 
@@ -182,7 +183,7 @@ class AIAcquireTargetAction(BaseActionOnEntity):
                     if self.handler:
                         #self.handler.send(EntityWaitEvent(wait_time=GLOBAL_ACTION_COOLDOWN_TIME, store=self.store, handler=self.handler, entity=self.entity))  # type: ignore
                         pass
-                    
+
 acquire_target = ('aiacquiretargetevent', AIAcquireTargetAction())
 
 

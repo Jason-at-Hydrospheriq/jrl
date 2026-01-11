@@ -171,10 +171,11 @@ class GameLoops:
                 if ctr % 50 == 0:
                     current_time = time.time()
                     if ctr % 100 == 0:
-                        print(f"Player SubLoop <8: {(current_time - last_beat)*1000:.2f}ms")
+                        # print(f"Player SubLoop <8: {(current_time - last_beat)*1000:.2f}ms")
                         ctr = 0
                     else:
-                        print(f"Player SubLoop 8>: {(current_time - last_beat)*1000:.2f}ms")
+                        pass
+                        # print(f"Player SubLoop 8>: {(current_time - last_beat)*1000:.2f}ms")
                     last_beat = current_time
                     
                 if self.player_loop_handler and self.player_loop_handler.events is not None:
@@ -240,10 +241,10 @@ class GameLoops:
                 if ctr % 50 == 0:
                     current_time = time.time()
                     if not ctr % 100 == 0:
-                        print(f"Mob SubLoop <8: {(current_time - last_beat)*1000:.2f}ms")
+                        #print(f"Mob SubLoop <8: {(current_time - last_beat)*1000:.2f}ms")
                         ctr = 0
                     else:
-                        print(f"Mob SubLoop 8>: {(current_time - last_beat)*1000:.2f}ms")
+                        pass #print(f"Mob SubLoop 8>: {(current_time - last_beat)*1000:.2f}ms")
                     last_beat = current_time
 
                 if self.mob_loop_handler and self.mob_loop_handler.events is not None:
