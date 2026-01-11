@@ -415,19 +415,18 @@ class Character(MobileEntity, CombatEntity):
 
             final_health_state = self.health.state  # type: ignore
             if initial_health_state != final_health_state:
-                self.store.log.add(f"{self.name} is now {final_health_state}.")  # type: ignore
+                if final_health_state != 'dead':
+                    self.store.log.add(f"{self.name} is now {final_health_state}.")  # type: ignore
 
     def die(self) -> None:
         self.target = None
         self.targeter = None
         self.color = enemy_die 
-        self.symbol = "%"
         self.blocks_movement = False
         self.is_invulnerable = True
         self.is_alive = False
-        self.store.log.add(f"{self.name} has died.")  # type: ignore
-        self.name = f"remains of {self.name}"
         self.render_order = EntityRenderOrder.CORPSE
+
 
 @action_locked
 class AICharacter(Character):

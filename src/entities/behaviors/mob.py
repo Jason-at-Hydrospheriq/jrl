@@ -5,6 +5,7 @@ from __future__ import annotations
 import traceback
 from typing import TYPE_CHECKING, Tuple, cast
 
+import colors
 from delays import GLOBAL_ACTION_COOLDOWN_TIME
 from game_types import TileCoordinate, StateActionObject
 from baseclasses import BaseActionOnEntity, BaseEntityEvent, BaseGameEvent, action_locked
@@ -319,3 +320,8 @@ class MobCharacter(AICharacter):
                 if self.store and self.store.portfolio:  # type: ignore | Assume store is GameStore
                     self.ai.handle(AIUpdateFocusEvent(store=self.store, handler=self.ai, entity=self))
 
+    def die(self) -> None:
+        super().die()
+        self.store.log.add(f"{self.name} has died.", fg=colors.enemy_die)  # type: ignore
+        self.symbol = "%"
+        self.name = f"remains of {self.name}"

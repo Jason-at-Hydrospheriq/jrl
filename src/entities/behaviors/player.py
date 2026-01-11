@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from __future__ import annotations
-from time import sleep
+from __future__ import annotations  
 from typing import TYPE_CHECKING, Tuple, cast
 import numpy as np
 import tcod
@@ -13,6 +12,7 @@ from entities import Character
 from baseclasses import BaseGameAction
 from entities.behaviors.entity import EntityMoveAction
 from game_types import StateActionObject, TileCoordinate
+import colors
 
 if TYPE_CHECKING:
     from store import GameStore
@@ -65,8 +65,9 @@ class PlayerCharacter(Character):
         super().update()
 
     def die(self) -> None:
-        self.is_alive = False
-        return super().die()
+        super().die()
+        self.store.log.add(f"Crap!! You died. GAME OVER.", fg=colors.player_die)  # type: ignore
+        self.name = f"remains of {self.name}"
 
 class InputEvent(BaseGameEvent):
     _input_event: tcod.event.Event | None
