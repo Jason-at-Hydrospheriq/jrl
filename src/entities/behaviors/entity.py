@@ -212,11 +212,7 @@ class EntityAttackAction(BaseActionOnTarget):
 
                             if damage > 0:
                                 self.target.take_damage(damage) # type: ignore | Gotta get types and inheritance straightened out here.
-                                if 'remains' not in self.target.name.lower():
-                                     self.store.log.add(f"{self.entity.name} attacks {self.target.name} for {damage} damage!")  # type: ignore | The store for this action must be GameStore.
-                                else:
-                                    self.store.log.add(f"Easy {self.entity.name}. Way to kick a guy while they're down!")  # type: ignore | The store for this action must be GameStore.
-            
+
         except Exception as e:
             print(f"Error performing attack action: {e}.")
             traceback.print_exc(file=sys.stdout)

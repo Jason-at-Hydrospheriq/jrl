@@ -312,6 +312,18 @@ class MobCharacter(AICharacter):
     def ai(self, value: SubLoopHandler | None) -> None:   # type: ignore
         self._ai = value
 
+    def take_damage(self, damage: int) -> None:
+        super().take_damage(damage)
+
+        # Update the log with the attack message
+        message = ""
+        if self.target and 'remains' not in self.target.name.lower():
+            message = f"{self.name} attacks {self.target.name} for {damage} damage! {self.hp} HP remaining."
+        elif self.target and 'remains' in self.target.name.lower():
+            message = f"Easy {self.name}. Way to kick a guy while they're down!"
+        self.store.log.add(message, fg=colors.enemy_atk)  # type: ignore | The store for player must be GameStore.
+          
+    
     def update(self) -> None:
         distance_to_player = self.distance_to_location(self.store.portfolio.player.location if self.store and self.store.portfolio else None)  # type: ignore | Assume store is GameStore
         if distance_to_player <= self.earshot_radius:
@@ -322,6 +334,7 @@ class MobCharacter(AICharacter):
 
     def die(self) -> None:
         super().die()
+        self.color = colors.enemy_die  # type: ignore
         self.store.log.add(f"{self.name} has died.", fg=colors.enemy_die)  # type: ignore
         self.symbol = "%"
         self.name = f"remains of {self.name}"

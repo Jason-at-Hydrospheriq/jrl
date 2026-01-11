@@ -64,10 +64,25 @@ class PlayerCharacter(Character):
         self.update_fov()
         super().update()
 
+    def take_damage(self, damage: int) -> None:
+        super().take_damage(damage)
+
+        # Update the log with the attack message
+        message = ""
+        if self.target and 'remains' not in self.target.name.lower():
+            message = f"{self.name} attacks {self.target.name} for {damage} damage!"
+        elif self.target and 'remains' in self.name.lower():
+            message = f"Easy {self.name}. Way to kick a guy while they're down!"
+        self.store.log.add(message, fg=colors.player_atk)  # type: ignore | The store for player must be GameStore.
+  
     def die(self) -> None:
         super().die()
-        self.store.log.add(f"Crap!! You died. GAME OVER.", fg=colors.player_die)  # type: ignore
+
+        # Update the log and display state.
+        self.color = colors.player_die  # type: ignore
         self.name = f"remains of {self.name}"
+        self.store.log.add(f"Crap!! You died. GAME OVER.", fg=colors.player_die)  # type: ignore
+
 
 class InputEvent(BaseGameEvent):
     _input_event: tcod.event.Event | None

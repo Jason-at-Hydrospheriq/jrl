@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 from typing import List, Tuple, TYPE_CHECKING
+from matplotlib import colors
 import numpy as np    
 from tcod import libtcodpy
 from tcod.map import compute_fov
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 
 from baseclasses import BaseGameSubState, action_locked
 from game_types import TileCoordinate
-from colors import enemy_die
+import colors
 from baseclasses import BaseGameEntity, EntityRenderOrder
 from entities.components import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState
 
@@ -421,7 +422,6 @@ class Character(MobileEntity, CombatEntity):
     def die(self) -> None:
         self.target = None
         self.targeter = None
-        self.color = enemy_die 
         self.blocks_movement = False
         self.is_invulnerable = True
         self.is_alive = False
@@ -480,6 +480,7 @@ class AICharacter(Character):
 
         self.update()
 
+   
     def die(self) -> None:
         super().die()
         self._ai = None
