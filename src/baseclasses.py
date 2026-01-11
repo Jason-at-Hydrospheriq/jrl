@@ -9,6 +9,7 @@ import numpy as np
 from tcod.console import Console
 from tcod.context import Context
 
+import colors
 from manifests import DEFAULT_TILEMAP_MANIFEST
 from game_types import StateHandler, StatefulObject, TileCoordinate, TileTuple, UIManifestDict
 
@@ -49,6 +50,18 @@ def action_locked(cls):
 
     return cls
 
+from enum import Enum, auto
+
+class EntityRenderOrder(Enum):
+     CORPSE = auto()
+     ITEM = auto()
+     ACTOR = auto()
+
+
+class WidgetRenderOrder(Enum):
+    BACKGROUND = auto()
+    FOREGROUND = auto()
+
 
 class BaseUIWidget:
     name: str
@@ -58,8 +71,9 @@ class BaseUIWidget:
     lower_Right_y: int
     width: int
     height: int
+    render_order: WidgetRenderOrder
 
-    def __init__(self, name: str, x: int, y: int, width: int, height: int):
+    def __init__(self, name: str, x: int, y: int, width: int, height: int, render_order: WidgetRenderOrder) -> None:
         self.name = name
         self.upper_Left_x = x
         self.upper_Left_y = y
@@ -67,7 +81,7 @@ class BaseUIWidget:
         self.lower_Right_y = y + height
         self.width = width
         self.height = height
-
+        self.render_order = render_order
 
     def render(self, context: Context, console: Console, store: GameStore) -> None:
         """ Render the UI component """
@@ -114,9 +128,11 @@ class BaseUI:
                 y = widget_info.get('y', 0)
                 width = widget_info.get('width', 10)
                 height = widget_info.get('height', 5)
-                widget = widget_cls(widget_name, upper_Left_x=x, upper_Left_y=y, width=width, height=height)
+                render_order = widget_info.get('render_order', WidgetRenderOrder.BACKGROUND)
+                widget = widget_cls(widget_name, upper_Left_x=x, upper_Left_y=y, width=width, height=height, render_order=render_order)
                 self.add_widget(widget=widget, x=x, y=y)
 
+            self.widgets = set(sorted(self.widgets, key=lambda w: w.render_order.value))
 
         states = ['idle',
                     {'name': 'started', 'on_enter': '_start'},
@@ -157,6 +173,7 @@ class BaseUI:
             if self.context.sdl_window is not None:
                 # console_width, console_height = self.context.sdl_window.size
                 self.console = self.context.new_console(self.console_width, self.console_height, order="F")
+                
                 for widget in self.widgets:
                     widget.render(self.context, self.console, self.store)
                 self.context.present(self.console)
@@ -402,3 +419,34 @@ class BaseActionOnDestination(BaseGameAction):
 
     def perform(self) -> None:
         raise NotImplementedError("Subclasses must implement the perform method.")
+
+
+class Message:
+    """ A single message for the message log. """
+    def __init__(self, text: str, fg: Tuple[int, int, int] = colors.white) -> None:
+        self.plain_text = text
+        self.fg= fg
+        self.count = 1
+
+    @property
+    def full_text(self) -> str:
+        if self.count > 1:
+            return f"{self.plain_text} (x{self.count})"
+        return self.plain_text
+
+
+class MessageLog:
+    """ A simple message log widget to display game messages. """
+    def __init__(self) -> None:
+        self.messages: list[Message] = []
+
+    def add(self, text: str, fg: Tuple[int, int, int] = colors.white, stack: bool = True) -> None:
+        """Add a message to this log.
+        `text` is the message text, `fg` is the text color.
+        If `stack` is True then the message can stack with a previous message
+        of the same text.
+        """
+        if stack and self.messages and text == self.messages[-1].plain_text:
+            self.messages[-1].count += 1
+        else:
+            self.messages.append(Message(text, fg))

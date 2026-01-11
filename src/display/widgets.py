@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 from tcod.console import Console
 from tcod.context import Context
 import numpy as np
@@ -12,12 +12,14 @@ from baseclasses import BaseUIWidget
 if TYPE_CHECKING:
     from store import GameStore
 
-from display import colors
+import colors
 from game_types import SHROUD
+from baseclasses import WidgetRenderOrder
+
 
 class HealthBarWidget(BaseUIWidget):
     """ A simple health bar widget to display an entity's health. """
-    def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=5) -> None:
+    def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=5, render_order: WidgetRenderOrder) -> None:
         self.name = name
         self.upper_Left_x = upper_Left_x
         self.upper_Left_y = upper_Left_y
@@ -25,6 +27,7 @@ class HealthBarWidget(BaseUIWidget):
         self.lower_Right_y = upper_Left_y + height
         self.width = width
         self.height = height
+        self.render_order = render_order
 
     def render(self, context: Context, console: Console, store: GameStore) -> None:
         bar_width = 0
@@ -52,7 +55,7 @@ class HealthBarWidget(BaseUIWidget):
 
 class MainMapDisplay(BaseUIWidget):
     """ The main map display widget. """
-    def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=5) -> None:
+    def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=5, render_order: WidgetRenderOrder) -> None:
         self.name = name
         self.upper_Left_x = upper_Left_x
         self.upper_Left_y = upper_Left_y
@@ -60,6 +63,7 @@ class MainMapDisplay(BaseUIWidget):
         self.lower_Right_y = upper_Left_y + height
         self.width = width
         self.height = height
+        self.render_order = render_order
 
     def render(self, context: Context, console: Console, store: GameStore) -> None:
         """
@@ -100,40 +104,9 @@ class MainMapDisplay(BaseUIWidget):
                 console.print(player.location.x, player.location.y, player.symbol, fg=player.color)
 
 
-class Message:
-    """ A single message for the message log. """
-    def __init__(self, text: str, fg: Tuple[int, int, int] = colors.white) -> None:
-        self.plain_text = text
-        self.fg= fg
-        self.count = 1
-
-    @property
-    def full_text(self) -> str:
-        if self.count > 1:
-            return f"{self.plain_text} (x{self.count})"
-        return self.plain_text
-
-
-class MessageLog:
-    """ A simple message log widget to display game messages. """
-    def __init__(self) -> None:
-        self.messages: list[Message] = []
-        
-    def add(self, text: str, fg: Tuple[int, int, int] = colors.white, stack: bool = True) -> None:
-        """Add a message to this log.
-        `text` is the message text, `fg` is the text color.
-        If `stack` is True then the message can stack with a previous message
-        of the same text.
-        """
-        if stack and self.messages and text == self.messages[-1].plain_text:
-            self.messages[-1].count += 1
-        else:
-            self.messages.append(Message(text, fg))   
-
-
 class MessageLogWidget(BaseUIWidget):
     """ A simple message log widget to display game messages. """
-    def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=5) -> None:
+    def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=5, render_order: WidgetRenderOrder) -> None:
         self.name = name
         self.upper_Left_x = upper_Left_x
         self.upper_Left_y = upper_Left_y
@@ -141,6 +114,7 @@ class MessageLogWidget(BaseUIWidget):
         self.lower_Right_y = upper_Left_y + height
         self.width = width
         self.height = height
+        self.render_order = render_order
 
     def render(self, context: Context, console: Console, store: GameStore) -> None:
         y = self.upper_Left_y + self.height - 1

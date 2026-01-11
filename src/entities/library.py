@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 from baseclasses import BaseGameSubState, action_locked
 from game_types import TileCoordinate
-from display.colors import enemy_die
+from colors import enemy_die
 from baseclasses import BaseGameEntity
 from entities.components import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState
 

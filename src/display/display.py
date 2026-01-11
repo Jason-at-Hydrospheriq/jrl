@@ -12,6 +12,8 @@ import numpy as np
 from display.widgets import MainMapDisplay, HealthBarWidget, MessageLogWidget
 from manifests import DEFAULT_TILEMAP_MANIFEST
 from baseclasses import BaseUI
+from baseclasses import WidgetRenderOrder as order
+
 from game_types import UIManifestDict
 
 if TYPE_CHECKING:
@@ -25,20 +27,24 @@ DEFAULT_UI_MANIFEST: UIManifestDict = {
                             'x': 1,
                             'y': 1,
                             'width': DEFAULT_TILEMAP_MANIFEST['dimensions']['grid_size'][0][0],
-                            'height': DEFAULT_TILEMAP_MANIFEST['dimensions']['grid_size'][1][0]},
+                            'height': DEFAULT_TILEMAP_MANIFEST['dimensions']['grid_size'][1][0],
+                            'render_order': order.BACKGROUND
+                        },
                         'player_health_bar': {
                             'cls': HealthBarWidget,
                             'x': 5,
                             'y': DEFAULT_TILEMAP_MANIFEST['dimensions']['grid_size'][1][0] + 2,
                             'width': 20,
-                            'height': 1
+                            'height': 1,
+                            'render_order': order.FOREGROUND
                                     },
                         'message_log': {
                             'cls': MessageLogWidget,
                             'x': 30,
                             'y': DEFAULT_TILEMAP_MANIFEST['dimensions']['grid_size'][1][0] - 5,
                             'width': 20,
-                            'height': 5
+                            'height': 5,
+                            'render_order': order.FOREGROUND
                         }
 
     }}

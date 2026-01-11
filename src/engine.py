@@ -8,10 +8,11 @@ import time
 import gc
 import traceback
 
+import colors
 from delays import GLOBAL_COOLDOWN_TIME
 from entities.behaviors import InputEvent
 from store import GameStore
-from display import GameDisplay, colors
+from display import GameDisplay
 from loop  import GameLoops
 from game_types import StoredStateObject
 
