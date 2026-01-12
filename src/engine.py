@@ -177,7 +177,8 @@ class GameEngine:
 
                 # Update Inputs
                 for event in tcod.event.wait(timeout=GLOBAL_COOLDOWN_TIME / 1000):
-                    if event.type in ( "QUIT", "KEYDOWN" ):
+                        
+                    if event.type in ( "QUIT", "KEYDOWN", "MOUSEMOTION" ):
                         match event.type:
                             case "QUIT":
                                 self.stop()  # type: ignore
@@ -212,6 +213,13 @@ class GameEngine:
                                                     self.loop.player_loop_handler.handle(game_event)
                                             else:
                                                 self.store.log.add(f"Events={self.loop.player_loop_handler.events.qsize()}, Actions={self.loop.player_loop_handler.actions.qsize()}")  # type: ignore
+                            
+                            case "MOUSEMOTION":
+                                if self.display and self.display.context and self.store:
+                                    self.display.context.convert_event(event)
+                                    if event.tile.x > 0 or event.tile.y > 0:
+                                        self.store.mouse_location.x = int(event.tile.x)  # type: ignore | Assume store is GameStore
+                                        self.store.mouse_location.y = int(event.tile.y)  # type: ignore | Assume store is GameStore
 
                 if self.state == 'shutdown':  # type: ignore | State machine attribute created dynamically
                     break

@@ -9,7 +9,7 @@ from PIL import Image
 import os
 import numpy as np
 
-from display.widgets import MainMapDisplay, HealthBarWidget, MessageLogWidget
+from display.widgets import MainMapDisplay, HealthBarWidget, MessageLogWidget, MouseTooltipWidget
 from manifests import DEFAULT_TILEMAP_MANIFEST
 from baseclasses import BaseUI
 from baseclasses import WidgetRenderOrder as order
@@ -45,7 +45,13 @@ DEFAULT_UI_MANIFEST: UIManifestDict = {
                             'width': 20,
                             'height': 5,
                             'render_order': order.FOREGROUND
-                        }
+                        },
+                        'mouse_tooltip': {
+                            'cls': MouseTooltipWidget,
+                            'mouse_x': 0,
+                            'mouse_y': 0,
+                            'render_order': order.FOREGROUND
+                        },
 
     }}
 

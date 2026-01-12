@@ -4,6 +4,7 @@
 from __future__ import annotations
 from transitions import Machine
 
+from game_types import TileCoordinate, TileTuple
 from portfolio import Portfolio
 from atlas import Atlas
 from baseclasses import MessageLog
@@ -19,6 +20,7 @@ class GameStore:
     portfolio: Portfolio | None
     atlas: Atlas | None
     log: MessageLog
+    mouse_location: TileCoordinate
 
     def __init__(self) -> None:
         self.portfolio = Portfolio(store=self)
@@ -34,7 +36,9 @@ class GameStore:
             ]
         self.machine = Machine(model=self, states=states, transitions=transitions, initial='stopped')
         self.log = MessageLog()
-        
+        map_size = self.atlas.active.grid.size if self.atlas and self.atlas.active else TileTuple(([100], [100]))
+        self.mouse_location = TileCoordinate.from_tuple((0,0), parent_map_size=map_size)
+    
     def _initialize(self):
         """Starts the game loop and prepares the game state for play."""
         if self.atlas and self.portfolio:

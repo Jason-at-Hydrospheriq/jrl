@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from store import GameStore
 
 import colors
-from game_types import SHROUD
+from game_types import SHROUD, TileCoordinate
 from baseclasses import WidgetRenderOrder
 
 
@@ -132,3 +132,30 @@ class MessageLogWidget(BaseUIWidget):
                 return
 
 
+class MouseTooltipWidget(BaseUIWidget):
+    """ A simple tooltip widget to display information about the tile under the mouse. """
+    def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=1, render_order: WidgetRenderOrder) -> None:
+        self.name = name
+        self.upper_Left_x = upper_Left_x
+        self.upper_Left_y = upper_Left_y
+        self.lower_Right_x = upper_Left_x + width
+        self.lower_Right_y = upper_Left_y + height
+        self.width = width
+        self.height = height
+
+        self.render_order = render_order
+
+    def render(self, context: Context, console: Console, store: GameStore) -> None:
+        name_at_mouse_location = ""
+        tool_tip_color = None
+        entity = store.portfolio.get_entity_at_location(store.mouse_location) if store.portfolio else None
+        if entity and store.mouse_location and store.mouse_location.is_inbounds:
+            name_at_mouse_location = entity[0].name
+            tool_tip_color = entity[0].color
+
+        console.print(
+                x=store.mouse_location.x if store.mouse_location else 0,
+                y=store.mouse_location.y - 1 if store.mouse_location else 0,
+                text=name_at_mouse_location,
+                fg=tool_tip_color,
+            )
