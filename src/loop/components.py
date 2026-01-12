@@ -116,14 +116,3 @@ class SubLoopHandler(BaseGameLoop, BaseGameTransformer):
         return False
 
 
-mob_behaviors = {
-    ('nonevent', NoAction()),
-    ('waitevent', WaitAction()),
-    entitywait, update_focus, investigate, pursue, acquire_target, entityattack
-}
-game_behaviors = {
-    ('nonevent', NoAction()),
-    ('waitevent', WaitAction()),
-    entitywait, entityattack,
-    ('inputevent', KeyDownAction()),
-}

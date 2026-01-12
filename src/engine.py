@@ -10,10 +10,10 @@ import traceback
 
 import colors
 from delays import GLOBAL_COOLDOWN_TIME
-from entities.behaviors import InputEvent
+from entities.behaviors.system import InputEvent
 from store import GameStore
 from display import GameDisplay
-from loop  import GameLoops
+from loop import GameLoops, SubLoopHandler
 from game_types import StoredStateObject
 
 class GameEngine:
@@ -27,11 +27,12 @@ class GameEngine:
     loop: GameLoops | None
     store: GameStore | None
     display: GameDisplay | None
+    main_loop_handler: SubLoopHandler | None = None
     last_update_time: float = 0.0
     print_heartbeat: bool = True  # Whether to print heartbeat messages
 
-    def __init__(self, ai: GameLoops | None = None, display: GameDisplay | None = None, store: GameStore | None = None) -> None:
-        self.loop = ai
+    def __init__(self, loop: GameLoops | None = None, display: GameDisplay | None = None, store: GameStore | None = None) -> None:
+        self.loop = loop
         self.display = display
         self.store = store
 
@@ -185,9 +186,10 @@ class GameEngine:
 
                             case "KEYDOWN":
                                 key_sim = event.sym
-                                if self.loop and self.loop.player_loop_handler:
+                                if self.loop and self.loop.inputs_loop_handler:
                                     match key_sim:
                                         case tcod.event.KeySym.ESCAPE:
+
                                             self.reset()  # type: ignore
 
                                         case tcod.event.KeySym.P:
@@ -206,13 +208,25 @@ class GameEngine:
                                                 self.store.log.add(msg)
                                                 print(msg)
 
+                                        case tcod.event.KeySym.V:
+                                            # if player is active, switch main loop handler to viewer
+                                            # Use Special InputEvent? self.loop.inputs_loop_handler.behaviors = viewer_behaviors
+
+                                            # if viewer is active, return inputs loop to player behaviors
+                                            # self.loop.inputs_loop_handler.behaviors = player_behaviors
+                                            pass
+
+                                        case tcod.event.KeySym.Q:
+                                            self.stop()  # type: ignore
+
                                         case _:
                                             if self.state not in ('idle', 'paused', 'shutdown'):  # type: ignore
                                                 if self.store.portfolio.player.is_alive:  # type: ignore | Assume store is GameStore
-                                                    game_event = InputEvent(store=self.store, handler=self.loop.player_loop_handler, input_event=event)
-                                                    self.loop.player_loop_handler.handle(game_event)
+                                                    game_event = InputEvent(store=self.store, handler=self.loop.inputs_loop_handler, input_event=event)
+                                                    if self.loop.inputs_loop_handler:
+                                                        self.loop.inputs_loop_handler.handle(game_event)
                                             else:
-                                                self.store.log.add(f"Events={self.loop.player_loop_handler.events.qsize()}, Actions={self.loop.player_loop_handler.actions.qsize()}")  # type: ignore
+                                                self.store.log.add(f"Events={self.loop.inputs_loop_handler.events.qsize()}, Actions={self.loop.inputs_loop_handler.actions.qsize()}")  # type: ignore
                             
                             case "MOUSEMOTION":
                                 if self.display and self.display.context and self.store:

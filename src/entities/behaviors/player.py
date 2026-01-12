@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Tuple, cast
 import numpy as np
 import tcod
 
+from entities.behaviors.system import NoAction, WaitAction
+from entities.behaviors.entity import entitywait, entityattack
 from game_types import TileCoordinate
 from baseclasses import BaseGameEvent, action_locked
 from entities import Character
@@ -84,28 +86,6 @@ class PlayerCharacter(Character):
         self.store.log.add(f"Crap!! You died. GAME OVER.", fg=colors.player_die)  # type: ignore
 
 
-class InputEvent(BaseGameEvent):
-    _input_event: tcod.event.Event | None
-
-    def __init__(self, store: GameStore | None = None, handler: SubLoopHandler | None = None, input_event: tcod.event.Event | None = None) -> None:
-        super().__init__(store, handler)
-        self._input_event = input_event
-
-    @property
-    def input_event(self) -> tcod.event.Event | None:
-        return self._input_event
-
-    @input_event.setter
-    def input_event(self, value: tcod.event.Event | None) -> None:
-        if value is not None and not isinstance(value, tcod.event.Event):
-            raise TypeError("input_event must be an instance of tcod.event.Event or None")
-        self._input_event = value
-
-    def trigger(self) -> None:
-        if self.handler:
-            self.handler.handle(cast(StateActionObject, self))
-
-
 class KeyDownAction(BaseGameAction):
     input_event: tcod.event.Event | None
 
@@ -178,6 +158,14 @@ class PlayerCharacterEvent(BaseGameEvent):
     def trigger(self) -> None:
         if self.handler:
             self.handler.handle(cast(StateActionObject, self))
+
+
+player_behaviors = {
+    ('nonevent', NoAction()),
+    ('waitevent', WaitAction()),
+    entitywait, entityattack,
+    ('inputevent', KeyDownAction()),
+}
 
 
 

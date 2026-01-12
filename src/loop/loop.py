@@ -11,7 +11,9 @@ import queue
 
 from delays import GLOBAL_ACTION_COOLDOWN_TIME, GLOBAL_COOLDOWN_TIME
 from display.display import GameDisplay
-from loop.components import SubLoopHandler, game_behaviors, mob_behaviors
+from entities.behaviors.mob import mob_behaviors
+from entities.behaviors.player import player_behaviors
+from loop.components import SubLoopHandler
 from game_types import GameAction, GameEvent, StateActionObject
 
 if TYPE_CHECKING:
@@ -27,7 +29,7 @@ class GameLoops:
     store: GameStore | None
     display: GameDisplay | None
     machine: Machine
-    player_loop_handler: SubLoopHandler | None
+    inputs_loop_handler: SubLoopHandler | None
     mob_loop_handler: SubLoopHandler | None
     threads: List[threading.Thread | None]
     stop_signal: threading.Event
@@ -36,7 +38,8 @@ class GameLoops:
     def __init__(self, store: GameStore | None = None, display: GameDisplay | None = None) -> None:
         self.store = store
         self.display = display
-        self.player_loop_handler = SubLoopHandler(store=store, behaviors=game_behaviors)
+        # Add loop handler and thread for viewer later
+        self.inputs_loop_handler = SubLoopHandler(store=store, behaviors=player_behaviors)
         self.mob_loop_handler = SubLoopHandler(store=store, behaviors=mob_behaviors)
         self.threads = []
         self.stop_signal = threading.Event()
@@ -58,15 +61,15 @@ class GameLoops:
     def _start(self) -> None:
         """Starts the loop threads."""
         try:
-            self.player_loop_handler.start() # type: ignore | State machine attribute created dynamically
+            self.inputs_loop_handler.start() # type: ignore | State machine attribute created dynamically
             self.mob_loop_handler.start()  # type: ignore | State machine attribute created dynamically
             self.stop_signal.clear()
 
             if not self.threads:
                 self.threads.append(threading.Thread(target=self.display_loop, daemon=True))
-                self.threads.append(threading.Thread(target=self.player_subloop, daemon=True))
-                self.threads.append(threading.Thread(target=self.mob_subloop, daemon=True))
                 self.threads.append(threading.Thread(target=self.ai_main_loop, daemon=True))
+                self.threads.append(threading.Thread(target=self.inputs_subloop, daemon=True))
+                self.threads.append(threading.Thread(target=self.mob_subloop, daemon=True))
 
                 for thread in self.threads:
                     if thread is not None:
@@ -78,7 +81,7 @@ class GameLoops:
             print(f"Error starting loops: {e}")
 
     def _pause(self) -> None:
-        self.player_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
+        self.inputs_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
         self.mob_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
 
     def _stop(self) -> None:
@@ -88,7 +91,10 @@ class GameLoops:
             for thread in self.threads:
                 if thread is not None:
                     thread.join()
-            self.player_loop_handler.stop() # type: ignore | State machine attribute created dynamically
+            
+            print("Game loops stopped.")
+
+            self.inputs_loop_handler.stop() # type: ignore | State machine attribute created dynamically
             self.mob_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
 
         except Exception as e:
@@ -151,7 +157,7 @@ class GameLoops:
                 print(f"AI main loop encountered an error: {e}")
                 traceback.print_exc()
 
-    def player_subloop(self) -> None:
+    def inputs_subloop(self) -> None:
         """
         Update the state of the game by processing events and updating the roster, map, and UI.
         """
@@ -178,16 +184,16 @@ class GameLoops:
                         # print(f"Player SubLoop 8>: {(current_time - last_beat)*1000:.2f}ms")
                     last_beat = current_time
                     
-                if self.player_loop_handler and self.player_loop_handler.events is not None:
-                    if not self.player_loop_handler.events.empty(): 
-                        next_event = self.player_loop_handler.events.get_nowait()
+                if self.inputs_loop_handler and self.inputs_loop_handler.events is not None:
+                    if not self.inputs_loop_handler.events.empty(): 
+                        next_event = self.inputs_loop_handler.events.get_nowait()
 
                     if next_event is not None and isinstance(next_event, GameEvent):
                             next_event.trigger()
 
-                if self.player_loop_handler and self.player_loop_handler.actions is not None:
-                    if not self.player_loop_handler.actions.empty():
-                        next_action = self.player_loop_handler.actions.get_nowait()
+                if self.inputs_loop_handler and self.inputs_loop_handler.actions is not None:
+                    if not self.inputs_loop_handler.actions.empty():
+                        next_action = self.inputs_loop_handler.actions.get_nowait()
 
                     if next_action is not None and isinstance(next_action, GameAction):
                             next_action.perform()

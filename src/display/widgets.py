@@ -3,11 +3,12 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
+import tcod
 from tcod.console import Console
 from tcod.context import Context
 import numpy as np
 
-from baseclasses import BaseUIWidget
+from baseclasses import BaseUI, BaseUIWidget
 
 if TYPE_CHECKING:
     from store import GameStore
@@ -159,3 +160,44 @@ class MouseTooltipWidget(BaseUIWidget):
                 text=name_at_mouse_location,
                 fg=tool_tip_color,
             )
+
+
+class HistoryViewerWidget(BaseUIWidget):
+    log_length: int
+    cursor: int
+
+    """ A simple history viewer widget to display past game messages. """
+    def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=20, render_order: WidgetRenderOrder) -> None:
+        self.name = name
+        self.upper_Left_x = upper_Left_x
+        self.upper_Left_y = upper_Left_y
+        self.lower_Right_x = upper_Left_x + width
+        self.lower_Right_y = upper_Left_y + height
+        self.width = width
+        self.height = height
+        self.render_order = render_order
+
+    def render(self, context: Context, console: Console, store: GameStore) -> None:
+        self.log_length = len(store.log.messages)
+        self.cursor = max(0, self.log_length - 1)
+
+        self.console = Console(console.width-6, console.height-6)
+        self.console.draw_frame(0, 0, self.console.width, self.console.height)
+        self.console.print(
+                        x=0, 
+                        y=0, 
+                        width=self.console.width, 
+                        height=1, 
+                        text="-|Message History|-", 
+                        alignment=tcod.CENTER)
+
+        for message in store.log.messages[: self.cursor + 1]:
+            self.console.print(
+                            x=1,
+                            y=1,
+                            width=self.console.width - 2,
+                            height=self.console.height - 2,
+                            text=message.full_text,
+                            fg=message.fg)
+
+        self.console.blit(console, 3, 3)

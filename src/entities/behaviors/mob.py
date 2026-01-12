@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Tuple, cast
 
 import colors
 from delays import GLOBAL_ACTION_COOLDOWN_TIME
+from entities.behaviors.system import NoAction, WaitAction
+from entities.behaviors.entity import entitywait, entityattack
 from game_types import TileCoordinate, StateActionObject
 from baseclasses import BaseActionOnEntity, BaseEntityEvent, BaseGameEvent, action_locked
 from entities.library import Character, AICharacter, CombatEntity
@@ -338,3 +340,10 @@ class MobCharacter(AICharacter):
         self.store.log.add(f"{self.name} has died.", fg=colors.enemy_die)  # type: ignore
         self.symbol = "%"
         self.name = f"remains of {self.name}"
+
+
+mob_behaviors = {
+    ('nonevent', NoAction()),
+    ('waitevent', WaitAction()),
+    entitywait, update_focus, investigate, pursue, acquire_target, entityattack
+}
