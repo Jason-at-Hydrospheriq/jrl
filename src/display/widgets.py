@@ -163,8 +163,6 @@ class MouseTooltipWidget(BaseUIWidget):
 
 
 class HistoryViewerWidget(BaseUIWidget):
-    log_length: int
-    cursor: int
 
     """ A simple history viewer widget to display past game messages. """
     def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=20, render_order: WidgetRenderOrder) -> None:
@@ -178,26 +176,31 @@ class HistoryViewerWidget(BaseUIWidget):
         self.render_order = render_order
 
     def render(self, context: Context, console: Console, store: GameStore) -> None:
-        self.log_length = len(store.log.messages)
-        self.cursor = max(0, self.log_length - 1)
-
-        self.console = Console(console.width-6, console.height-6)
-        self.console.draw_frame(0, 0, self.console.width, self.console.height)
-        self.console.print(
-                        x=0, 
-                        y=0, 
-                        width=self.console.width, 
-                        height=1, 
+        cursor = store.log.cursor
+        left_index = max(0, cursor)
+        right_index = min(cursor + 5, len(store.log.messages) - 1)
+        console.draw_frame(0, 0, self.width, self.height)
+        console.print(
+                        x=1, 
+                        y=1, 
+                        width=self.width-2, 
+                        height=self.height-2, 
                         text="-|Message History|-", 
                         alignment=tcod.CENTER)
+        
+        y = self.upper_Left_y + 1
+        for message in store.log.messages[left_index : right_index]:
+            console.print(
+                x=self.upper_Left_x+1,
+                y=y,
+                width=self.width-2, 
+                height=1, 
+                text=message.full_text,
+                fg=message.fg,
+            )
+            y += 1
 
-        for message in store.log.messages[: self.cursor + 1]:
-            self.console.print(
-                            x=1,
-                            y=1,
-                            width=self.console.width - 2,
-                            height=self.console.height - 2,
-                            text=message.full_text,
-                            fg=message.fg)
+            if y > self.upper_Left_y + self.height - 1:
+                return
 
-        self.console.blit(console, 3, 3)
+        # console.blit(console, 3, 3)

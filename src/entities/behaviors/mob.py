@@ -320,12 +320,11 @@ class MobCharacter(AICharacter):
         # Update the log with the attack message
         message = ""
         if self.target and 'remains' not in self.target.name.lower():
-            message = f"{self.name} attacks {self.target.name} for {damage} damage! {self.hp} HP remaining."
+            message = f"{self.target.name} attacks {self.name} for {damage} damage! {self.hp} HP remaining."
         elif self.target and 'remains' in self.target.name.lower():
-            message = f"Easy {self.name}. Way to kick a guy while they're down!"
-        self.store.log.add(message, fg=colors.enemy_atk)  # type: ignore | The store for player must be GameStore.
+            message = f"Easy {self.target.name}. Way to kick a guy while they're down!"
+        self.store.log.add(message, fg=colors.player_atk)  # type: ignore | The store for player must be GameStore.
           
-    
     def update(self) -> None:
         distance_to_player = self.distance_to_location(self.store.portfolio.player.location if self.store and self.store.portfolio else None)  # type: ignore | Assume store is GameStore
         if distance_to_player <= self.earshot_radius:

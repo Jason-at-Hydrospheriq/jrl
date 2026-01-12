@@ -4,6 +4,7 @@ from entities.behaviors.mob import (AICharacter, AICharacterEvent, AIAcquireTarg
                                  AIInvestigateEvent, AIInvestigateAction, AIPursuitAction, AIPursuitEvent,
                                  AIUpdateFocusEvent, AIUpdateFocusAction)
 from entities.behaviors.entity import EntityEvent, EntityMoveAction, EntityWaitAction, EntityWaitEvent, EntityAttackEvent, EntityAttackAction
-from entities.behaviors.player import PlayerCharacter
-from entities.behaviors.mob import MobCharacter
+from entities.behaviors.player import PlayerCharacter, player_behaviors
+from entities.behaviors.mob import MobCharacter, mob_behaviors
+from entities.behaviors.history_viewer import viewer_behaviors
 

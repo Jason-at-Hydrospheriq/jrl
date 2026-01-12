@@ -10,7 +10,7 @@ import traceback
 
 import colors
 from delays import GLOBAL_COOLDOWN_TIME
-from entities.behaviors.system import InputEvent
+from entities.behaviors import InputEvent, player_behaviors, viewer_behaviors
 from store import GameStore
 from display import GameDisplay
 from loop import GameLoops, SubLoopHandler
@@ -209,12 +209,20 @@ class GameEngine:
                                                 print(msg)
 
                                         case tcod.event.KeySym.V:
-                                            # if player is active, switch main loop handler to viewer
-                                            # Use Special InputEvent? self.loop.inputs_loop_handler.behaviors = viewer_behaviors
+                                            if self.display:
+                                                current_behavior = self.loop.inputs_loop_handler.behaviors
+                                                main_console = self.display.get_window_by_name('main_window')                                        
+                                                viewer_console = self.display.get_window_by_name('viewer_window')
 
-                                            # if viewer is active, return inputs loop to player behaviors
-                                            # self.loop.inputs_loop_handler.behaviors = player_behaviors
-                                            pass
+                                                if current_behavior == player_behaviors:
+                                                    self.loop.inputs_loop_handler.behaviors = viewer_behaviors
+                                                    if main_console and viewer_console:
+                                                        viewer_console.is_rendered=True
+
+                                                elif current_behavior == viewer_behaviors:
+                                                    self.loop.inputs_loop_handler.behaviors = player_behaviors
+                                                    if main_console and viewer_console:
+                                                        viewer_console.is_rendered=False
 
                                         case tcod.event.KeySym.Q:
                                             self.stop()  # type: ignore

@@ -72,10 +72,10 @@ class PlayerCharacter(Character):
         # Update the log with the attack message
         message = ""
         if self.target and 'remains' not in self.target.name.lower():
-            message = f"{self.name} attacks {self.target.name} for {damage} damage!"
+            message = f"{self.target.name} attacks {self.name} for {damage} damage!"
         elif self.target and 'remains' in self.name.lower():
-            message = f"Easy {self.name}. Way to kick a guy while they're down!"
-        self.store.log.add(message, fg=colors.player_atk)  # type: ignore | The store for player must be GameStore.
+            message = f"Easy {self.target.name}. Way to kick a guy while they're down!"
+        self.store.log.add(message, fg=colors.enemy_atk)  # type: ignore | The store for player must be GameStore.
   
     def die(self) -> None:
         super().die()

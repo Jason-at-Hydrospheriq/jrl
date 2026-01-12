@@ -88,16 +88,99 @@ class BaseUIWidget:
         raise NotImplementedError()
 
 
+class BaseUIWindow:
+    name: str
+    context: Context | None
+    console: Console | None
+    store: GameStore | None
+    width: int
+    height: int
+    widgets: Set[BaseUIWidget]
+    overlay_x: int
+    overlay_y: int
+    is_rendered: bool = False
+    is_overlay: bool = False
+
+    def __init__(self, name: str, store: GameStore | None = None, context: Context | None = None, width: int = 80, height: int = 50, 
+                 overlay_x: int = 1, overlay_y: int = 1, widget_manifest: UIManifestDict | None = None, is_rendered: bool = False, 
+                 is_overlay: bool = False) -> None:
+        
+        self.name = name
+        
+        if context is not None:
+            self.context = context
+        
+        if store is not None:
+            self.store = store
+
+        self.console = None
+        self.widgets = set()
+        self.width = width
+        self.height = height
+        self.overlay_x = overlay_x
+        self.overlay_y = overlay_y
+        self.is_rendered = is_rendered
+        self.is_overlay = is_overlay
+
+        if widget_manifest is not None:
+
+            for widget_name, widget_info in widget_manifest['widgets'].items():
+                widget_cls = widget_info['cls']
+                x = widget_info.get('x', 0)
+                y = widget_info.get('y', 0)
+                width = widget_info.get('width', 10)
+                height = widget_info.get('height', 5)
+                render_order = widget_info.get('render_order', WidgetRenderOrder.BACKGROUND)
+                widget = widget_cls(widget_name, upper_Left_x=x, upper_Left_y=y, width=width, height=height, render_order=render_order)
+                self.add_widget(widget=widget, x=x, y=y)
+
+            self.widgets = set(sorted(self.widgets, key=lambda w: w.render_order.value))
+
+    def add_widget(self, *, widget: BaseUIWidget, x: int = -1, y: int = -1) -> None:
+        """Add a widget to the UI window at the given location."""
+        widget.upper_Left_x = x
+        widget.upper_Left_y = y
+        widget.lower_Right_x = x + widget.width
+        widget.lower_Right_y = y + widget.height
+        self.widgets.add(widget)
+
+    def drop_widget(self, *, name: str) -> None:
+        """Remove a widget by its name."""
+        widget_to_remove = None
+        for widget in self.widgets:
+            if widget.name == name:
+                widget_to_remove = widget
+                break
+        if widget_to_remove:
+            self.widgets.remove(widget_to_remove)
+
+    def get_widget_by_name(self, name: str) -> BaseUIWidget | None:
+        """Retrieve a widget by its name."""
+        for widget in self.widgets:
+            if widget.name == name:
+                return widget
+        return None
+
+    def get_widgets_by_type(self, widget_type: type) -> Set[BaseUIWidget]:
+        """Retrieve all widgets of a specific type."""
+        return {widget for widget in self.widgets if isinstance(widget, widget_type)}
+
+    def render(self) -> None:
+        if self.is_rendered and self.context and self.store:
+            if self.context.sdl_window is not None:
+                self.console = self.context.new_console(self.width, self.height, order="F")
+                sorted_widgets = sorted(self.widgets, key=lambda w: w.render_order.value)
+                for widget in sorted_widgets:
+                    widget.render(self.context, self.console, self.store)
+
+
 class BaseUI:
     store: GameStore | None
     machine: Machine
     context: Context | None
-    console: Console | None
-    widgets: Set[BaseUIWidget]
+    windows: Set[BaseUIWindow]
     context_width: int
     context_height: int
-    console_width: int
-    console_height: int
 
     """ The UI Manager handles the various UI components and their interactions. """
 
@@ -109,30 +192,9 @@ class BaseUI:
         if store is not None:
             self.store = store
 
-        self.widgets = set()
+        self.windows = set()
         self.context_width = context_width
         self.context_height = context_height
-        # if self.state.map.active is not None:
-        #     self.console_width, self.console_height = self.state.map.active.tiles.shape
-        # else:
-        #     self.console_width = context_width
-        #     self.console_height = context_height
-
-        if ui_manifest is not None:
-            self.console_width = DEFAULT_TILEMAP_MANIFEST['dimensions']['grid_size'][0][0]
-            self.console_height = DEFAULT_TILEMAP_MANIFEST['dimensions']['grid_size'][1][0]
-
-            for widget_name, widget_info in ui_manifest['widgets'].items():
-                widget_cls = widget_info['cls']
-                x = widget_info.get('x', 0)
-                y = widget_info.get('y', 0)
-                width = widget_info.get('width', 10)
-                height = widget_info.get('height', 5)
-                render_order = widget_info.get('render_order', WidgetRenderOrder.BACKGROUND)
-                widget = widget_cls(widget_name, upper_Left_x=x, upper_Left_y=y, width=width, height=height, render_order=render_order)
-                self.add_widget(widget=widget, x=x, y=y)
-
-            self.widgets = set(sorted(self.widgets, key=lambda w: w.render_order.value))
 
         states = ['idle',
                     {'name': 'started', 'on_enter': '_start'},
@@ -149,36 +211,45 @@ class BaseUI:
     def _stop(self) -> None:
         ...
 
-    def add_widget(self, *, widget: BaseUIWidget, x: int = -1, y: int = -1) -> None:
+    def add_window(self, window: BaseUIWindow) -> None:
         """Spawn a copy of this entity at the given location."""
-        widget.upper_Left_x = x
-        widget.upper_Left_y = y
-        widget.lower_Right_x = x + widget.width
-        widget.lower_Right_y = y + widget.height
-        self.widgets.add(widget)
+        self.windows.add(window)
 
-    def get_widget_by_name(self, name: str) -> BaseUIWidget | None:
+    def remove_window(self, *, name: str) -> None:
+        """Remove a UI element by its name."""
+        window_to_remove = None
+        for window in self.windows:
+            if window.name == name:
+                window_to_remove = window
+                break   
+        if window_to_remove:
+            self.windows.remove(window_to_remove)
+
+    def get_window_by_name(self, name: str) -> BaseUIWindow | None:
         """Retrieve a UI element by its name."""
-        for widget in self.widgets:
-            if widget.name == name:
-                return widget
+        for window in self.windows:
+            if window.name == name:
+                return window
         return None
 
-    def get_widgets_by_type(self, widget_type: type) -> Set[BaseUIWidget]:
+    def get_windows_by_type(self, window_type: type) -> Set[BaseUIWindow]:
         """Retrieve all UI elements of a specific type."""
-        return {widget for widget in self.widgets if isinstance(widget, widget_type)}
+        return {window for window in self.windows if isinstance(window, window_type)}
 
     def render(self) -> None:
         if self.context and self.store:
-            if self.context.sdl_window is not None:
-                # console_width, console_height = self.context.sdl_window.size
-                self.console = self.context.new_console(self.console_width, self.console_height, order="F")
-                sorted_widgets = sorted(self.widgets, key=lambda w: w.render_order.value)
-                for widget in sorted_widgets:
-                    widget.render(self.context, self.console, self.store)
-                self.context.present(self.console)
-                self.console.clear()
-
+            main_window = self.get_window_by_name('main_window')
+            if self.context.sdl_window and main_window and main_window.console:
+                main_window.render()
+                for window in self.windows:
+                    if window != main_window and window.is_rendered and window.console:
+                        window.render()
+                        if window.is_overlay:
+                            window.console.blit(main_window.console, window.overlay_x, window.overlay_y)
+                self.context.present(main_window.console)
+                # for window in self.windows:
+                #     if window.console:
+                #         window.console.clear()
 
 class BaseSubState:
     machine: Machine
@@ -441,6 +512,8 @@ class Message:
 
 
 class MessageLog:
+    cursor: int = 0
+    
     """ A simple message log widget to display game messages. """
     def __init__(self) -> None:
         self.messages: list[Message] = []

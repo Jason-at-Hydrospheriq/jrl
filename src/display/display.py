@@ -9,10 +9,9 @@ from PIL import Image
 import os
 import numpy as np
 
-from display.widgets import MainMapDisplay, HealthBarWidget, MessageLogWidget, MouseTooltipWidget
+from display.widgets import HistoryViewerWidget, MainMapDisplay, HealthBarWidget, MessageLogWidget, MouseTooltipWidget
 from manifests import DEFAULT_TILEMAP_MANIFEST
-from baseclasses import BaseUI
-from baseclasses import WidgetRenderOrder as order
+from baseclasses import BaseUI, BaseUIWindow, WidgetRenderOrder as order
 
 from game_types import UIManifestDict
 
@@ -20,7 +19,7 @@ if TYPE_CHECKING:
     from store import GameStore
 
 
-DEFAULT_UI_MANIFEST: UIManifestDict = {
+MAIN_CONSOLE_MANIFEST: UIManifestDict = {
     'widgets': {                
                         'main_map': {
                             'cls': MainMapDisplay,
@@ -54,7 +53,18 @@ DEFAULT_UI_MANIFEST: UIManifestDict = {
                         },
 
     }}
+VIEWER_CONSOLE_MANIFEST: UIManifestDict = {
+    'widgets': {                
+                        'history_viewer': {
+                            'cls': HistoryViewerWidget,
+                            'x': 5,
+                            'y': 5,
+                            'width': 75,
+                            'height': 15,
+                            'render_order': order.FOREGROUND
+                        },
 
+    }}
 
 class GameDisplay(BaseUI):
     
@@ -64,7 +74,7 @@ class GameDisplay(BaseUI):
     src_path = os.path.dirname(os.path.abspath(__file__))
     TILESET = tcod.tileset.load_truetype_font("C:\\Users\\jason\\workspaces\\repos\\jrl\\src\\display\\graphics\\resources\\GoogleSansCode-SemiBold.ttf", 25, 25)
 
-    def __init__(self, context: Context | None = None, ui_manifest: UIManifestDict | None = DEFAULT_UI_MANIFEST, store: GameStore | None = None) -> None:
+    def __init__(self, context: Context | None = None, ui_manifest: UIManifestDict | None = MAIN_CONSOLE_MANIFEST, store: GameStore | None = None) -> None:
         super().__init__(context=context, ui_manifest=ui_manifest)  
         self.store = store
 
@@ -76,9 +86,18 @@ class GameDisplay(BaseUI):
         img = img.convert("RGBA")
         self.TILESET.set_tile(65, np.array(img))
         
+        self.add_window(BaseUIWindow(name="main_window", store=store, context=context, width=80, height=50, 
+                                       widget_manifest=ui_manifest, is_rendered=True))
+        self.add_window(BaseUIWindow(name="viewer_window", store=store, context=context, width=75, height=15, 
+                                       overlay_x=1, overlay_y=34, widget_manifest=VIEWER_CONSOLE_MANIFEST, is_rendered=False, 
+                                       is_overlay=True))
+
     def _start(self) -> None:
         """Initializes the display for rendering."""
         self.context = tcod.context.new(columns = self.WIDTH, rows = self.HEIGHT, tileset=self.TILESET, title=self.TITLE, vsync=True, sdl_window_flags=self.FLAGS)
+        for window in self.windows:
+            window.context = self.context
+            window.console = self.context.new_console(window.width, window.height, order="F")
 
         print("Display has started.")
 
