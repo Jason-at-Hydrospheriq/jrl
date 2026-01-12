@@ -7,14 +7,14 @@ from time import sleep
 import traceback
 from typing import TYPE_CHECKING, cast
 
-from entities import MobileEntity, TargetableEntity, TargetingEntity, CombatEntity
+from baseclasses import BaseActionOnDestination, BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseGameEntity, BaseGameEvent, BaseItem
+from entities.actors import MobileEntity, TargetableEntity, TargetingEntity, CombatEntity, Character
 from delays import GLOBAL_ACTION_COOLDOWN_TIME
-from baseclasses import BaseActionOnDestination, BaseActionOnEntity, BaseActionOnTarget, BaseGameEntity, BaseGameEvent
-from game_types import StateActionObject, StateHandler
-from game_types import TileCoordinate
+from game_types import StateActionObject, StateHandler, TileCoordinate
 
 if TYPE_CHECKING:
     from store import GameStore
+    from loop.components import SubLoopHandler
 
 
 class EntityEvent(BaseGameEvent):
@@ -218,3 +218,30 @@ class EntityAttackAction(BaseActionOnTarget):
             traceback.print_exc(file=sys.stdout)
 
 entityattack = ('entityattackevent', EntityAttackAction())
+
+
+class EntityUseItemAction(BaseGameAction):
+    item_name: str
+
+    def __init__(self, store: GameStore | None = None, handler: SubLoopHandler | None = None, item_name: str = "") -> None:
+        super().__init__(store, handler)
+        self.item_name = item_name
+
+    def perform(self) -> None:
+        if self.store and self.store.portfolio.player:  # type: ignore | The store for this action must be GameStore.
+            item = self.store.portfolio.player.inventory.get_item(self.item_name)  # type: ignore | The store for this action must be GameStore.
+            if item:
+                item.use(self.store.portfolio.player)  # type: ignore | The store for this action must be GameStore.
+
+
+class EntityPickupAction(BaseActionOnDestination):
+    def perform(self) -> None:
+        if self.store and self.store.portfolio and self.entity and self.destination: # type: ignore | Assume store is GameStore
+            items_at_location = self.store.portfolio.get_entity_at_location(self.destination)  # type: ignore | Assume store is GameStore
+            if items_at_location:
+                for item in items_at_location:
+                    if isinstance(self.entity, Character):
+                        # Make this a state check for inventory full/slot full later
+                        if self.entity and self.entity.inventory:
+                            if isinstance(item, BaseItem):  
+                                self.entity.inventory.add(item)  

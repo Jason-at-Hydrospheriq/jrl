@@ -11,7 +11,7 @@ from entities.behaviors.system import NoAction, WaitAction
 from entities.behaviors.entity import entitywait, entityattack
 from game_types import TileCoordinate, StateActionObject
 from baseclasses import BaseActionOnEntity, BaseEntityEvent, BaseGameEvent, action_locked
-from entities.library import Character, AICharacter, CombatEntity
+from entities.actors import Character, AICharacter, CombatEntity
 from entities.behaviors.entity import EntityWaitEvent, EntityAttackAction, EntityMoveAction, EntityAttackEvent
 
 if TYPE_CHECKING:

@@ -7,20 +7,17 @@ import numpy as np
 import tcod
 
 from entities.behaviors.system import NoAction, WaitAction
-from entities.behaviors.entity import entitywait, entityattack
+from entities.behaviors.entity import EntityMoveAction, EntityPickupAction, entitywait, entityattack
+from entities.components import PlayerInventory
 from game_types import TileCoordinate
-from baseclasses import BaseGameEvent, action_locked
-from entities import Character
-from baseclasses import BaseGameAction
-from entities.behaviors.entity import EntityMoveAction
+from baseclasses import BaseGameEvent, BaseGameAction, action_locked
+from entities.actors import Character
 from game_types import StateActionObject, TileCoordinate
 import colors
 
 if TYPE_CHECKING:
     from store import GameStore
     from loop.components import SubLoopHandler
-
-GLOBAL_ACTION_COOLDOWN_TIME = 100  # Global cooldown time in milliseconds
 
 
 @action_locked
@@ -47,6 +44,7 @@ class PlayerCharacter(Character):
         self.hp = hp
         self.max_hp = max_hp
         self.speed = speed
+        self.inventory = PlayerInventory(store=self)
         self.update()
 
     def update_fov(self) -> None:
@@ -97,6 +95,7 @@ class KeyDownAction(BaseGameAction):
         if isinstance(self.input_event, tcod.event.KeyboardEvent):
             key_sim = self.input_event.sym if self.input_event else None
             destination = (0, 0)
+            action = EntityMoveAction  # Default action
 
             if self.store and self.store.portfolio.player and key_sim is not None:  # type: ignore | The store for this action must be GameStore.
                 if self.store.portfolio.player.location:  # type: ignore | The store for this action must be GameStore.
@@ -104,6 +103,7 @@ class KeyDownAction(BaseGameAction):
 
                 # Parse movement keys
                 match key_sim:
+                    # Move Actions
                     case tcod.event.KeySym.LEFT:
                         destination = (destination[0] - 1, destination[1])
                     case tcod.event.KeySym.A:
@@ -120,9 +120,15 @@ class KeyDownAction(BaseGameAction):
                         destination = (destination[0], destination[1] + 1)
                     case tcod.event.KeySym.S:
                         destination = (destination[0], destination[1] + 1)
-                
+                    
+                    # Pickup Action
+                    case tcod.event.KeySym.SPACE:
+                        # Pickup Action
+                        destination = self.store.portfolio.player.location.to_tuple  # type: ignore | The store for this action must be GameStore.
+                        action = EntityPickupAction
+
                 if destination != (0,0):      
-                    self.handler.send(EntityMoveAction(store=self.store, handler=self.handler, entity=self.store.portfolio.player,  # type: ignore | The store for this action must be GameStore.
+                    self.handler.send(action(store=self.store, handler=self.handler, entity=self.store.portfolio.player,  # type: ignore | The store for this action must be GameStore.
                                                            destination=TileCoordinate.from_tuple(destination, parent_map_size=self.store.atlas.active.grid.size)))  # type: ignore | The store for this action must be GameStore.
 
 

@@ -8,7 +8,7 @@ from tcod.console import Console
 from tcod.context import Context
 import numpy as np
 
-from baseclasses import BaseUI, BaseUIWidget
+from baseclasses import BaseItem, BaseUI, BaseUIWidget
 
 if TYPE_CHECKING:
     from store import GameStore
@@ -101,6 +101,11 @@ class MainMapDisplay(BaseUIWidget):
                     elif actor.perception.is_targeted():  # type: ignore | State machine method is dynamically added
                         color = colors.enemy_atk
                     console.print(actor.location.x, actor.location.y, actor.symbol, fg=color)
+            
+            for item in store.portfolio.all_items:  # type: ignore | Assume store is GameStore
+                if isinstance(item, BaseItem) and item.location:  
+                    if item.owner is None and visible[*item.location.to_list]: 
+                        console.print(item.location.x, item.location.y, item.symbol, fg=item.color)
 
             if player and player.location:
                 console.print(player.location.x, player.location.y, player.symbol, fg=player.color)

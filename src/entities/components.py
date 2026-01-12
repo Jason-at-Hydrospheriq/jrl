@@ -2,7 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
-from baseclasses import BaseGameSubState
+from baseclasses import BaseGameSubState, BaseInventorySlot, BaseInventory
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from entities.actors import Character
 
 
 class CollisionSubState(BaseGameSubState):
@@ -212,3 +216,12 @@ class CharacterHealthSubState(BaseGameSubState):
     def is_dead(self) -> bool:
         return self.store.state_vector['is_dead']  # type: ignore
     
+
+class PlayerInventory(BaseInventory):
+    """An Inventory Slot for the Player Character's inventory. Can hold multiple items of the same type."""
+    
+    def __init__(self, store: Character | None = None, max_quantity: int = 5, max_slots: int = 20) -> None:
+        super().__init__(store=store, slot_template=BaseInventorySlot(max_quantity=max_quantity), 
+                         max_slots=max_slots)
+
+

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
+from copy import deepcopy
 from functools import wraps
 from typing import TYPE_CHECKING, Dict, Set, Tuple
 from transitions import Machine
@@ -13,6 +14,7 @@ from enum import Enum, auto
 import colors
 from manifests import DEFAULT_TILEMAP_MANIFEST
 from game_types import StateHandler, StatefulObject, TileCoordinate, TileTuple, UIManifestDict
+
 
 if TYPE_CHECKING:
     from store import GameStore
@@ -250,6 +252,7 @@ class BaseUI:
                 # for window in self.windows:
                 #     if window.console:
                 #         window.console.clear()
+
 
 class BaseSubState:
     machine: Machine
@@ -528,3 +531,82 @@ class MessageLog:
             self.messages[-1].count += 1
         else:
             self.messages.append(Message(text, fg))
+
+
+class BaseItem(BaseGameEntity):
+    """An Item is any game object that can be picked up and used by a Character. 
+    It has a 'spawn' substate that is an instance of BaseGameSubState that manages its 
+    spawning states. An Item can be stored in an inventory or used directly."""
+    owner: BaseGameEntity | None = None
+    _substates_manifest = (
+        ("spawn", BaseGameSubState)),
+
+    def __init__(   self,
+                    store: GameStore | None = None,
+                    owner: BaseGameEntity | None = None,
+                    location: TileCoordinate | None = None,
+                    *,
+                    name: str="<Unnamed>",
+                    symbol: str=' ',
+                    color: Tuple[int, int, int]=(0,0,0)) -> None:
+        super().__init__(store=store, location=location, name=name, symbol=symbol, color=color)
+        self.owner = owner
+
+
+class BaseInventorySlot:
+    name: str
+    item: BaseItem | None
+    quantity: int
+    max_quantity: int = 99
+    
+    def __init__(self, name: str = '', item: BaseItem | None = None, quantity: int = 0, max_quantity: int = 99) -> None:
+        self.name = name
+        self.item = item
+        self.quantity = quantity
+        self.max_quantity = max_quantity
+
+
+class BaseInventory:
+    store: BaseGameEntity | None = None
+    slot_template: BaseInventorySlot | None = None
+    items: dict[str, BaseInventorySlot]
+    max_slots: int = 20
+
+    def __init__(self, store: BaseGameEntity | None = None, slot_template: BaseInventorySlot | None = None, max_slots: int = 20) -> None:
+        self.store = store
+        self.slot_template = slot_template
+        self.items = {}
+        self.max_slots = max_slots
+    
+    def get(self, item_name: str) -> BaseItem | None:
+        if item_name in self.items and self.items[item_name].quantity > 0:
+            return self.items[item_name].item
+        
+        return None
+    
+    def add(self, item: BaseItem) -> None:
+        if len(self.items) >= self.max_slots and item.name not in self.items:
+            self.store.store.portfolio.log.add(f"{self.store.name}'s inventory is full and cannot pick up {item.name}.")  # type: ignore | Assume store is Character and store.store is GameStore
+            return # This state check should move to Action/Behavior later
+
+        item.owner = self.store  # type: ignore | Assume store is Character
+        if item.name in self.items:
+            self.items[item.name].quantity += 1
+        else:
+            if self.slot_template:
+                new_inventory_slot = deepcopy(self.slot_template)
+                new_inventory_slot.item = item
+                new_inventory_slot.name = item.name
+                new_inventory_slot.quantity = 1
+                self.items[item.name] = new_inventory_slot
+ 
+        self.store.store.log.add(f"{self.store.name} picks up {item.name}.")  # type: ignore | Assume store is Character and store.store is GameStore
+ 
+    def drop(self, item_name: str) -> bool:
+        if item_name in self.items:
+            if self.items[item_name].quantity > 1:
+                self.items[item_name].quantity -= 1
+            else:
+                del self.items[item_name]
+            return True
+        return False

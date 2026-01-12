@@ -8,7 +8,7 @@ from baseclasses import BaseGameEntity
 
 
 if TYPE_CHECKING:
-    from entities.library import Character, AICharacter
+    from entities.actors import Character, AICharacter
 
 
 class BaseStats:

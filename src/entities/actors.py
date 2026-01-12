@@ -1,23 +1,19 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
 from typing import List, Tuple, TYPE_CHECKING
-from matplotlib import colors
 import numpy as np    
 from tcod import libtcodpy
 from tcod.map import compute_fov
 from tcod.path import Pathfinder, SimpleGraph
 
-
 if TYPE_CHECKING:
     from store import GameStore
     from loop.components import SubLoopHandler
 
-from baseclasses import BaseGameSubState, action_locked
+from baseclasses import BaseGameSubState, BaseInventory, action_locked
 from game_types import TileCoordinate
-import colors
 from baseclasses import BaseGameEntity, EntityRenderOrder
 from entities.components import CollisionSubState, CombatSubState, TargetedSubState, TargetingSubState, CharacterHealthSubState
 
@@ -350,6 +346,7 @@ class CombatEntity(TargetableEntity, TargetingEntity):
 class Character(MobileEntity, CombatEntity):
     health: CharacterHealthSubState
     is_alive: bool
+    inventory: BaseInventory
 
     _substates_manifest = (
         ("spawn", BaseGameSubState),
@@ -375,6 +372,21 @@ class Character(MobileEntity, CombatEntity):
 
         self.render_order = EntityRenderOrder.CHARACTER
 
+    def heal(self, amount: int) -> None:
+        initial_health_state = self.health.state  # type: ignore
+        if self.is_alive:
+            if self.hp is not None and self.max_hp is not None:
+                healed_amount = min(self.max_hp - self.hp, amount)                    
+                self.hp += healed_amount
+                self.store.log.add(f"{self.name} heals for {healed_amount} HP.")  # type: ignore
+
+                final_health_state = self.health.state  # type: ignore
+                if initial_health_state != final_health_state:
+                    if final_health_state != 'dead':
+                        self.store.log.add(f"{self.name} is now {final_health_state}.")  # type: ignore
+
+                self.update()
+                
     def take_damage(self, damage: int) -> None:
         if self.is_alive:
             initial_health_state = self.health.state  # type: ignore

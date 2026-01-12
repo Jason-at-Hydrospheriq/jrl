@@ -10,10 +10,10 @@ from copy import deepcopy
 from manifests import DEFAULT_TILEMAP_MANIFEST
 from entities import AICharacter, Character
 from atlas.components.tilemaps import DefaultTileMap
-from baseclasses import BaseGameEntity
+from baseclasses import BaseGameEntity, BaseItem
 from game_types import TileCoordinate
 from game_types import TileTuple
-from entities import MobCharacter, PlayerCharacter
+from entities import MobCharacter, PlayerCharacter, HealingPotion
 
 if TYPE_CHECKING:
     from store import GameStore
@@ -31,25 +31,30 @@ class Portfolio:
     PLAYER = PlayerCharacter(   name="Player", 
                                 symbol=chr(64), 
                                 color=(130, 200, 255),
-                                location=TileCoordinate(TileTuple(([0], [0])), 
+                                location=TileCoordinate.from_tuple((0,0), 
                                                     parent_map_size=PARENT_MAP_SIZE),
                                 hp=150,
                                 max_hp=150)
     ORC = MobCharacter(     name="Orc", 
                             symbol=chr(65), 
                             color=(63, 127, 63),
-                            location=TileCoordinate(TileTuple(([0], [0])), 
+                            location=TileCoordinate.from_tuple((0,0), 
                                                     parent_map_size=PARENT_MAP_SIZE),
                             hp=25,
                             max_hp=25)
     TROLL = MobCharacter(   name="Troll", 
                             symbol=chr(65), 
                             color=(0, 127, 0), 
-                            location=TileCoordinate(TileTuple(([0], [0])), 
+                            location=TileCoordinate.from_tuple((0,0), 
                                                     parent_map_size=PARENT_MAP_SIZE),
                             hp=35,
                             max_hp=35)
-
+    HEALING_POTION = HealingPotion( name="Healing Potion",
+                                    symbol='!',
+                                    color=(255, 0, 255),
+                                    location=TileCoordinate.from_tuple((0,0), 
+                                                    parent_map_size=PARENT_MAP_SIZE)
+    )
     def __init__(self, store: GameStore | None = None, game_ai: GameLoops | None = None) -> None:
 
         if store is not None:
@@ -100,6 +105,10 @@ class Portfolio:
     @property
     def live_ai_actors(self) -> List[AICharacter]:
         return [entity for entity in self.live_actors if isinstance(entity, AICharacter)]
+    
+    @property
+    def all_items(self) -> List[BaseGameEntity]:
+        return [entity for entity in self.entities if isinstance(entity, BaseItem)]
     
     def get_entity_at_location(self, location: TileCoordinate) -> List[BaseGameEntity]:
         found_entity = []
@@ -185,6 +194,8 @@ class Portfolio:
                             self.spawn_at_location(entity=self.TROLL, location=spawn_location)
 
                 n_total_mobs_spawned_in_this_map += 1
+
+        self.spawn_at_location(entity=self.HEALING_POTION, location=self.player.location)  # type: ignore
     
     def update(self) -> None:
         """Update all entities in the portfolio."""
