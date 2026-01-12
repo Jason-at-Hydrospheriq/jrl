@@ -9,7 +9,7 @@ from PIL import Image
 import os
 import numpy as np
 
-from display.widgets import HistoryViewerWidget, MainMapDisplay, HealthBarWidget, MessageLogWidget, MouseTooltipWidget
+from display.widgets import HistoryViewerWidget, InventoryViewerWidget, MainMapDisplay, HealthBarWidget, MessageLogWidget, MouseTooltipWidget
 from manifests import DEFAULT_TILEMAP_MANIFEST
 from baseclasses import BaseUI, BaseUIWindow, WidgetRenderOrder as order
 
@@ -53,13 +53,25 @@ MAIN_CONSOLE_MANIFEST: UIManifestDict = {
                         },
 
     }}
-VIEWER_CONSOLE_MANIFEST: UIManifestDict = {
+HISTORY_CONSOLE_MANIFEST: UIManifestDict = {
     'widgets': {                
                         'history_viewer': {
                             'cls': HistoryViewerWidget,
                             'x': 5,
                             'y': 5,
                             'width': 75,
+                            'height': 15,
+                            'render_order': order.FOREGROUND
+                        },
+
+    }}
+INVENTORY_CONSOLE_MANIFEST: UIManifestDict = {
+    'widgets': {                
+                        'inventory_viewer': {
+                            'cls': InventoryViewerWidget,
+                            'x': 5,
+                            'y': 5,
+                            'width': 30,
                             'height': 15,
                             'render_order': order.FOREGROUND
                         },
@@ -88,8 +100,11 @@ class GameDisplay(BaseUI):
         
         self.add_window(BaseUIWindow(name="main_window", store=store, context=context, width=80, height=50, 
                                        widget_manifest=ui_manifest, is_rendered=True))
-        self.add_window(BaseUIWindow(name="viewer_window", store=store, context=context, width=75, height=15, 
-                                       overlay_x=1, overlay_y=34, widget_manifest=VIEWER_CONSOLE_MANIFEST, is_rendered=False, 
+        self.add_window(BaseUIWindow(name="history_window", store=store, context=context, width=75, height=15, 
+                                       overlay_x=1, overlay_y=34, widget_manifest=HISTORY_CONSOLE_MANIFEST, is_rendered=False, 
+                                       is_overlay=True))
+        self.add_window(BaseUIWindow(name="inventory_window", store=store, context=context, width=30, height=15, 
+                                       overlay_x=1, overlay_y=34, widget_manifest=INVENTORY_CONSOLE_MANIFEST, is_rendered=False, 
                                        is_overlay=True))
 
     def _start(self) -> None:

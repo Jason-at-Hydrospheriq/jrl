@@ -557,7 +557,7 @@ class BaseInventorySlot:
     name: str
     item: BaseItem | None
     quantity: int
-    max_quantity: int = 99
+    max_quantity: int = 1
     
     def __init__(self, name: str = '', item: BaseItem | None = None, quantity: int = 0, max_quantity: int = 99) -> None:
         self.name = name
@@ -569,44 +569,46 @@ class BaseInventorySlot:
 class BaseInventory:
     store: BaseGameEntity | None = None
     slot_template: BaseInventorySlot | None = None
-    items: dict[str, BaseInventorySlot]
+    slots: dict[str, BaseInventorySlot]
     max_slots: int = 20
 
     def __init__(self, store: BaseGameEntity | None = None, slot_template: BaseInventorySlot | None = None, max_slots: int = 20) -> None:
         self.store = store
         self.slot_template = slot_template
-        self.items = {}
+        self.slots = {}
         self.max_slots = max_slots
     
     def get(self, item_name: str) -> BaseItem | None:
-        if item_name in self.items and self.items[item_name].quantity > 0:
-            return self.items[item_name].item
+        if item_name in self.slots and self.slots[item_name].quantity > 0:
+            item_slot = self.slots[item_name]
+            item_slot.quantity -= 1
+            return item_slot.item
         
         return None
     
     def add(self, item: BaseItem) -> None:
-        if len(self.items) >= self.max_slots and item.name not in self.items:
+        if len(self.slots) >= self.max_slots and item.name not in self.slots:
             self.store.store.portfolio.log.add(f"{self.store.name}'s inventory is full and cannot pick up {item.name}.")  # type: ignore | Assume store is Character and store.store is GameStore
             return # This state check should move to Action/Behavior later
 
         item.owner = self.store  # type: ignore | Assume store is Character
-        if item.name in self.items:
-            self.items[item.name].quantity += 1
+        if item.name in self.slots:
+            self.slots[item.name].quantity += 1
         else:
             if self.slot_template:
                 new_inventory_slot = deepcopy(self.slot_template)
                 new_inventory_slot.item = item
                 new_inventory_slot.name = item.name
                 new_inventory_slot.quantity = 1
-                self.items[item.name] = new_inventory_slot
+                self.slots[item.name] = new_inventory_slot
  
         self.store.store.log.add(f"{self.store.name} picks up {item.name}.")  # type: ignore | Assume store is Character and store.store is GameStore
  
     def drop(self, item_name: str) -> bool:
-        if item_name in self.items:
-            if self.items[item_name].quantity > 1:
-                self.items[item_name].quantity -= 1
+        if item_name in self.slots:
+            if self.slots[item_name].quantity > 1:
+                self.slots[item_name].quantity -= 1
             else:
-                del self.items[item_name]
+                del self.slots[item_name]
             return True
         return False

@@ -53,7 +53,7 @@ class HealingPotion(ConsumableItem):
                 
                 if self._remaining_uses <= 0:
                     # Remove the potion from the game
-                    if self.store and self in self.store.portfolio.items:  # type: ignore | Assume store is GameStore
-                        self.store.portfolio.items.remove(self)  # type: ignore
+                    if self.store and self in self.store.portfolio.entities:  # type: ignore | Assume store is GameStore
+                        self.store.portfolio.entities.remove(self)  # type: ignore
                 self.owner.update()
                 self.update()

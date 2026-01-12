@@ -6,5 +6,5 @@ from entities.behaviors.mob import (AICharacter, AICharacterEvent, AIAcquireTarg
 from entities.behaviors.entity import EntityEvent, EntityMoveAction, EntityWaitAction, EntityWaitEvent, EntityAttackEvent, EntityAttackAction
 from entities.behaviors.player import PlayerCharacter, player_behaviors
 from entities.behaviors.mob import MobCharacter, mob_behaviors
-from entities.behaviors.history_viewer import viewer_behaviors
-
+from entities.behaviors.viewer import viewer_behaviors
+from entities.behaviors.selector import selector_behaviors

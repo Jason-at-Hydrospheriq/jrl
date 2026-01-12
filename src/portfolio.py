@@ -41,14 +41,16 @@ class Portfolio:
                             location=TileCoordinate.from_tuple((0,0), 
                                                     parent_map_size=PARENT_MAP_SIZE),
                             hp=25,
-                            max_hp=25)
+                            max_hp=25,
+                            drop_rate=0.6)
     TROLL = MobCharacter(   name="Troll", 
                             symbol=chr(65), 
                             color=(0, 127, 0), 
                             location=TileCoordinate.from_tuple((0,0), 
                                                     parent_map_size=PARENT_MAP_SIZE),
                             hp=35,
-                            max_hp=35)
+                            max_hp=35,
+                            drop_rate=0.8)
     HEALING_POTION = HealingPotion( name="Healing Potion",
                                     symbol='!',
                                     color=(255, 0, 255),
@@ -151,25 +153,27 @@ class Portfolio:
             if self.player and self.player.location is not None:    
                 if room.contains(self.player.location):
                     continue  # Skip room if player is inside
-                
-                elif not room.contains(self.player.location):
-                    n_mobs_spawned_in_this_room = 0
-                    attempts = 100  # Prevent infinite loops
 
-                    while n_mobs_spawned_in_this_room < max_mobs_in_this_room and attempts > 0:
-                        current_mob_locations = [mob.location for mob in self.live_ai_actors]
+                n_mobs_spawned_in_this_room = 0
+                attempts = 100  # Prevent infinite loops
 
-                        spawn_location = room.get_random_location()
-                        attempts -= 1
-                        
-                        if not any(mob_location == spawn_location for mob_location in current_mob_locations):
-                            if random.random() < 0.8:
-                                self.spawn_at_location(entity=self.ORC, location=spawn_location)
-                            else:
-                                self.spawn_at_location(entity=self.TROLL, location=spawn_location)
-                                    
-                            n_total_mobs_spawned_in_this_map += 1
-                            n_mobs_spawned_in_this_room += 1
+                while n_mobs_spawned_in_this_room < max_mobs_in_this_room and attempts > 0:
+                    current_mob_locations = [mob.location for mob in self.live_ai_actors]
+
+                    spawn_location = room.get_random_location()
+                    attempts -= 1
+                    
+                    if not any(mob_location == spawn_location for mob_location in current_mob_locations):
+                        random_number = random.random()
+                        if random_number < 0.8:
+                            self.spawn_at_location(entity=self.ORC, location=spawn_location)
+                        elif 0.8 <= random_number < 0.9:
+                            self.spawn_at_location(entity=self.TROLL, location=spawn_location)
+                        elif random_number >= 0.9:
+                            self.spawn_at_location(entity=self.HEALING_POTION, location=spawn_location)
+                            
+                        n_total_mobs_spawned_in_this_map += 1
+                        n_mobs_spawned_in_this_room += 1
 
         # Generate remainder of mobs in corridors
         corridors = [area for name, area in game_map.areas.items() if name.startswith('_corridor')]

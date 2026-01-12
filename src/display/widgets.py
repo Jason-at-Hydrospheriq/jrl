@@ -208,4 +208,80 @@ class HistoryViewerWidget(BaseUIWidget):
             if y > self.upper_Left_y + self.height - 1:
                 return
 
-        # console.blit(console, 3, 3)
+
+class InventoryViewerWidget(BaseUIWidget):
+
+    """ A simple history viewer widget to display past game messages. """
+    def __init__(self, name: str, *, upper_Left_x: int = 0, upper_Left_y: int=0, width: int=50, height: int=20, render_order: WidgetRenderOrder) -> None:
+        self.name = name
+        self.upper_Left_x = upper_Left_x
+        self.upper_Left_y = upper_Left_y
+        self.lower_Right_x = upper_Left_x + width
+        self.lower_Right_y = upper_Left_y + height
+        self.width = width
+        self.height = height
+        self.render_order = render_order
+
+    def render(self, context: Context, console: Console, store: GameStore) -> None:
+        player = store.portfolio.player if store.portfolio else None
+        x = 0
+        y = 0
+        height = 3
+        width = 20
+
+        if player and player.location and player.inventory:
+            items = [item_slot.item for item_slot in player.inventory.slots.values() if player.inventory]
+            name_lengths = [len(item.name) for item in items if item]
+            
+            if name_lengths:
+                max_name_length = max(name_lengths)
+                if max_name_length + 4 > width:
+                    width = max_name_length + 6
+
+            if len(items) > 1:
+                height = len(items) + 2
+
+            if player.location.x <= 30:
+                x = 40
+
+            console.draw_frame(x, y, width, height)
+            console.print(
+                            x=x, 
+                            y=y, 
+                            width=width-2, 
+                            height=1, 
+                            text="-|Inventory|-", 
+                            alignment=tcod.CENTER)
+            
+            if len(items) == 0:
+                console.print(
+                    x=x+1,
+                    y=y+1,
+                    width=width-2, 
+                    height=1, 
+                    text="(Inventory is empty)",
+                    fg=(255,255,255),
+                )
+                return
+            
+            else:     
+                y = y + 1    
+                for i, item in enumerate(items):
+                    if item is None:
+                        continue
+                    
+                    item_key = chr(ord("a") + i)
+
+                    console.print(
+                        x=x+1,
+                        y=y,
+                        width=width-2, 
+                        height=1, 
+                        text=f"({item_key}) {item.name}",
+                        fg=(255,255,255),
+                    )
+                    y += 1
+
+                    if y > y + height - 1:
+                        return
+

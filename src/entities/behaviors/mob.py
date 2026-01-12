@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import annotations
+import random
 import traceback
 from typing import TYPE_CHECKING, Tuple, cast
 
@@ -285,6 +286,7 @@ pursue = ('aipursuitevent', AIPursuitAction())
 class MobCharacter(AICharacter):
     action_locked: bool | None = False
     location: TileCoordinate | None
+    drop_rate: float = 0.5
 
     def __init__(   self,
                     store: GameStore | None = None,
@@ -295,6 +297,7 @@ class MobCharacter(AICharacter):
                     color: Tuple[int, int, int]=(255, 255, 255),
                     hp: int = 50,
                     max_hp: int = 50,
+                    drop_rate: float = 0.5
                     ) -> None:
 
         self.fov_radius = 5 # Must be set before super().__init__() call to ensure FOV is correct on initialization.
@@ -304,6 +307,7 @@ class MobCharacter(AICharacter):
 
         self.hp = hp
         self.max_hp = max_hp
+        self.drop_rate = drop_rate
         self.update()
 
     @property
@@ -339,7 +343,8 @@ class MobCharacter(AICharacter):
         self.store.log.add(f"{self.name} has died.", fg=colors.enemy_die)  # type: ignore
         self.symbol = "%"
         self.name = f"remains of {self.name}"
-
+        if random.random() < self.drop_rate:
+            self.store.portfolio.spawn_at_location(entity=self.store.portfolio.HEALING_POTION, location=self.location)  # type: ignore | Assume store is GameStore
 
 mob_behaviors = {
     ('nonevent', NoAction()),

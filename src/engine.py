@@ -10,7 +10,7 @@ import traceback
 
 import colors
 from delays import GLOBAL_COOLDOWN_TIME
-from entities.behaviors import InputEvent, player_behaviors, viewer_behaviors
+from entities.behaviors import InputEvent, player_behaviors, viewer_behaviors, selector_behaviors
 from store import GameStore
 from display import GameDisplay
 from loop import GameLoops, SubLoopHandler
@@ -212,18 +212,38 @@ class GameEngine:
                                             if self.display:
                                                 current_behavior = self.loop.inputs_loop_handler.behaviors
                                                 main_console = self.display.get_window_by_name('main_window')                                        
-                                                viewer_console = self.display.get_window_by_name('viewer_window')
+                                                history_console = self.display.get_window_by_name('history_window')
 
                                                 if current_behavior == player_behaviors:
+                                                    self.loop.mob_loop_handler.stop()  # type: ignore
                                                     self.loop.inputs_loop_handler.behaviors = viewer_behaviors
-                                                    if main_console and viewer_console:
-                                                        viewer_console.is_rendered=True
+                                                    if main_console and history_console:
+                                                        history_console.is_rendered=True
 
                                                 elif current_behavior == viewer_behaviors:
+                                                    self.loop.mob_loop_handler.start()  # type: ignore
                                                     self.loop.inputs_loop_handler.behaviors = player_behaviors
-                                                    if main_console and viewer_console:
-                                                        viewer_console.is_rendered=False
+                                                    if main_console and history_console:
+                                                        history_console.is_rendered=False
+                                        
+                                        case tcod.event.KeySym.I:
+                                            if self.display:
+                                                current_behavior = self.loop.inputs_loop_handler.behaviors
+                                                main_console = self.display.get_window_by_name('main_window')                                        
+                                                inventory_console = self.display.get_window_by_name('inventory_window')
 
+                                                if current_behavior == player_behaviors:
+                                                    self.loop.mob_loop_handler.stop()  # type: ignore
+                                                    self.loop.inputs_loop_handler.behaviors = selector_behaviors
+                                                    if main_console and inventory_console:
+                                                        inventory_console.is_rendered=True
+
+                                                elif current_behavior == selector_behaviors:
+                                                    self.loop.mob_loop_handler.start()  # type: ignore
+                                                    self.loop.inputs_loop_handler.behaviors = player_behaviors
+                                                    if main_console and inventory_console:
+                                                        inventory_console.is_rendered=False
+                                                        
                                         case tcod.event.KeySym.Q:
                                             self.stop()  # type: ignore
 

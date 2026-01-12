@@ -76,11 +76,11 @@ class EntityMoveAction(BaseActionOnDestination):
             initial_state = self.entity.collision.state  # type: ignore | State machine attribute created dynamically
             recalculate = False
 
-            wait = GLOBAL_ACTION_COOLDOWN_TIME * 2 # Default wait time
+            wait = GLOBAL_ACTION_COOLDOWN_TIME # Default wait time
             if self.entity.speed:
-                wait = (GLOBAL_ACTION_COOLDOWN_TIME - self.entity.speed) * 2
+                wait = (GLOBAL_ACTION_COOLDOWN_TIME - (50 - self.entity.speed))  # type: ignore
             
-            # EntityWaitAction(wait_time=wait, store=self.store, handler=self.handler, entity=self.entity).perform() # type: ignore | The store for this action must be GameStore.
+            EntityWaitAction(wait_time=wait, store=self.store, handler=self.handler, entity=self.entity).perform() # type: ignore | The store for this action must be GameStore.
 
             match self.entity.collision.state:  # type: ignore | State machine attribute created dynamically
                 case 'not_colliding':                     
@@ -229,9 +229,9 @@ class EntityUseItemAction(BaseGameAction):
 
     def perform(self) -> None:
         if self.store and self.store.portfolio.player:  # type: ignore | The store for this action must be GameStore.
-            item = self.store.portfolio.player.inventory.get_item(self.item_name)  # type: ignore | The store for this action must be GameStore.
+            item = self.store.portfolio.player.inventory.get(self.item_name)  # type: ignore | The store for this action must be GameStore.
             if item:
-                item.use(self.store.portfolio.player)  # type: ignore | The store for this action must be GameStore.
+                item.use()  # type: ignore | The store for this action must be GameStore.
 
 
 class EntityPickupAction(BaseActionOnDestination):
