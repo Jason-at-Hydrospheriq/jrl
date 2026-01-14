@@ -227,16 +227,16 @@ class InventoryViewerWidget(BaseUIWidget):
         x = 0
         y = 0
         height = 3
-        width = 20
+        width = 10
 
         if player and player.location and player.inventory:
-            items = [item_slot.item for item_slot in player.inventory.slots.values() if player.inventory]
-            name_lengths = [len(item.name) for item in items if item]
+            items = [item_slot for item_slot in player.inventory.slots.values() if player.inventory]
+            name_lengths = [len(item.item.name) for item in items if item.item]
             
             if name_lengths:
                 max_name_length = max(name_lengths)
                 if max_name_length + 4 > width:
-                    width = max_name_length + 6
+                    width = max_name_length + 10
 
             if len(items) > 1:
                 height = len(items) + 2
@@ -267,21 +267,20 @@ class InventoryViewerWidget(BaseUIWidget):
             else:     
                 y = y + 1    
                 for i, item in enumerate(items):
-                    if item is None:
-                        continue
+                    if item.item:
                     
-                    item_key = chr(ord("a") + i)
+                        item_key = chr(ord("a") + i)
 
-                    console.print(
-                        x=x+1,
-                        y=y,
-                        width=width-2, 
-                        height=1, 
-                        text=f"({item_key}) {item.name}",
-                        fg=(255,255,255),
-                    )
-                    y += 1
+                        console.print(
+                            x=x+1,
+                            y=y,
+                            width=width-2, 
+                            height=1, 
+                            text=f"({item_key}) {item.item.name} x {item.quantity}",
+                            fg=(255,255,255),
+                        )
+                        y += 1
 
-                    if y > y + height - 1:
-                        return
+                        if y > y + height - 1:
+                            return
 

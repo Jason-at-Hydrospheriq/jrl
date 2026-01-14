@@ -13,7 +13,7 @@ from atlas.components.tilemaps import DefaultTileMap
 from baseclasses import BaseGameEntity, BaseItem
 from game_types import TileCoordinate
 from game_types import TileTuple
-from entities import MobCharacter, PlayerCharacter, HealingPotion
+from entities import MobCharacter, PlayerCharacter, HealingConsumable
 
 if TYPE_CHECKING:
     from store import GameStore
@@ -51,7 +51,7 @@ class Portfolio:
                             hp=35,
                             max_hp=35,
                             drop_rate=0.8)
-    HEALING_POTION = HealingPotion( name="Healing Potion",
+    HEALING_POTION = HealingConsumable( name="Healing Potion",
                                     symbol='!',
                                     color=(255, 0, 255),
                                     location=TileCoordinate.from_tuple((0,0), 

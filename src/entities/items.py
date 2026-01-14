@@ -39,7 +39,7 @@ class ConsumableItem(BaseItem):
         raise NotImplementedError("The 'use' method must be implemented by subclasses of ConsumableEntity.")
     
 
-class HealingPotion(ConsumableItem):
+class HealingConsumable(ConsumableItem):
     """A Healing Potion is a Consumable Item that restores health to a Character when used."""
 
     _healing_amount: int = 20

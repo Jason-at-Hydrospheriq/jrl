@@ -175,10 +175,13 @@ class EntityAttackAction(BaseActionOnTarget):
             return
         
         try:
+            if self.entity and self.entity.action_locked:
+                return
+            
             if isinstance(self.entity, CombatEntity) and self.store and self.target:
-                wait = GLOBAL_ACTION_COOLDOWN_TIME // 2 # Default wait time
+                wait = GLOBAL_ACTION_COOLDOWN_TIME # Default wait time
                 if hasattr(self.entity, 'speed') and self.entity:
-                    wait = (GLOBAL_ACTION_COOLDOWN_TIME- self.entity.speed) // 2  # type: ignore
+                    wait = GLOBAL_ACTION_COOLDOWN_TIME + (50 - self.entity.speed)  # type: ignore
                 
                 EntityWaitAction(wait_time=wait, store=self.store, handler=self.handler, entity=self.entity).perform() # type: ignore | The store for this action must be GameStore.
                 
@@ -195,18 +198,28 @@ class EntityAttackAction(BaseActionOnTarget):
                     case 'fighting': 
                         
                         if not self.target.health.is_dead():  # type: ignore | Gotta get types and inheritance straightened out here.         
-                            attack = 0
+                            attack = attack = self.entity.attack()
                             defend = 0
                             damage = 0
 
-                            if isinstance(self.entity, CombatEntity):
-                                attack = self.entity.attack()
-
+                            match self.entity.health.state:  # type: ignore | State machine attribute created dynamically
+                                # case 'healthy' | 'injured':
+                                #     pass
+                                case 'critical':
+                                    attack = max(1, attack * 3 // 4)
+                                
                             if isinstance(self.target, CombatEntity):
                                 defend = self.target.defend()
 
+                                match self.target.health.state:  # type: ignore | State machine attribute created dynamically
+                                    # case 'healthy' | 'injured':
+                                    #     pass
+                                    case 'critical':
+                                        defend = max(1, defend * 3 // 4)
+
                             if attack and defend:
                                 damage = max(0, attack - defend)
+                            
                             elif attack:
                                 damage = attack
 
@@ -243,5 +256,5 @@ class EntityPickupAction(BaseActionOnDestination):
                     if isinstance(self.entity, Character):
                         # Make this a state check for inventory full/slot full later
                         if self.entity and self.entity.inventory:
-                            if isinstance(item, BaseItem):  
+                            if isinstance(item, BaseItem) and not item.owner:  
                                 self.entity.inventory.add(item)  
