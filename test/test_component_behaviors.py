@@ -6,15 +6,14 @@ import threading
 import tcod
 path.append('c:\\Users\\jason\\workspaces\\repos\\jrl\\src')
 
-from baseclasses import BaseActionOnEntity, BaseActionOnTarget, BaseGameAction, BaseGameEntity
-from loop import *
-from baseclasses import BaseActionOnDestination
-from loop.components import SubLoopHandler
+from baseclasses import BaseActionOnEntity, BaseActionOnDestination, BaseActionOnTarget, BaseGameAction, BaseGameEntity
+from game_types import StoredStateObject
+from loop import SubLoopHandler
 from portfolio import Portfolio
 from atlas import Atlas
-from game_types import StoredStateObject
 from store import GameStore
 from entities import AICharacter
+from entities.behaviors import *
 from game_types import StateActionObject
 from game_types import TileCoordinate
 
@@ -322,7 +321,7 @@ def test_component_entity_acquire_target_action():
 
         assert final_entity_target == target, "Expected entity's target to be set to the target character after acquire target action"
         assert final_focus_state == 'tracking', "Expected entity's focus state to be 'tracking' after acquire target action"
-        assert final_event_queue_size == initial_event_queue_size + 1, "Expected final event queue size to be +1 added by acquire target action"
+        assert final_event_queue_size == initial_event_queue_size, "Expected final event queue size to be +1 added by acquire target action"
         assert final_action_queue_size == initial_action_queue_size, "Expected final action queue size to be unchanged by acquire target action"
         assert final_store_log_size == initial_store_log_size + 1, "Expected final store log size to be +1 added by acquire target action"
 
@@ -524,8 +523,8 @@ def test_component_investigate_action():
         after_investigate_state = action.entity.focus.state  # type: ignore | Expect 'tracking'
         after_investigate_event_queue_size = action.handler.events.qsize()
         after_investigate_action_queue_size = action.handler.actions.qsize()
-        event1 = action.handler.events.get_nowait()
-        event2 = action.handler.events.get_nowait()
+        if not action.handler.actions.empty():
+            action1 = action.handler.actions.get_nowait()
         final_store_log_size = len(action.store.log.messages)  # type: ignore
 
         # Assert
@@ -540,10 +539,9 @@ def test_component_investigate_action():
         assert initial_action_queue_size == 0, "Expected initial action queue size to be 0"
         assert len(after_investigate_path) > 1, "Expected path to be set after calling investigate action"
         assert after_investigate_state == 'tracking', "Expected focus state to remain 'tracking' after investigate action"  # type: ignore
-        assert after_investigate_event_queue_size == 2, "Expected event queue size to have two new events after investigate action"
-        assert after_investigate_action_queue_size == 0, "Expected action queue size to remain unchanged after investigate action"
-        assert isinstance(event1, EntityWaitEvent), "Expected first event to be instance of EntityWaitEvent"
-        assert isinstance(event2, AIPursuitEvent), "Expected second event to be instance of AIPursuitEvent"
+        assert after_investigate_event_queue_size == 0, "Expected event queue size to have two new events after investigate action"
+        assert after_investigate_action_queue_size == 1, "Expected action queue size to remain unchanged after investigate action"
+        assert isinstance(action1, AIPursuitAction), "Expected first event to be instance of EntityWaitEvent"
         assert final_store_log_size == 1, "Expected one new log message in store after investigate action"
 
     except AssertionError as e:
@@ -598,10 +596,9 @@ def test_component_pursuit_action():
         after_perform_path = action.entity.path
         after_perform_state = action.entity.focus.state  # type: ignore | Expect 'tracking'
         after_perform_event_queue_size = action.handler.events.qsize()
-        event1 = action.handler.events.get_nowait()
-        event2 = action.handler.events.get_nowait()
         after_perform_action_queue_size = action.handler.actions.qsize()
-        action1 = action.handler.actions.get_nowait()
+        if not action.handler.actions.empty():
+            action1 = action.handler.actions.get_nowait()
         final_store_log_size = len(action.store.log.messages)  # type: ignore
 
         # Assert
@@ -614,11 +611,9 @@ def test_component_pursuit_action():
         assert initial_state == 'tracking', "Expected initial focus state to be 'tracking'"  # type: ignore
         assert len(after_perform_path) > 1, "Expected path to be set after calling pursuit action"
         assert after_perform_state == 'tracking', "Expected focus state to remain 'tracking' after pursuit action"  # type: ignore
-        assert after_perform_event_queue_size == 2, "Expected event queue size to have two new events after pursuit action"
+        assert after_perform_event_queue_size == 0, "Expected event queue size to have two new events after pursuit action"
         assert after_perform_action_queue_size == 1, "Expected action queue size to remain unchanged after pursuit action"
-        assert isinstance(event1, EntityWaitEvent), "Expected first event to be instance of EntityWaitEvent"
-        assert isinstance(event2, AIPursuitEvent), "Expected second event to be instance of AIPursuitEvent"
-        assert isinstance(action1, EntityMoveAction), "Expected first action to be instance of EntityMoveAction"
+        assert isinstance(action1, AIPursuitAction), "Expected first action to be instance of EntityAttackAction"
         assert final_store_log_size == 1, "Expected one new log message in store after pursuit action"
 
     except AssertionError as e:

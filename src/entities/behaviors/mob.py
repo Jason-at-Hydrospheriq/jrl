@@ -228,7 +228,10 @@ class AIInvestigateAction(BaseActionOnEntity):
 
                     self.store.log.add(text=f"The {self.entity.name} is moving to investigate {self.entity.target.name}.")  # type: ignore | Entity in this state must have a target. | If collision detected, recalculate path
 
-                    AIPursuitAction(store=self.store, handler=self.handler, entity=self.entity).perform()  # type: ignore
+                    if not self.handler.actions.full():
+                        self.handler.actions.put_nowait(AIPursuitAction(store=self.store, handler=self.handler, entity=self.entity))  
+                    else:
+                        AIPursuitAction(store=self.store, handler=self.handler, entity=self.entity).perform()
 
 investigate = ('aiinvestigateevent', AIInvestigateAction())
 
@@ -278,14 +281,21 @@ class AIPursuitAction(BaseActionOnEntity):
                 case 'tracking':
                     if self.entity.distance_to_target is not None and self.entity.distance_to_target > 1: # If not adjacent to target, recalculate path, and continue pursuit
                         self.entity.set_destination_from_path() # If not adjacent to target, recalculate path, and continue pursuit
-                        AIPursuitEvent(store=self.store, handler=self.handler, entity=self.entity).trigger()
+                        if not self.handler.actions.full():
+                            self.handler.actions.put_nowait(AIPursuitAction(store=self.store, handler=self.handler, entity=self.entity))
+                        else:
+                            AIPursuitAction(store=self.store, handler=self.handler, entity=self.entity).perform()
+
                         self.store.log.add(text=f"The {self.entity.name} is pursuing {self.entity.target.name}.")  # type: ignore | Entity in this state must have a target.
 
                 case 'targeting':
                     if self.entity.distance_to_target == 1: # # type: ignore | State machine attribute created dynamically | Dummy combat action for now
                         if isinstance(self.entity, CombatEntity) and self.entity.target:
                             if not isinstance(self.entity.target, self.entity.__class__):  # Prevent attacking self types
-                                EntityAttackAction(store=self.store, handler=self.handler, entity=self.entity, target=self.entity.target).perform()  # type: ignore | The store for this action must be GameStore.
+                                if not self.handler.actions.full():
+                                    self.handler.actions.put_nowait(EntityAttackAction(store=self.store, handler=self.handler, entity=self.entity, target=self.entity.target))
+                                else:
+                                    EntityAttackAction(store=self.store, handler=self.handler, entity=self.entity, target=self.entity.target).perform()
 
 pursue = ('aipursuitevent', AIPursuitAction())
 
