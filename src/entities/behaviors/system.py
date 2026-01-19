@@ -80,3 +80,56 @@ class InputEvent(BaseGameEvent):
         if self.handler:
             self.handler.handle(cast(StateActionObject, self))
         
+
+class SystemKeyDownAction(BaseGameAction):
+    input_event: tcod.event.Event | None
+    
+    def __init__(self, store: GameStore | None = None, handler: SubLoopHandler | None = None, input_event: tcod.event.KeyboardEvent | None = None) -> None:
+        super().__init__(store, handler)
+        self.input_event = input_event
+
+    def perform(self) -> None:
+        try:
+            if isinstance(self.input_event, tcod.event.KeyboardEvent) and self.store and self.display and self.loop:
+                key_sim = self.input_event.sym
+                match key_sim:
+
+                    case tcod.event.KeySym.V:
+                        if self.display and self.loop.display_loop_handler:
+                            main_console = self.display.get_window_by_name('main_window')                                        
+                            history_console = self.display.get_window_by_name('history_window')
+                                                                            
+                            if main_console and history_console and not history_console.is_rendered:
+                                self.loop.sequenced_loop_handler.stop()  # type: ignore
+                                self.loop.display_loop_handler.behaviors = viewer_behaviors
+                                history_console.is_rendered=True
+
+                            elif main_console and history_console and history_console.is_rendered:
+                                self.loop.sequenced_loop_handler.start()
+                                if main_console and history_console:
+                                    history_console.is_rendered=False
+                    
+                    case tcod.event.KeySym.I:
+                        if self.display and self.loop.display_loop_handler:
+                            main_console = self.display.get_window_by_name('main_window')                                        
+                            inventory_console = self.display.get_window_by_name('inventory_window')
+                                                                            
+                            if main_console and inventory_console and not inventory_console.is_rendered:
+                                self.loop.sequenced_loop_handler.stop()  # type: ignore
+                                self.loop.display_loop_handler.behaviors = selector_behaviors
+                                inventory_console.is_rendered=True
+
+                            elif main_console and inventory_console and inventory_console.is_rendered:
+                                self.loop.sequenced_loop_handler.start()
+                                if main_console and inventory_console:
+                                    inventory_console.is_rendered=False
+
+        except Exception as e:
+            print(f"An error occured with system action. {e}")
+            traceback.print_exc()
+
+system_behaviors = {
+    ('nonevent', NoAction()),
+    ('waitevent', WaitAction()),
+    ('inputevent', SystemKeyDownAction()),
+}

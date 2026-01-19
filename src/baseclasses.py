@@ -15,10 +15,9 @@ import colors
 from manifests import DEFAULT_TILEMAP_MANIFEST
 from game_types import StateHandler, StatefulObject, TileCoordinate, TileTuple, UIManifestDict
 
-
 if TYPE_CHECKING:
     from store import GameStore
-
+    from loop.components import SubLoopHandler
 
 def is_locked(func):
     """A decorator to wrap each method with a condition check."""
@@ -180,6 +179,7 @@ class BaseUI:
     store: GameStore | None
     machine: Machine
     context: Context | None
+    ai: SubLoopHandler | None
     windows: Set[BaseUIWindow]
     context_width: int
     context_height: int
@@ -238,6 +238,9 @@ class BaseUI:
         """Retrieve all UI elements of a specific type."""
         return {window for window in self.windows if isinstance(window, window_type)}
 
+    def process_event(self, input_event: tcod.event.Event) -> None:
+        raise NotImplementedError()
+        
     def render(self) -> None:
         if self.context and self.store:
             main_window = self.get_window_by_name('main_window')

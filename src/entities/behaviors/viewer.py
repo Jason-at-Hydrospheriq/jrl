@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from loop.components import SubLoopHandler
 
 
-class KeyDownAction(BaseGameAction):
+class ViewerKeyDownAction(BaseGameAction):
     input_event: tcod.event.Event | None
     cursor_keys: Dict[tcod.event.KeySym, int] = {
         tcod.event.KeySym.UP: -1,
@@ -61,5 +61,5 @@ class KeyDownAction(BaseGameAction):
 viewer_behaviors = {
     ('nonevent', NoAction()),
     ('waitevent', WaitAction()),
-    ('inputevent', KeyDownAction()),
+    ('inputevent', ViewerKeyDownAction()),
 }

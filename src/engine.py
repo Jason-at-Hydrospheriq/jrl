@@ -9,7 +9,7 @@ import gc
 import traceback
 
 import colors
-from delays import GLOBAL_COOLDOWN_TIME
+from delays import GLOBAL_COOLDOWN_TIME, GLOBAL_ACTION_COOLDOWN_TIME
 from entities.behaviors import InputEvent, player_behaviors, viewer_behaviors, selector_behaviors
 from store import GameStore
 from display import GameDisplay
@@ -91,7 +91,8 @@ class GameEngine:
         if self.loop and self.loop.state != 'started':  # type: ignore | State machine attribute created dynamically
             self.loop.start() # type: ignore | State machine attribute created dynamically
             self.loop.pause()  # type: ignore | State machine attribute created dynamically
-        
+            self.display.ai = self.loop.display_loop_handler  # type: ignore | Assume display is GameDisplay
+
         # self.main_loop()
 
         print(f"Game is {self.state}.") # type: ignore
@@ -103,6 +104,8 @@ class GameEngine:
             self.store.start() # type: ignore | State machine attribute created dynamically
         if self.loop and self.loop.state != 'started':  # type: ignore | State machine attribute created dynamically
             self.loop.start() # type: ignore | State machine attribute created dynamically
+        if self.display and self.display.state != 'main':  # type: ignore | State machine attribute created dynamically
+            self.display.open_main() # type: ignore | State machine attribute created dynamically
         if self.store and self.store.portfolio and self.store.portfolio.player:
             self.store.portfolio.player.update_fov()  # type: ignore | The class for this action must be PlayerCharacter.
 
@@ -177,7 +180,7 @@ class GameEngine:
                     self.last_update_time = time.time()
 
                 # Update Inputs
-                for event in tcod.event.wait(timeout=GLOBAL_COOLDOWN_TIME / 1000):
+                for event in tcod.event.wait(timeout=GLOBAL_ACTION_COOLDOWN_TIME / 1000):
                         
                     if event.type in ( "QUIT", "KEYDOWN", "MOUSEMOTION" ):
                         match event.type:
@@ -186,10 +189,9 @@ class GameEngine:
 
                             case "KEYDOWN":
                                 key_sim = event.sym
-                                if self.loop and self.loop.inputs_loop_handler:
+                                if self.loop and self.loop.sequenced_loop_handler:
                                     match key_sim:
                                         case tcod.event.KeySym.ESCAPE:
-
                                             self.reset()  # type: ignore
 
                                         case tcod.event.KeySym.P:
@@ -209,53 +211,50 @@ class GameEngine:
                                                 print(msg)
 
                                         case tcod.event.KeySym.V:
-                                            if self.display:
-                                                current_behavior = self.loop.inputs_loop_handler.behaviors
-                                                main_console = self.display.get_window_by_name('main_window')                                        
+                                            if self.display and self.loop.display_loop_handler:                                     
                                                 history_console = self.display.get_window_by_name('history_window')
+                                                                                                
+                                                if history_console and not history_console.is_rendered:
+                                                    if not self.loop.sequenced_loop_handler.is_stopped():  # type: ignore
+                                                        self.loop.sequenced_loop_handler.stop()  # type: ignore
+                                                    self.display.open_history()
 
-                                                if current_behavior == player_behaviors:
-                                                    self.loop.mob_loop_handler.stop()  # type: ignore
-                                                    self.loop.inputs_loop_handler.behaviors = viewer_behaviors
-                                                    if main_console and history_console:
-                                                        history_console.is_rendered=True
-
-                                                elif current_behavior == viewer_behaviors:
-                                                    self.loop.mob_loop_handler.start()  # type: ignore
-                                                    self.loop.inputs_loop_handler.behaviors = player_behaviors
-                                                    if main_console and history_console:
-                                                        history_console.is_rendered=False
+                                                elif history_console and history_console.is_rendered:
+                                                    if self.loop.sequenced_loop_handler.is_stopped():  # type: ignore
+                                                        self.loop.sequenced_loop_handler.start()  # type: ignore
+                                                    self.display.close_history()
                                         
                                         case tcod.event.KeySym.I:
-                                            if self.display:
-                                                current_behavior = self.loop.inputs_loop_handler.behaviors
+                                            if self.display and self.loop.display_loop_handler:
                                                 main_console = self.display.get_window_by_name('main_window')                                        
                                                 inventory_console = self.display.get_window_by_name('inventory_window')
+                                                                                                
+                                                if main_console and inventory_console and not inventory_console.is_rendered:
+                                                    if not self.loop.sequenced_loop_handler.is_stopped():  # type: ignore
+                                                        self.loop.sequenced_loop_handler.stop()  # type: ignore
+                                                    self.display.open_inventory()
 
-                                                if current_behavior == player_behaviors:
-                                                    self.loop.mob_loop_handler.stop()  # type: ignore
-                                                    self.loop.inputs_loop_handler.behaviors = selector_behaviors
-                                                    if main_console and inventory_console:
-                                                        inventory_console.is_rendered=True
+                                                elif main_console and inventory_console and inventory_console.is_rendered:
+                                                    if self.loop.sequenced_loop_handler.is_stopped():  # type: ignore
+                                                        self.loop.sequenced_loop_handler.start()  # type: ignore
+                                                    self.display.close_inventory()
 
-                                                elif current_behavior == selector_behaviors:
-                                                    self.loop.mob_loop_handler.start()  # type: ignore
-                                                    self.loop.inputs_loop_handler.behaviors = player_behaviors
-                                                    if main_console and inventory_console:
-                                                        inventory_console.is_rendered=False
-                                                        
                                         case tcod.event.KeySym.Q:
                                             self.stop()  # type: ignore
 
                                         case _:
                                             if self.state not in ('idle', 'paused', 'shutdown'):  # type: ignore
-                                                if self.store.portfolio.player.is_alive:  # type: ignore | Assume store is GameStore
-                                                    game_event = InputEvent(store=self.store, handler=self.loop.inputs_loop_handler, input_event=event)
-                                                    if self.loop.inputs_loop_handler:
-                                                        self.loop.inputs_loop_handler.handle(game_event)
-                                            else:
-                                                self.store.log.add(f"Events={self.loop.inputs_loop_handler.events.qsize()}, Actions={self.loop.inputs_loop_handler.actions.qsize()}")  # type: ignore
-                            
+                                                inventory_console = self.display.get_window_by_name('inventory_window')
+                                                history_console = self.display.get_window_by_name('history_window')
+
+                                                if not inventory_console.is_rendered and not history_console.is_rendered:                                                
+                                                    # Player Takes Turn
+                                                    self.store.portfolio.player.take_turn(event)
+
+                                                elif inventory_console.is_rendered or history_console.is_rendered:
+                                                    # Pass event to Display
+                                                    self.display.process_event(event)
+
                             case "MOUSEMOTION":
                                 if self.display and self.display.context and self.store:
                                     self.display.context.convert_event(event)

@@ -82,9 +82,9 @@ class AICharacterEvent(BaseGameEvent):
             self.handler.handle(cast(StateActionObject, self))
 
 
-class AIUpdateFocusEvent(BaseEntityEvent):
+class AITakeTurnEvent(BaseEntityEvent):
     """
-    The AIUpdateFocusEvent is the event portion of the UpdateFocus behavior for a TargetingEntity controlled by the GameAI. It is created by the Game AI or directly by an AICharacter.
+    The AITakeTurnEvent is the event portion of the TakeTurn behavior for a TargetingEntity controlled by the GameAI. It is created by the Game AI or directly by an AICharacter.
     Duck Types: StateActionObject, StoredStateObject
     """
     def trigger(self) -> None:
@@ -92,9 +92,9 @@ class AIUpdateFocusEvent(BaseEntityEvent):
             self.handler.handle(cast(StateActionObject, self))
 
 
-class AIUpdateFocusAction(BaseActionOnEntity):
+class AITakeTurnAction(BaseActionOnEntity):
     """
-    The AIUpdateFocusAction is the action portion of the UpdateFocus behavior for a TargetingEntity controlled by the GameAI. It is performed by an AICharacter.
+    The AITakeTurnAction is the action portion of the TakeTurn behavior for a TargetingEntity controlled by the GameAI. It is performed by an AICharacter.
     
     Duck Types: StateActionObject, StoredStateObject
     """
@@ -142,10 +142,10 @@ class AIUpdateFocusAction(BaseActionOnEntity):
                             pass
 
         except Exception as e:
-            print(f"Error in AIUpdateFocusAction.perform: {e}")
+            print(f"Error in AITakeTurnAction.perform: {e}")
             traceback.print_exc()
 
-update_focus = ('aiupdatefocusevent', AIUpdateFocusAction())
+take_turn = ('aitaketurnevent', AITakeTurnAction())
 
 
 class AIAcquireTargetEvent(BaseEntityEvent):
@@ -336,6 +336,10 @@ class MobCharacter(AICharacter):
     def ai(self, value: SubLoopHandler | None) -> None:   # type: ignore
         self._ai = value
 
+    @property
+    def player_visible(self) -> bool:
+        return self.store.portfolio.player.is_location_in_fov(self.location)
+
     def take_damage(self, damage: int) -> None:
         super().take_damage(damage)
 
@@ -346,15 +350,12 @@ class MobCharacter(AICharacter):
         elif self.target and 'remains' in self.target.name.lower():
             message = f"Easy {self.target.name}. Way to kick a guy while they're down!"
         self.store.log.add(message, fg=colors.player_atk)  # type: ignore | The store for player must be GameStore.
-          
-    def update(self) -> None:
-        distance_to_player = self.distance_to_location(self.store.portfolio.player.location if self.store and self.store.portfolio else None)  # type: ignore | Assume store is GameStore
-        if distance_to_player <= self.earshot_radius:
-            super().update()
-            if self.ai:
-                if self.store and self.store.portfolio:  # type: ignore | Assume store is GameStore
-                    self.ai.handle(AIUpdateFocusEvent(store=self.store, handler=self.ai, entity=self))
-
+    
+    def take_turn(self) -> None:
+        if self.ai:
+            if self.store and self.store.portfolio:  # type: ignore | Assume store is GameStore
+                self.ai.handle(AITakeTurnEvent(store=self.store, handler=self.ai, entity=self))
+    
     def die(self) -> None:
         super().die()
         self.color = colors.enemy_die  # type: ignore
@@ -367,5 +368,6 @@ class MobCharacter(AICharacter):
 mob_behaviors = {
     ('nonevent', NoAction()),
     ('waitevent', WaitAction()),
-    entitywait, update_focus, investigate, pursue, acquire_target, entityattack
+    entitywait, take_turn, investigate, 
+    pursue, acquire_target, entityattack
 }

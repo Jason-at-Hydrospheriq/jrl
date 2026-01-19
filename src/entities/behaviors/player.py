@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Tuple, cast
 import numpy as np
 import tcod
 
-from entities.behaviors.system import NoAction, WaitAction
+from entities.behaviors.system import NoAction, WaitAction, InputEvent
 from entities.behaviors.entity import EntityMoveAction, EntityPickupAction, entitywait, entityattack
 from entities.components import PlayerInventory
 from game_types import TileCoordinate
 from baseclasses import BaseGameEvent, BaseGameAction, action_locked
-from entities.actors import Character
+from entities.actors import AICharacter
 from game_types import StateActionObject, TileCoordinate
 import colors
 
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 @action_locked
-class PlayerCharacter(Character):
+class PlayerCharacter(AICharacter):
     action_locked: bool | None = True
     location: TileCoordinate | None
 
@@ -74,7 +74,17 @@ class PlayerCharacter(Character):
         elif self.target and 'remains' in self.name.lower():
             message = f"Easy {self.target.name}. Way to kick a guy while they're down!"
         self.store.log.add(message, fg=colors.enemy_atk)  # type: ignore | The store for player must be GameStore.
-  
+    
+    def take_turn(self, input_event: tcod.event.Event) -> None:
+        if self.is_alive:  # type: ignore | Assume store is GameStore
+            game_event = InputEvent(store=self.store, handler=self.ai, input_event=input_event)
+            if self.ai:
+                self.ai.handle(game_event)
+        
+        # All Visible Mobs Take Actions
+        for mob in self.store.portfolio.visible_mobs:
+            mob.take_turn() 
+
     def die(self) -> None:
         super().die()
 

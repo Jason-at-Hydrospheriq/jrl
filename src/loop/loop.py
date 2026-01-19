@@ -13,6 +13,7 @@ from delays import GLOBAL_ACTION_COOLDOWN_TIME, GLOBAL_COOLDOWN_TIME
 from display.display import GameDisplay
 from entities.behaviors.mob import mob_behaviors
 from entities.behaviors.player import player_behaviors
+from entities.behaviors.selector import selector_behaviors
 from loop.components import SubLoopHandler
 from game_types import GameAction, GameEvent, StateActionObject
 
@@ -29,8 +30,9 @@ class GameLoops:
     store: GameStore | None
     display: GameDisplay | None
     machine: Machine
-    inputs_loop_handler: SubLoopHandler | None
-    mob_loop_handler: SubLoopHandler | None
+    display_loop_handler: SubLoopHandler | None
+    sequenced_loop_handler: SubLoopHandler | None
+    continuous_loop_handler: SubLoopHandler | None
     threads: List[threading.Thread | None]
     stop_signal: threading.Event
     last_event_time: dict = {}
@@ -38,9 +40,15 @@ class GameLoops:
     def __init__(self, store: GameStore | None = None, display: GameDisplay | None = None) -> None:
         self.store = store
         self.display = display
+
         # Add loop handler and thread for viewer later
-        self.inputs_loop_handler = SubLoopHandler(store=store, behaviors=player_behaviors)
-        self.mob_loop_handler = SubLoopHandler(store=store, behaviors=mob_behaviors)
+        behaviors = player_behaviors
+        for behavior in mob_behaviors:
+            if behavior not in behaviors:
+                behaviors.add(behavior)
+
+        self.sequenced_loop_handler = SubLoopHandler(store=store, behaviors=behaviors)
+        self.display_loop_handler = SubLoopHandler(store=store, behaviors=selector_behaviors)
         self.threads = []
         self.stop_signal = threading.Event()
         #threading.excepthook = self.threaded_exception_handler
@@ -61,15 +69,16 @@ class GameLoops:
     def _start(self) -> None:
         """Starts the loop threads."""
         try:
-            self.inputs_loop_handler.start() # type: ignore | State machine attribute created dynamically
-            self.mob_loop_handler.start()  # type: ignore | State machine attribute created dynamically
+            self.sequenced_loop_handler.start() # type: ignore | State machine attribute created dynamically
+            self.display_loop_handler.start()  # type: ignore | State machine attribute created dynamically
+            # self.continuous_loop_handler.start()  # type: ignore | State machine attribute created dynamically
             self.stop_signal.clear()
 
             if not self.threads:
-                self.threads.append(threading.Thread(target=self.display_loop, daemon=True))
-                self.threads.append(threading.Thread(target=self.ai_main_loop, daemon=True))
-                self.threads.append(threading.Thread(target=self.inputs_subloop, daemon=True))
-                self.threads.append(threading.Thread(target=self.mob_subloop, daemon=True))
+                self.threads.append(threading.Thread(target=self.continuous_display_loop, daemon=True))
+                # self.threads.append(threading.Thread(target=self.continuous_game_loop, daemon=True))
+                self.threads.append(threading.Thread(target=self.sequenced_game_loop, daemon=True))
+                # self.threads.append(threading.Thread(target=self.mob_subloop, daemon=True))
 
                 for thread in self.threads:
                     if thread is not None:
@@ -81,8 +90,8 @@ class GameLoops:
             print(f"Error starting loops: {e}")
 
     def _pause(self) -> None:
-        self.inputs_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
-        self.mob_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
+        self.sequenced_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
+        # self.continuous_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
 
     def _stop(self) -> None:
         """Stops the loop threads."""
@@ -94,32 +103,36 @@ class GameLoops:
             
             print("Game loops stopped.")
 
-            self.inputs_loop_handler.stop() # type: ignore | State machine attribute created dynamically
-            self.mob_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
+            self.sequenced_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
+            self.display_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
 
         except Exception as e:
             print(f"Error stopping loops: {e}")
     
-    def loop_throttle(self) -> bool:
+    def loop_throttle(self, cooldown: int) -> bool:
         """Throttle the loop to prevent it from running too fast."""
-        global GLOBAL_COOLDOWN_TIME
 
         try:
-            time.sleep(GLOBAL_COOLDOWN_TIME / 1000)
+            time.sleep(cooldown / 1000)
             return True
         
         except Exception as e:
             print(f"Error in loop throttle: {e}")
             return False
         
-    def display_loop(self) -> None:
-        """Main display loop that runs in a separate thread."""
+    def continuous_display_loop(self) -> None:
+        """
+        Manages the rendering loop for the Game Display and a FIFO queue for display interactions.
+        This loop is not throttled.
+        """
         last_beat = time.time()
         ctr = 0
 
         try:
             while not self.stop_signal.is_set():
                 ctr += 1
+                next_event = None
+                next_action = None
     
                 if self.state != 'started':  # type: ignore
                     time.sleep(0.1)
@@ -134,72 +147,100 @@ class GameLoops:
                         print(f"Display Loop 8>: {(current_time - last_beat)*1000:.2f}ms")
                     last_beat = current_time
 
-                if self.display and self.display.is_started():  # type: ignore
+                # Process All Events
+                if self.display_loop_handler and self.display_loop_handler.events is not None:
+                    while not self.display_loop_handler.events.empty(): 
+                        next_event = self.sequenced_loop_handler.events.get_nowait()
+
+                        if next_event is not None and isinstance(next_event, GameEvent):
+                                next_event.trigger()
+
+                # Process All Actions
+                if self.display_loop_handler and self.display_loop_handler.actions is not None:
+                    while not self.display_loop_handler.actions.empty():
+                        next_action = self.display_loop_handler.actions.get_nowait()
+
+                        if next_action is not None and isinstance(next_action, GameAction):
+                                next_action.perform() 
+                                
+                if self.display and self.display.state != 'stopped':  # type: ignore
                     self.display.render()
 
         except Exception as e:
             print(f"Display loop encountered an error: {e}")
             traceback.print_exc()
 
-    def ai_main_loop(self) -> None:
-        """Main AI loop that runs in a separate thread."""
+    def continuous_game_loop(self) -> None:
+        """
+        Manages a FIFO queue for processing game requests, such as calls to ChatGPT and
+        state updates for active Game entities. This loop is throttled by the 
+        GLOBAL_COOLDOWN_TIME delay.
+        """
+        global GLOBAL_COOLDOWN_TIME
+
         while not self.stop_signal.is_set():  # type: ignore
             try:
                 if self.state != 'started':  # type: ignore
-                    time.sleep(0.1)
-                    continue
+                    time.sleep(0.1)                   
 
-                # Process AI logic here
-                if self.loop_throttle():
-                    self.update()
+                # State updates
+                if self.loop_throttle(GLOBAL_COOLDOWN_TIME):
+                    self.store.portfolio.player.update()
+                    for mob in self.store.portfolio.visible_mobs:
+                        mob.update()
 
             except Exception as e:
-                print(f"AI main loop encountered an error: {e}")
+                print(f"The continuious game loop encountered an error: {e}")
                 traceback.print_exc()
 
-    def inputs_subloop(self) -> None:
+    def sequenced_game_loop(self) -> None:
         """
-        Update the state of the game by processing events and updating the roster, map, and UI.
+        Manages the action sequence of player and active mob entities. Updates with a maximum
+        frequency set by the GLOBAL_ACTION_COOLDOWN delay.
         """
         last_beat = 0.0
         ctr = 0
+        global GLOBAL_ACTION_COOLDOWN_TIME
 
         try:
             while not self.stop_signal.is_set():  # type: ignore
-                ctr += 1
-                next_event = None
-                next_action = None
+                if self.loop_throttle(GLOBAL_ACTION_COOLDOWN_TIME):
+                    ctr += 1
+                    next_event = None
+                    next_action = None
 
-                if self.state != 'started':  # type: ignore
-                    time.sleep(0.1)
-                    continue
+                    if self.state != 'started':  # type: ignore
+                        time.sleep(0.1)
+                        continue
 
-                if ctr % 50 == 0:
-                    current_time = time.time()
-                    if ctr % 100 == 0:
-                        # print(f"Player SubLoop <8: {(current_time - last_beat)*1000:.2f}ms")
-                        ctr = 0
-                    else:
-                        pass
-                        # print(f"Player SubLoop 8>: {(current_time - last_beat)*1000:.2f}ms")
-                    last_beat = current_time
-                    
-                if self.inputs_loop_handler and self.inputs_loop_handler.events is not None:
-                    if not self.inputs_loop_handler.events.empty(): 
-                        next_event = self.inputs_loop_handler.events.get_nowait()
+                    if ctr % 50 == 0:
+                        current_time = time.time()
+                        if ctr % 100 == 0:
+                            # print(f"Player SubLoop <8: {(current_time - last_beat)*1000:.2f}ms")
+                            ctr = 0
+                        else:
+                            pass
+                            # print(f"Player SubLoop 8>: {(current_time - last_beat)*1000:.2f}ms")
+                        last_beat = current_time
 
-                    if next_event is not None and isinstance(next_event, GameEvent):
-                            next_event.trigger()
+                    # Process All Events
+                    if self.sequenced_loop_handler and self.sequenced_loop_handler.events is not None:
+                        while not self.sequenced_loop_handler.events.empty(): 
+                            next_event = self.sequenced_loop_handler.events.get_nowait()
 
-                if self.inputs_loop_handler and self.inputs_loop_handler.actions is not None:
-                    if not self.inputs_loop_handler.actions.empty():
-                        next_action = self.inputs_loop_handler.actions.get_nowait()
+                            if next_event is not None and isinstance(next_event, GameEvent):
+                                    next_event.trigger()
 
-                    if next_action is not None and isinstance(next_action, GameAction):
-                            next_action.perform()
+                    # Process All Actions
+                    if self.sequenced_loop_handler and self.sequenced_loop_handler.actions is not None:
+                        while not self.sequenced_loop_handler.actions.empty():
+                            next_action = self.sequenced_loop_handler.actions.get_nowait()
+
+                            if next_action is not None and isinstance(next_action, GameAction):
+                                    next_action.perform()             
 
         except BaseException as e:
-            print(f"Error processing player sub loop item: {e}")
+            print(f"Error processing sequenced game loop item: {e}")
             traceback.print_exc()
 
     def mob_subloop(self) -> None:
@@ -228,16 +269,16 @@ class GameLoops:
                         pass #print(f"Mob SubLoop 8>: {(current_time - last_beat)*1000:.2f}ms")
                     last_beat = current_time
 
-                if self.mob_loop_handler and self.mob_loop_handler.events is not None:
-                    if not self.mob_loop_handler.events.empty(): 
-                        next_event = self.mob_loop_handler.events.get_nowait()
+                if selcontinous and selcontinous.events is not None:
+                    if not selcontinous.events.empty(): 
+                        next_event = selcontinous.events.get_nowait()
 
                     if next_event is not None and isinstance(next_event, GameEvent):
                             next_event.trigger()
                 
-                if self.mob_loop_handler and self.mob_loop_handler.actions is not None:
-                    if not self.mob_loop_handler.actions.empty():
-                        next_action = self.mob_loop_handler.actions.get_nowait()
+                if selcontinous and selcontinous.actions is not None:
+                    if not selcontinous.actions.empty():
+                        next_action = selcontinous.actions.get_nowait()
 
                     if next_action is not None and isinstance(next_action, GameAction):
                             next_action.perform()

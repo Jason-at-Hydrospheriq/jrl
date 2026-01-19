@@ -109,6 +109,14 @@ class Portfolio:
         return [entity for entity in self.live_actors if isinstance(entity, AICharacter)]
     
     @property
+    def live_mobs(self) -> List[MobCharacter]:
+        return [entity for entity in self.live_ai_actors if isinstance(entity, MobCharacter)]
+    
+    @property
+    def visible_mobs(self) -> List[MobCharacter]:
+        return [entity for entity in self.live_mobs if entity.player_visible]
+
+    @property
     def all_items(self) -> List[BaseGameEntity]:
         return [entity for entity in self.entities if isinstance(entity, BaseItem)]
     
@@ -127,6 +135,7 @@ class Portfolio:
         start_room = random.choice(start_rooms)
         spawn_location = game_map.areas[start_room].get_random_location()
         self.player = self.spawn_at_location(entity=self.PLAYER, location=spawn_location)  # type: ignore
+        self.player.ai = self.game_ai.sequenced_loop_handler
 
     def spawn_at_location(self, *, entity: M, location: TileCoordinate) -> M:
         """Spawn a copy of this entity at the given location and return it."""
@@ -134,7 +143,7 @@ class Portfolio:
         clone.location = location
         clone.store = self.store
         if isinstance(clone, AICharacter) and self.game_ai is not None:
-            clone.ai = self.game_ai.mob_loop_handler
+            clone.ai = self.game_ai.sequenced_loop_handler
         self.entities.add(clone)
         return clone
     
