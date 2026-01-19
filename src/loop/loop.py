@@ -49,6 +49,8 @@ class GameLoops:
 
         self.sequenced_loop_handler = SubLoopHandler(store=store, behaviors=behaviors)
         self.display_loop_handler = SubLoopHandler(store=store, behaviors=selector_behaviors)
+        self.continuous_loop_handler = SubLoopHandler(store=store, behaviors=None)
+        
         self.threads = []
         self.stop_signal = threading.Event()
         #threading.excepthook = self.threaded_exception_handler
@@ -71,12 +73,12 @@ class GameLoops:
         try:
             self.sequenced_loop_handler.start() # type: ignore | State machine attribute created dynamically
             self.display_loop_handler.start()  # type: ignore | State machine attribute created dynamically
-            # self.continuous_loop_handler.start()  # type: ignore | State machine attribute created dynamically
+            self.continuous_loop_handler.start()  # type: ignore | State machine attribute created dynamically
             self.stop_signal.clear()
 
             if not self.threads:
                 self.threads.append(threading.Thread(target=self.continuous_display_loop, daemon=True))
-                # self.threads.append(threading.Thread(target=self.continuous_game_loop, daemon=True))
+                self.threads.append(threading.Thread(target=self.continuous_game_loop, daemon=True))
                 self.threads.append(threading.Thread(target=self.sequenced_game_loop, daemon=True))
                 # self.threads.append(threading.Thread(target=self.mob_subloop, daemon=True))
 
@@ -91,7 +93,7 @@ class GameLoops:
 
     def _pause(self) -> None:
         self.sequenced_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
-        # self.continuous_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
+        self.continuous_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
 
     def _stop(self) -> None:
         """Stops the loop threads."""
@@ -105,6 +107,7 @@ class GameLoops:
 
             self.sequenced_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
             self.display_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
+            self.continuous_loop_handler.stop()  # type: ignore | State machine attribute created dynamically
 
         except Exception as e:
             print(f"Error stopping loops: {e}")

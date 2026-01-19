@@ -118,7 +118,7 @@ class TargetingEntity(BaseGameEntity):
                  symbol: str=' ',
                  color: Tuple[int, int, int]=(0,0,0)) -> None:
         super().__init__(store=store, location=location, name=name, symbol=symbol, color=color)
-
+        
     @property
     def threat_level(self) -> int:
         return self._threat_level
