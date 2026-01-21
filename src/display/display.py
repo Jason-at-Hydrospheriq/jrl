@@ -139,13 +139,14 @@ class GameDisplay(BaseUI):
     def _open_inventory(self) -> None:                                        
         inventory_console = self.get_window_by_name('inventory_window')
         main_console = self.get_window_by_name('main_window')
-        inventory_console.is_rendered=True
+        if inventory_console:
+            inventory_console.is_rendered=True
 
         for window in self.windows:
             if window is not inventory_console and window is not main_console:
                 window.is_rendered=False
-
-        self.ai.behaviors = selector_behaviors
+        if self.ai:
+            self.ai.behaviors = selector_behaviors
 
         print("Inventory opened.")
 
@@ -154,19 +155,23 @@ class GameDisplay(BaseUI):
         for window in self.windows:
             if window.name == 'inventory_window':
                 window.is_rendered=False
-        self.ai.behaviors = system_behaviors
+        if self.ai:
+            self.ai.behaviors = system_behaviors
 
         print("Inventory closed.")
 
     def _open_history(self) -> None:
         history_console = self.get_window_by_name('history_window')
         main_console = self.get_window_by_name('main_window')
-        history_console.is_rendered=True
+        if history_console:
+            history_console.is_rendered=True
 
         for window in self.windows:
             if window is not history_console and window is not main_console:
                 window.is_rendered=False
-        self.ai.behaviors = viewer_behaviors
+        
+        if self.ai: 
+            self.ai.behaviors = viewer_behaviors
 
         print("History viewer opened.")
 
@@ -174,7 +179,8 @@ class GameDisplay(BaseUI):
         for window in self.windows:
             if window.name == 'history_window':
                 window.is_rendered=False
-        self.ai.behaviors = system_behaviors
+        if self.ai:
+            self.ai.behaviors = system_behaviors
 
         print("History viewer closed.")
 

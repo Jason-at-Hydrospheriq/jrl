@@ -6,13 +6,14 @@ import random
 from warnings import warn
 from typing import Tuple
 import numpy as np
+from math import cos, pi, sin
 
-from game_types import TileArea
-from game_types import BaseTileGrid, TileCoordinate, TileTuple
+from game_types import TileArea, BaseTileGrid, TileCoordinate, TileTuple
 
 DEFAULT_GRID_SIZE = TileTuple( ([10], [10]) )
 DEFAULT_CENTER_LOCATION = TileTuple( ([5], [5]) )
 DEFAULT_CENTER_COORDINATE = TileCoordinate(DEFAULT_CENTER_LOCATION, DEFAULT_GRID_SIZE)
+
 
 class GenericMapArea(TileArea):
     wall_thickness: int = 1
@@ -127,73 +128,70 @@ class CircularRoom(GenericMapArea):
                                grid_tuple, dtype=int)
         return mask
 
-        # @property
-    # def tile_types(self) -> np.ndarray:
-    #     return self.tiles["type"]
-    
-    # @property
-    # def visible_tiles(self) -> np.ndarray:
-    #     return self.tiles["visible"]
-    
-    # @property
-    # def explored_tiles(self) -> np.ndarray:
-    #     return self.tiles["explored"]
-    
-    # @property
-    # def traversable_tiles(self) -> np.ndarray:
-    #     return self.tiles["traversable"]
-    
-    # @property
-    # def transparent_tiles(self) -> np.ndarray:
-    #     return self.tiles["transparent"]
 
-    # @property
-    # def tile_graphics(self) -> np.ndarray:
-    #     return self.tiles["graphic"]
-    
-    # def _initialize_grid(self) -> None:
-    #     """Initializes the tile grid with default values."""
-    #     self._tiles = np.full((self._width, self._height), fill_value=False, dtype=self._dtype)
+class GravPulseShipDeck(GenericMapArea):
+    _radius: int
+    _corridor_width: int
 
-    # def get_type_at(self, location: TileCoordinate) -> np.ndarray:
-    #     """Return the tile type at the given location."""
-    #     if not location.is_inbounds:
-    #         return np.empty((1,))
+    def __init__(self, center: TileCoordinate = DEFAULT_CENTER_COORDINATE, corridor_width: int = 3, 
+                 radius: int = 18) -> None:
         
-    #     return self.tiles["type"][location.x, location.y]
+        self.wall_thickness = 2
+        self._corridor_width = corridor_width
+        self._radius = radius
+        center = TileCoordinate.from_tuple((25,25), parent_map_size=TileTuple( ([50], [50]) ))
+        super().__init__(center=center)
+        self.width = 50
+        self.height = 50
+
+    @property
+    def radius(self) -> int:
+        return self._radius
+
+    @property
+    def corridor_width(self) -> int:
+        return self._corridor_width
+
+    @property
+    def outer_radius(self) -> int:
+        return self._radius
+
+    @property
+    def inner_radius(self) -> int:
+        return self.radius - self.corridor_width - 2 * self.wall_thickness
+        
+    @property
+    def to_mask(self) -> np.ndarray:
+        """Return the inner area of this room as a 2D array index."""
+        # Inner Hull
+        center = (self.width / 2, self.height / 2)
+        y, x = np.ogrid[:self.height, :self.width]
+        distance_from_center = np.sqrt((x - center[1])**2 + (y - center[0])**2 + 2)
+        
+        return (distance_from_center >= self.inner_radius) & (distance_from_center <= self.outer_radius)
     
-    # def get_graphic_at(self, location: TileCoordinate) -> np.ndarray:
-    #     """Return the tile color at the given location."""
-    #     if not location.is_inbounds:
-    #         return np.empty((3,))
-        
-    #     return self.tiles["colors"][location.x, location.y]
+
+class GravPulseShipBulkhead(GenericMapArea):
     
-    # def is_traversable_at(self, location: TileCoordinate) -> bool:
-    #     """Return True if the tile at location is traversable."""
-    #     if not location.is_inbounds:
-    #         return False
+    def __init__(self, center: TileCoordinate = DEFAULT_CENTER_COORDINATE, thickness: int=2, angle: int=0) -> None:
+        self.wall_thickness = thickness
+        self.angle = angle
+        center = TileCoordinate.from_tuple((25,25), parent_map_size=TileTuple( ([50], [50]) ))
+        super().__init__(center=center)
+        self.width = 50
+        self.height = 50
+
+    @property
+    def to_mask(self) -> np.ndarray:
+        """Return the inner area of this room as a 2D array index."""
+        y, x = np.ogrid[:self.height, :self.width]
         
-    #     return bool(self.tiles["traversable"][location.x, location.y].all())
-           
-    # def is_transparent_at(self, location: TileCoordinate) -> bool:
-    #     """Return True if the tile at location is transparent."""
-    #     if not location.is_inbounds:
-    #         return False
+        m = (sin(self.angle/ 360 * 2 * pi) / cos(self.angle/ 360 * 2 * pi))
+        y1 = m * (self.center.x - x) - self.wall_thickness / 2 + self.width / 2
+        y2 = m * (self.center.x - x) + self.wall_thickness / 2 + self.width / 2
+
+        mask = ~( (y >= y1) & (y <= y2) )
         
-    #     return bool(self.tiles["transparent"][location.x, location.y].all())
+        return mask
     
-    # def is_visible_at(self, location: TileCoordinate) -> bool:
-    #     """Return True if the tile at location is visible."""
-    #     if not location.is_inbounds:
-    #         return False
-        
-    #     return bool(self.tiles["visible"][location.x, location.y].all())
-    
-    # def is_explored_at(self, location: TileCoordinate) -> bool:
-    #     """Return True if the tile at location has been explored."""
-    #     if not location.is_inbounds:
-    #         return False
-        
-    #     return bool(self.tiles["explored"][location.x, location.y].all())
- 
+

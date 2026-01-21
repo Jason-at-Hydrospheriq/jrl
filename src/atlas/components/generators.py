@@ -140,3 +140,45 @@ class DungeonGenerator(BaseMapGenerator):
 
         return clone
     
+
+class GravPulseShipHangerDeck(BaseMapGenerator):
+
+    def __init__(self, template: GraphicTileMap=DEFAULT_MAP_TEMPLATE) -> None:
+        
+        self.map_template = template
+
+    def generate(self) -> GraphicTileMap:
+        map = self.spawn_map()
+        
+        a = GravPulseShipDeck(radius=10, corridor_width=0)
+        map.areas['main_corridor'] = a
+        b = GravPulseShipDeck(radius=25, corridor_width=8)
+        map.areas['main_hanger'] = b
+        c = GravPulseShipBulkhead(angle = 55, thickness=4)
+        d = GravPulseShipBulkhead(angle = -55, thickness=4)
+        e = GravPulseShipBulkhead(angle = 0, thickness=2)
+        bulkheads = c.to_mask & d.to_mask & e.to_mask
+        floor_layout = (a.to_mask | bulkheads) & (a.to_mask | b.to_mask)
+        map.set_tiles(floor_layout.astype(bool), "floor")
+
+        door_layout = map.get_tile_layout('solid_door')
+        if door_layout is not None:
+            door_layout[13:16, 24:27] = True  # add a door 
+            door_layout[35:38, 24:27] = True  # add another door
+            map.set_tiles(door_layout.astype(bool), "solid_door")
+            blocked_layout = ~floor_layout.astype(bool) | door_layout.astype(bool)
+            map.set_state_bits('blocks_movement', blocked_layout)
+            map.set_state_bits('blocks_vision', blocked_layout)
+        
+        map.update_state()
+        return map
+    
+    def spawn_map(self) -> GraphicTileMap:
+        """Spawn a new map instance based on the generator's template."""
+        map = deepcopy(self.map_template)
+        self.width = map.grid.width
+        self.height = map.grid.height
+        map.set_tiles(graphic_name='wall') # Initialize all tiles as walls
+        map.update_state()
+        
+        return map

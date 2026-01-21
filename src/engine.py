@@ -217,12 +217,12 @@ class GameEngine:
                                                 if history_console and not history_console.is_rendered:
                                                     if not self.loop.sequenced_loop_handler.is_stopped():  # type: ignore
                                                         self.loop.sequenced_loop_handler.stop()  # type: ignore
-                                                    self.display.open_history()
+                                                    self.display.open_history() # type: ignore | State machine attribute created dynamically
 
                                                 elif history_console and history_console.is_rendered:
                                                     if self.loop.sequenced_loop_handler.is_stopped():  # type: ignore
                                                         self.loop.sequenced_loop_handler.start()  # type: ignore
-                                                    self.display.close_history()
+                                                    self.display.close_history() # type: ignore | State machine attribute created dynamically
                                         
                                         case tcod.event.KeySym.I:
                                             if self.display and self.loop.display_loop_handler:
@@ -232,28 +232,29 @@ class GameEngine:
                                                 if main_console and inventory_console and not inventory_console.is_rendered:
                                                     if not self.loop.sequenced_loop_handler.is_stopped():  # type: ignore
                                                         self.loop.sequenced_loop_handler.stop()  # type: ignore
-                                                    self.display.open_inventory()
+                                                    self.display.open_inventory() # type: ignore | State machine attribute created dynamically
 
                                                 elif main_console and inventory_console and inventory_console.is_rendered:
                                                     if self.loop.sequenced_loop_handler.is_stopped():  # type: ignore
                                                         self.loop.sequenced_loop_handler.start()  # type: ignore
-                                                    self.display.close_inventory()
+                                                    self.display.close_inventory() # type: ignore | State machine attribute created dynamically
 
                                         case tcod.event.KeySym.Q:
                                             self.stop()  # type: ignore
 
                                         case _:
                                             if self.state not in ('idle', 'paused', 'shutdown'):  # type: ignore
-                                                inventory_console = self.display.get_window_by_name('inventory_window')
-                                                history_console = self.display.get_window_by_name('history_window')
+                                                if self.display:
+                                                    inventory_console = self.display.get_window_by_name('inventory_window')
+                                                    history_console = self.display.get_window_by_name('history_window')
+                                                    if inventory_console and history_console and self.store and self.store.portfolio and self.store.portfolio.player:
+                                                        if not inventory_console.is_rendered and not history_console.is_rendered:                                                
+                                                            # Player Takes Turn
+                                                            self.store.portfolio.player.take_turn(event) # type: ignore | The class for this action must be PlayerCharacter.
 
-                                                if not inventory_console.is_rendered and not history_console.is_rendered:                                                
-                                                    # Player Takes Turn
-                                                    self.store.portfolio.player.take_turn(event)
-
-                                                elif inventory_console.is_rendered or history_console.is_rendered:
-                                                    # Pass event to Display
-                                                    self.display.process_event(event)
+                                                        elif inventory_console.is_rendered or history_console.is_rendered:
+                                                            # Pass event to Display
+                                                            self.display.process_event(event)
 
                             case "MOUSEMOTION":
                                 if self.display and self.display.context and self.store:

@@ -7,6 +7,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Dict, Set, Tuple
 from transitions import Machine
 import numpy as np
+import tcod
 from tcod.console import Console
 from tcod.context import Context
 from enum import Enum, auto
@@ -18,6 +19,7 @@ from game_types import StateHandler, StatefulObject, TileCoordinate, TileTuple, 
 if TYPE_CHECKING:
     from store import GameStore
     from loop.components import SubLoopHandler
+
 
 def is_locked(func):
     """A decorator to wrap each method with a condition check."""

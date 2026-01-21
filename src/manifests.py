@@ -21,7 +21,9 @@ DEFAULT_TILEMAP_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': Til
                                                     "fill_light_yellow": (ord(" "), (255, 255, 255), (200, 180, 50)),
                                                     "fill_black": (ord(" "), (255, 255, 255), (0, 0, 0)),
                                                     "fill_dark_blue": (ord(" "), (255, 255, 255), (0, 0, 100)),
-                                                    "fill_golden_yellow": (ord(" "), (255, 255, 255), (130, 110, 50))
+                                                    "fill_golden_yellow": (ord(" "), (255, 255, 255), (130, 110, 50)),
+                                                    "fill_brown": (ord(" "), (255, 255, 255), (100, 50, 0)),
+                                                    "fill_golden_brown": (ord(" "), (255, 255, 255), (180, 120, 20))
                                                         },
                                          'dtypes': {
                                                         "tile_state_vector": None,
@@ -41,5 +43,10 @@ DEFAULT_TILEMAP_MANIFEST = GraphicsManifestDict({'dimensions': {'grid_size': Til
                                                                                     'explored': 'fill_dark_blue',
                                                                                     'first_look': 'fill_golden_yellow',
                                                                                     'visible': 'fill_golden_yellow'}},
+                                                        "solid_door": {   "fixed_state_bits": (1, 1, None, None),
+                                                                            "state_definitions": {'shroud': 'fill_black',
+                                                                                    'explored': 'fill_brown',
+                                                                                    'first_look': 'fill_golden_brown',
+                                                                                    'visible': 'fill_golden_brown'}},
                                                         }
                                          })

@@ -135,7 +135,8 @@ class Portfolio:
         start_room = random.choice(start_rooms)
         spawn_location = game_map.areas[start_room].get_random_location()
         self.player = self.spawn_at_location(entity=self.PLAYER, location=spawn_location)  # type: ignore
-        self.player.ai = self.game_ai.sequenced_loop_handler
+        if self.game_ai and self.player is not None:
+            self.player.ai = self.game_ai.sequenced_loop_handler # type: ignore
 
     def spawn_at_location(self, *, entity: M, location: TileCoordinate) -> M:
         """Spawn a copy of this entity at the given location and return it."""
@@ -186,27 +187,28 @@ class Portfolio:
 
         # Generate remainder of mobs in corridors
         corridors = [area for name, area in game_map.areas.items() if name.startswith('_corridor')]
+        
+        if len(corridors) > 0:
+            while n_total_mobs_spawned_in_this_map < max_total_mobs_in_this_map:
+                current_mob_locations = [mob.location for mob in self.live_ai_actors]
 
-        while n_total_mobs_spawned_in_this_map < max_total_mobs_in_this_map:
-            current_mob_locations = [mob.location for mob in self.live_ai_actors]
+                for corridor in corridors:
+                    
+                    open_terrain_layout = game_map.blocks_movement == False
+                    open_terrain_in_corridor = open_terrain_layout & corridor.to_mask
+                    open_terrain_coords = np.argwhere(open_terrain_in_corridor)
+                    spawn_choice = random.choice(open_terrain_coords)
+                    location_tuple = TileTuple(([int(spawn_choice[0])], [int(spawn_choice[1])]))
+                    spawn_location = TileCoordinate(location_tuple, corridor.parent_map_size)
 
-            for corridor in corridors:
-                
-                open_terrain_layout = game_map.blocks_movement == False
-                open_terrain_in_corridor = open_terrain_layout & corridor.to_mask
-                open_terrain_coords = np.argwhere(open_terrain_in_corridor)
-                spawn_choice = random.choice(open_terrain_coords)
-                location_tuple = TileTuple(([int(spawn_choice[0])], [int(spawn_choice[1])]))
-                spawn_location = TileCoordinate(location_tuple, corridor.parent_map_size)
+                    if not any(room.contains(spawn_location) for room in game_map.areas.values()):
+                        if not any(mob_location == spawn_location for mob_location in current_mob_locations):
+                            if random.random() < 0.8:
+                                self.spawn_at_location(entity=self.ORC, location=spawn_location)
+                            else:
+                                self.spawn_at_location(entity=self.TROLL, location=spawn_location)
 
-                if not any(room.contains(spawn_location) for room in game_map.areas.values()):
-                    if not any(mob_location == spawn_location for mob_location in current_mob_locations):
-                        if random.random() < 0.8:
-                            self.spawn_at_location(entity=self.ORC, location=spawn_location)
-                        else:
-                            self.spawn_at_location(entity=self.TROLL, location=spawn_location)
-
-                n_total_mobs_spawned_in_this_map += 1
+                    n_total_mobs_spawned_in_this_map += 1
 
         self.spawn_at_location(entity=self.HEALING_POTION, location=self.player.location)  # type: ignore
     

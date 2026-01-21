@@ -153,7 +153,7 @@ class GameLoops:
                 # Process All Events
                 if self.display_loop_handler and self.display_loop_handler.events is not None:
                     while not self.display_loop_handler.events.empty(): 
-                        next_event = self.sequenced_loop_handler.events.get_nowait()
+                        next_event = self.display_loop_handler.events.get_nowait()
 
                         if next_event is not None and isinstance(next_event, GameEvent):
                                 next_event.trigger()
@@ -188,9 +188,10 @@ class GameLoops:
 
                 # State updates
                 if self.loop_throttle(GLOBAL_COOLDOWN_TIME):
-                    self.store.portfolio.player.update()
-                    for mob in self.store.portfolio.visible_mobs:
-                        mob.update()
+                    if self.store and self.store.portfolio and self.store.portfolio.player:
+                        self.store.portfolio.player.update()
+                        for mob in self.store.portfolio.visible_mobs:
+                            mob.update()
 
             except Exception as e:
                 print(f"The continuious game loop encountered an error: {e}")
@@ -245,51 +246,6 @@ class GameLoops:
         except BaseException as e:
             print(f"Error processing sequenced game loop item: {e}")
             traceback.print_exc()
-
-    def mob_subloop(self) -> None:
-        """
-        Update the state of the game by processing events and updating the roster, map, and UI.
-        """
-        while not self.stop_signal.is_set():  # type: ignore
-            ctr = 0
-            last_beat = 0.0
-            next_action = None
-            try:
-                ctr += 1
-                next_event = None
-                next_event = None
-    
-                if self.state != 'started':  # type: ignore
-                    time.sleep(0.1)
-                    continue
-
-                if ctr % 50 == 0:
-                    current_time = time.time()
-                    if not ctr % 100 == 0:
-                        #print(f"Mob SubLoop <8: {(current_time - last_beat)*1000:.2f}ms")
-                        ctr = 0
-                    else:
-                        pass #print(f"Mob SubLoop 8>: {(current_time - last_beat)*1000:.2f}ms")
-                    last_beat = current_time
-
-                if selcontinous and selcontinous.events is not None:
-                    if not selcontinous.events.empty(): 
-                        next_event = selcontinous.events.get_nowait()
-
-                    if next_event is not None and isinstance(next_event, GameEvent):
-                            next_event.trigger()
-                
-                if selcontinous and selcontinous.actions is not None:
-                    if not selcontinous.actions.empty():
-                        next_action = selcontinous.actions.get_nowait()
-
-                    if next_action is not None and isinstance(next_action, GameAction):
-                            next_action.perform()
-
-            except BaseException as e:
-                print(f"Error processing mob sub loop item: {e}")
-                traceback.print_exc()
-                break
 
     def threaded_exception_handler(self, args):
         print(f"Thread failed: {args.thread.name}")

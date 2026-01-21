@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 from typing import Tuple, TYPE_CHECKING
+import numpy as np
+from transitions import Machine
 
 from baseclasses import BaseGameAction, BaseGameSubState, BaseItem, EntityRenderOrder
 from entities.actors import Character
-from game_types import TileCoordinate
+from game_types import GraphicTileMap, TileCoordinate
 
 if TYPE_CHECKING:
     from store import GameStore
@@ -57,3 +59,66 @@ class HealingConsumable(ConsumableItem):
                         self.store.portfolio.entities.remove(self)  # type: ignore
                 self.owner.update()
                 self.update()
+
+
+class InteractiveItem(BaseItem):
+    """An Interaction Item is any game object that can be interacted with by a Character. 
+    It has no consumable properties."""
+
+    _action: BaseGameAction | None = None
+    _substates_manifest = (
+        ("spawn", BaseGameSubState)),
+    
+    def __init__(self, store: GameStore | None = None, location: TileCoordinate | None = None, 
+                 *, name: str = "<Unnamed>", symbol: str = ' ', color: Tuple[int, int, int]) -> None:
+        
+        super().__init__(store, owner=None, location=location, name=name, symbol=symbol, color=color)
+        self.blocks_movement = False
+        self.is_invulnerable = True
+        self.render_order = EntityRenderOrder.ITEM
+
+
+class Door(InteractiveItem):
+    """A Door is an Interaction Item that can be opened or closed by a Character."""
+    _door_tiles: np.ndarray | None = None # A boolean mask representing the door's tile layout.
+
+    def __init__(self, store: GameStore | None = None, map: GraphicTileMap | None = None, location: TileCoordinate | None = None, 
+                 *, name: str = "<Unnamed>", symbol: str = ' ', color: Tuple[int, int, int]) -> None:
+       
+        super().__init__(store, location, name=name, symbol=symbol, color=color)
+        self.map = map
+
+        states = [{'name': 'locked', 'on_enter': '_lock'},
+                  {'name': 'unlocked', 'on_enter': '_unlock'},
+                  {'name': 'open', 'on_enter': '_open'},
+                  {'name': 'closed', 'on_enter': '_close'}]
+        
+        transitions =[
+            {'trigger': 'lock', 'source': 'closed', 'dest': 'locked'},
+            {'trigger': 'unlock', 'source': 'locked', 'dest': 'closed'},
+            {'trigger': 'open', 'source': 'closed', 'dest': 'open'},
+            {'trigger': 'close', 'source': 'open', 'dest': 'closed'}
+            ]
+        
+        self.machine = Machine(model=self, states=states, transitions=transitions, initial='closed')
+
+    def lock(self) -> None:
+        if self.store:
+            self.store.log.add(f"The {self.name} is now locked.")  # type: ignore | Assume store is GameStore
+        self.update()
+
+    def unlock(self) -> None:
+        if self.store:
+            self.store.log.add(f"The {self.name} is now unlocked.")  # type: ignore | Assume store is GameStore
+        self.update()
+
+    def open(self) -> None:
+        if self.store:
+            self.store.log.add(f"The {self.name} is now open.")  # type: ignore | Assume store is GameStore
+        self.update()
+
+    def close(self) -> None:
+        if self.store:
+            self.store.log.add(f"The {self.name} is now closed.")  # type: ignore | Assume store is GameStore
+        self.update()
+

@@ -41,17 +41,21 @@ class GameStore:
     
     def _initialize(self):
         """Starts the game loop and prepares the game state for play."""
-        if self.atlas and self.portfolio:
-            self._start()
+        try:
+            if self.atlas and self.portfolio:
+                self._start()
 
-            map = None
-            if self.atlas is not None:
-                self.atlas.create_map()
-                map = self.atlas.active
+                map = None
+                if self.atlas is not None:
+                    self.atlas.create_map()
+                    map = self.atlas.active
 
-            if self.portfolio and map is not None:
-                self.portfolio.spawn_player(map)
-                self.portfolio.initialize_random_mobs(map, max_mobs_per_area=3)
+                if self.portfolio and map is not None:
+                    self.portfolio.spawn_player(map)
+                    self.portfolio.initialize_random_mobs(map, max_mobs_per_area=3)
+                    
+        except Exception as e:
+            print(f"Error during game initialization: {e}")
 
     def _start(self):
         pass

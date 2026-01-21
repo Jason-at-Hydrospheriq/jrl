@@ -4,7 +4,7 @@
 from __future__ import annotations
 from collections import OrderedDict
 from typing import TYPE_CHECKING
-from atlas.components.generators import DungeonGenerator
+from atlas.components.generators import DungeonGenerator, GravPulseShipHangerDeck
 from atlas.components.tilemaps import DefaultTileMap
 from game_types import BaseMapGenerator
 
@@ -26,7 +26,7 @@ class Atlas:
         if store is not None:
             self.store = store
 
-        self.generators = OrderedDict({'dungeon': DungeonGenerator()})
+        self.generators = OrderedDict({'dungeon': DungeonGenerator(), 'hanger_deck': GravPulseShipHangerDeck()})
         self.library = OrderedDict({})
         self.library['_empty'] = DefaultTileMap()
         self.set_active_map('_empty')
@@ -48,9 +48,9 @@ class Atlas:
     def create_map(self) -> None:
         """Create a new map using the specified generator and add it to the library."""
         if len(self.library.keys()) < 1:
-            self.library['level_0'] = self.generators['dungeon'].generate()
+            self.library['level_0'] = self.generators['hanger_deck'].generate() # type: ignore
             self.set_active_map('level_0')
         else:
             new_map_name = f"level_{len(self.library.keys())-1}"
-            self.library[new_map_name] = self.generators['dungeon'].generate()
+            self.library[new_map_name] = self.generators['hanger_deck'].generate() # type: ignore
             self.set_active_map(new_map_name)

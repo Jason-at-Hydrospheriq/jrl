@@ -11,7 +11,7 @@ from entities.behaviors.entity import EntityMoveAction, EntityPickupAction, enti
 from entities.components import PlayerInventory
 from game_types import TileCoordinate
 from baseclasses import BaseGameEvent, BaseGameAction, action_locked
-from entities.actors import AICharacter
+from entities.actors import AICharacter, Character
 from game_types import StateActionObject, TileCoordinate
 import colors
 
@@ -76,14 +76,15 @@ class PlayerCharacter(AICharacter):
         self.store.log.add(message, fg=colors.enemy_atk)  # type: ignore | The store for player must be GameStore.
     
     def take_turn(self, input_event: tcod.event.Event) -> None:
-        if self.is_alive:  # type: ignore | Assume store is GameStore
-            game_event = InputEvent(store=self.store, handler=self.ai, input_event=input_event)
-            if self.ai:
-                self.ai.handle(game_event)
-        
-        # All Visible Mobs Take Actions
-        for mob in self.store.portfolio.visible_mobs:
-            mob.take_turn() 
+        if self.store and self.store.portfolio is not None:  # type: ignore | Assume store is GameStore
+            if self.is_alive:  # type: ignore | Assume store is GameStore
+                game_event = InputEvent(store=self.store, handler=self.ai, input_event=input_event) # type: ignore | Assume store is GameStore
+                if self.ai:
+                    self.ai.handle(game_event)
+            
+            # All Visible Mobs Take Actions
+            for mob in self.store.portfolio.visible_mobs: # type: ignore | Assume store is GameStore
+                mob.take_turn() 
 
     def die(self) -> None:
         super().die()
